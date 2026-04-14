@@ -3050,6 +3050,53 @@ function gestConverti(inv){ return inv; }
 // Quando l'utente segna un acconto/pagamento, cerca se la fattura
 // è già nel registro Supabase (per numero). Se sì aggiorna, se no inserisce.
 
+
+// ── Foto ricevuta pagamento ──
+function gestUploadFoto(input){
+  if(!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e){
+    // Comprimi immagine per Supabase (max 800px, JPEG 70%)
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      var maxW = 800;
+      var w = img.width, h = img.height;
+      if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      // Mostra anteprima
+      document.getElementById('gestFotoImg').src = dataUrl;
+      document.getElementById('gestFotoPreview').style.display = 'block';
+      // Salva nel contesto corrente
+      window._gestCurFoto = dataUrl;
+      toast('Foto pronta — premi Salva');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function gestApriFullFoto(){
+  var src = document.getElementById('gestFotoImg').src;
+  if(!src) return;
+  // Modal fullscreen
+  var mo = document.getElementById('fotoFullMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'fotoFullMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;align-items:center;justify-content:center;cursor:pointer';
+    mo.innerHTML = '<img id="fotoFullImg" style="max-width:96vw;max-height:92vh;object-fit:contain;border-radius:8px">';
+    mo.onclick = function(){ mo.style.display='none'; };
+    document.body.appendChild(mo);
+  }
+  document.getElementById('fotoFullImg').src = src;
+  mo.style.display = 'flex';
+}
+
 async function gestTrovaInRegistro(numero){
   try {
     var rows = await sbFetch('fatture?numero=eq.'+encodeURIComponent(numero.toString().trim())+'&select=*&limit=1');
@@ -3156,6 +3203,15 @@ function gestApriDettaglio(idx){
         (iban?'<div style="background:var(--surface);border-radius:8px;padding:10px;grid-column:span 2"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">IBAN</div><div style="font-size:12px;font-weight:500;margin-top:2px;word-break:break-all">'+gestEsc(iban)+'</div></div>':'')+
       '</div>'+
       // SEZIONE PAGAMENTO — usa tabella fatture Supabase
+            // Foto ricevuta
+      '<div style="margin-top:16px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">&#128247; Foto ricevuta pagamento</div>'+
+        '<div id="gestFotoPreview" style="display:none;margin-bottom:10px;text-align:center"><img id="gestFotoImg" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid var(--sep);cursor:pointer" onclick="gestApriFullFoto()"></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--sep);border-radius:10px;background:var(--surface2);cursor:pointer;font-size:13px;font-weight:600;color:var(--blue)"><input type="file" accept="image/*" capture="environment" onchange="gestUploadFoto(this)" style="display:none">&#128247; Scatta foto</label>'+
+          '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--sep);border-radius:10px;background:var(--surface2);cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3)"><input type="file" accept="image/*" onchange="gestUploadFoto(this)" style="display:none">&#128193; Galleria</label>'+
+        '</div>'+
+      '</div>'+
       '<div style="margin-top:18px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)" id="gestPagBox">'+
         '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">\ud83d\udcb0 Pagamento</div>'+
         '<div id="gestPagLoading" style="text-align:center;color:var(--ink3);font-size:13px;padding:8px">Caricamento...</div>'+
@@ -3194,6 +3250,7 @@ function gestApriDettaglio(idx){
 
   // Salva contesto corrente
   window._gestCur = {inv:inv, numero:numero, totale:totale, idx:idx, sbId:null};
+  window._gestCurFoto = '';
   window._gestCurStato = 'da_pagare';
 
   // Cerca nel registro Supabase se la fattura c'è già
@@ -3203,6 +3260,14 @@ function gestApriDettaglio(idx){
     if(existing){
       window._gestCur.sbId = existing.id;
       gestSetSt(existing.stato||'da_pagare');
+      // Carica foto se esiste
+      if(existing.foto){
+        window._gestCurFoto = existing.foto;
+        var fotoImg = document.getElementById('gestFotoImg');
+        var fotoPreview = document.getElementById('gestFotoPreview');
+        if(fotoImg){ fotoImg.src = existing.foto; }
+        if(fotoPreview){ fotoPreview.style.display = 'block'; }
+      }
       if(existing.pagamento) gestSetMetodo(existing.pagamento);
       if(existing.parz_pagato) document.getElementById('gestAccInp').value = parseFloat(existing.parz_pagato).toFixed(2).replace('.',',');
       if(existing.note) document.getElementById('gestPagNote').value = existing.note;
@@ -3277,7 +3342,7 @@ async function gestSalvaPagamento(){
     try {
       await sbFetch('fatture?id=eq.'+window._gestCur.sbId, {
         method:'PATCH',
-        body:JSON.stringify({stato:st, parz_pagato:parzPagato, note:note})
+        body:JSON.stringify({stato:st, parz_pagato:parzPagato, note:note, foto:window._gestCurFoto||undefined})
       });
       toast('Pagamento aggiornato!');
     } catch(e){ toast('Errore: '+e.message); return; }
@@ -3292,6 +3357,7 @@ async function gestSalvaPagamento(){
       importo: totale,
       pagamento: _gestCurMetodo||pag,
       bon_iban: inv.iban||'',
+        foto: window._gestCurFoto||'',
       note: note||(inv.descrizione||'').slice(0,120)||'Da gestionale SDI',
       stato: st,
       scadenza: (inv.due_date||'').toString().slice(0,10)||null,

@@ -908,7 +908,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <input type="number" id="corrAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
     </div>
     <div style="flex:1;display:flex;align-items:flex-end">
-      <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica</button>
+      <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica corrispettivi</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn btn-s" onclick="goTab('iva',null)" style="flex:1;padding:10px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px">&#128176; Liquidazione IVA</button>
     </div>
   </div>
   
@@ -951,9 +955,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
   <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
-  <button class="tab-item" onclick="goTab('iva',this)">
-    <span class="tab-ico">&#128176;</span>
-    <span class="tab-lbl">IVA</span>
+  <button class="tab-item" onclick="goTab('riepilogo',this)">
+    <span class="tab-ico">&#128202;</span>
+    <span class="tab-lbl">Riepilogo</span>
   </button>
 </nav>
 
@@ -4193,178 +4197,204 @@ async function calcolaIVA(){
   
   var totDiv = document.getElementById('ivaTotali');
   var mesiDiv = document.getElementById('ivaMesi');
-  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento dati...</div>';
+  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento...</div>';
   mesiDiv.innerHTML = '';
   
   try {
-    // Carica fatture passive (IVA a credito) e corrispettivi (IVA a debito) in parallelo
     var [resFatt, resCorr] = await Promise.all([
       fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500'),
       fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno)
     ]);
-    
     if(!resFatt.ok) throw new Error('Fatture: HTTP '+resFatt.status);
     if(!resCorr.ok) throw new Error('Corrispettivi: HTTP '+resCorr.status);
     
-    var fatture_api = await resFatt.json();
-    var corrispettivi_api = await resCorr.json();
-    
-    var fatt = Array.isArray(fatture_api) ? fatture_api : (fatture_api.items||fatture_api.invoices||[]);
-    var corr = Array.isArray(corrispettivi_api) ? corrispettivi_api : (corrispettivi_api.items||corrispettivi_api.corrispettivi||[]);
+    var fatt = await resFatt.json();
+    var corr = await resCorr.json();
+    fatt = Array.isArray(fatt)?fatt:(fatt.items||fatt.invoices||[]);
+    corr = Array.isArray(corr)?corr:(corr.items||corr.corrispettivi||[]);
     
     var fmtE = function(n){ return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    var nomiMesi = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     
     // Raggruppa per mese
     var mesi = {};
     for(var m=1; m<=12; m++){
-      var mm = String(m).padStart(2,'0');
-      mesi[mm] = { credito: 0, debito: 0, imponibileAcq: 0, imponibileVen: 0, dettaglioCredito: {}, dettaglioDebito: {} };
+      mesi[m] = { credito:0, debito:0, impAcq:0, impVen:0, detCredito:{}, detDebito:{}, noteDiCredito:0 };
     }
     
-    // IVA a CREDITO — dalle fatture passive
+    // ── IVA A CREDITO (fatture passive = acquisti) ──
+    // Art. 1 DPR 100/98 + Art. 25 DPR 633/72:
+    // La fattura si porta in detrazione nel mese della DATA FATTURA,
+    // PURCHE' sia stata RICEVUTA entro il 15 del mese successivo.
+    // Campo imported_at = data ricezione PEC
+    // Campo invoice_date = data fattura
     fatt.forEach(function(f){
-      var data = f.invoice_date || f.data_effettiva || f.data || '';
-      var mese = data.toString().slice(5,7);
-      if(!mese || !mesi[mese]) return;
-      var iva = parseFloat(f.vat_amount || f.totale_iva || 0);
-      var imp = parseFloat(f.taxable_amount || f.totale_imponibile || 0);
-      var ali = f.vat_rate || 0;
-      mesi[mese].credito += iva;
-      mesi[mese].imponibileAcq += imp;
-      if(ali){ 
+      var dataFatt = (f.invoice_date||f.data_effettiva||'').toString().slice(0,10);
+      var dataRic = (f.imported_at||'').toString().slice(0,10);
+      if(!dataFatt) return;
+      
+      var meseFatt = parseInt(dataFatt.slice(5,7)); // mese della fattura
+      var annoFatt = dataFatt.slice(0,4);
+      if(annoFatt !== anno) return;
+      
+      // Determina il mese di competenza IVA
+      var meseCompetenza = meseFatt;
+      
+      if(dataRic){
+        var meseRic = parseInt(dataRic.slice(5,7));
+        var annoRic = dataRic.slice(0,4);
+        var giornoRic = parseInt(dataRic.slice(8,10));
+        
+        // Se ricevuta nello stesso mese della fattura → competenza = mese fattura
+        // Se ricevuta entro il 15 del mese successivo → competenza = mese fattura
+        // Se ricevuta DOPO il 15 del mese successivo → competenza = mese di ricezione
+        if(annoRic === anno && meseRic === meseFatt){
+          meseCompetenza = meseFatt; // stesso mese
+        } else if(
+          (annoRic === anno && meseRic === meseFatt + 1 && giornoRic <= 15) ||
+          (meseFatt === 12 && annoRic === String(parseInt(anno)+1) && meseRic === 1 && giornoRic <= 15)
+        ){
+          meseCompetenza = meseFatt; // ricevuta entro il 15 del mese dopo → competenza mese fattura
+        } else if(annoRic === anno){
+          meseCompetenza = meseRic; // ricevuta dopo il 15 → competenza mese ricezione
+        }
+      }
+      
+      if(meseCompetenza < 1 || meseCompetenza > 12) return;
+      
+      var iva = parseFloat(f.vat_amount||f.totale_iva||0);
+      var imp = parseFloat(f.taxable_amount||f.totale_imponibile||0);
+      var ali = f.vat_rate||0;
+      
+      // Escludi fatture marcate come in corrispettivo (evita doppio conteggio)
+      if(f.inclusa_in_corrispettivo) return;
+      
+      // Note di credito (TD04) → riducono l'IVA a credito
+      if(f.document_type === 'TD04'){
+        mesi[meseCompetenza].credito -= iva;
+        mesi[meseCompetenza].noteDiCredito += iva;
+        return;
+      }
+      
+      mesi[meseCompetenza].credito += iva;
+      mesi[meseCompetenza].impAcq += imp;
+      if(ali){
         var k = ali+'%';
-        mesi[mese].dettaglioCredito[k] = (mesi[mese].dettaglioCredito[k]||0) + iva;
+        mesi[meseCompetenza].detCredito[k] = (mesi[meseCompetenza].detCredito[k]||0) + iva;
       }
     });
     
-    // IVA a DEBITO — dai corrispettivi
+    // ── IVA A DEBITO (corrispettivi = vendite) ──
     corr.forEach(function(c){
-      var data = c.data || '';
-      var mese = data.toString().slice(5,7);
-      if(!mese || !mesi[mese]) return;
-      var iva = parseFloat(c.totale_iva || 0);
-      var imp = parseFloat(c.totale_imponibile || 0);
+      var data = (c.data||'').toString().slice(0,10);
+      var mese = parseInt((data||'').slice(5,7));
+      if(!mese || mese<1 || mese>12) return;
+      
+      var iva = parseFloat(c.totale_iva||0);
+      var imp = parseFloat(c.totale_imponibile||0);
       mesi[mese].debito += iva;
-      mesi[mese].imponibileVen += imp;
-      // Dettaglio per aliquota
+      mesi[mese].impVen += imp;
+      
       if(c.riepilogo_iva && c.riepilogo_iva.length){
         c.riepilogo_iva.forEach(function(r){
           var k = (r.aliquota_iva||'0')+'%';
-          mesi[mese].dettaglioDebito[k] = (mesi[mese].dettaglioDebito[k]||0) + parseFloat(r.imposta||0);
+          mesi[mese].detDebito[k] = (mesi[mese].detDebito[k]||0) + parseFloat(r.imposta||0);
         });
       }
     });
     
-    // Calcola totali annuali e saldo progressivo
+    // ── CALCOLO LIQUIDAZIONE ──
     var totCredito=0, totDebito=0, creditoRiportato=0;
-    var nomiMesi = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-    
     var mesiHtml = '';
     var mesiAttivi = 0;
     
     for(var m=1; m<=12; m++){
-      var mm = String(m).padStart(2,'0');
-      var d = mesi[mm];
-      if(d.credito === 0 && d.debito === 0) continue;
+      var d = mesi[m];
+      if(d.credito===0 && d.debito===0) continue;
       mesiAttivi++;
-      
       totCredito += d.credito;
       totDebito += d.debito;
       
-      // Saldo mese = debito - credito - credito riportato da mese precedente
-      var saldoMese = d.debito - d.credito - creditoRiportato;
-      var daVersare = saldoMese > 0 ? saldoMese : 0;
-      var creditoRes = saldoMese < 0 ? Math.abs(saldoMese) : 0;
+      // Saldo = debito - credito - credito riportato
+      var saldo = d.debito - d.credito - creditoRiportato;
+      var daVersare = saldo > 0 ? saldo : 0;
+      var creditoRes = saldo < 0 ? Math.abs(saldo) : 0;
       
-      // Scadenza versamento: 16 del mese successivo
-      var meseSucc = m < 12 ? m+1 : 1;
-      var annoSucc = m < 12 ? parseInt(anno) : parseInt(anno)+1;
-      var scadenza = String(annoSucc)+'-'+String(meseSucc).padStart(2,'0')+'-16';
-      var scadFmt = new Date(scadenza+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
-      var oggi = new Date();
-      var scadDate = new Date(scadenza+'T12:00:00');
-      var scaduta = scadDate < oggi && daVersare > 0;
+      // Scadenza: 16 del mese successivo
+      var ms = m<12 ? m+1 : 1;
+      var as = m<12 ? parseInt(anno) : parseInt(anno)+1;
+      var scadStr = as+'-'+String(ms).padStart(2,'0')+'-16';
+      var scadFmt = new Date(scadStr+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
+      var scaduta = new Date(scadStr+'T12:00:00') < new Date() && daVersare > 0;
       
       // Dettaglio aliquote
       var detHtml = '';
-      var aliCredito = Object.keys(d.dettaglioCredito);
-      var aliDebito = Object.keys(d.dettaglioDebito);
-      if(aliCredito.length || aliDebito.length){
+      var aliTutte = new Set([...Object.keys(d.detCredito),...Object.keys(d.detDebito)]);
+      if(aliTutte.size){
         detHtml = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:12px">';
         detHtml += '<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px">DETTAGLIO PER ALIQUOTA</div>';
-        var tutteAli = new Set([...aliCredito,...aliDebito]);
-        tutteAli.forEach(function(ali){
-          var cr = d.dettaglioCredito[ali]||0;
-          var db = d.dettaglioDebito[ali]||0;
-          detHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0">';
-          detHtml += '<span>'+ali+'</span>';
-          detHtml += '<span>Credito: \u20ac'+fmtE(cr)+' | Debito: \u20ac'+fmtE(db)+'</span>';
+        detHtml += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px;font-size:11px"><div style="font-weight:700">Aliq.</div><div style="font-weight:700;text-align:right">Credito</div><div style="font-weight:700;text-align:right">Debito</div></div>';
+        aliTutte.forEach(function(ali){
+          detHtml += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px;font-size:11px;padding:2px 0;border-top:1px solid rgba(0,0,0,.04)">';
+          detHtml += '<div>'+ali+'</div>';
+          detHtml += '<div style="text-align:right;color:var(--blue)">\u20ac'+fmtE(d.detCredito[ali]||0)+'</div>';
+          detHtml += '<div style="text-align:right;color:var(--red)">\u20ac'+fmtE(d.detDebito[ali]||0)+'</div>';
           detHtml += '</div>';
         });
         detHtml += '</div>';
       }
       
-      var bgColor = daVersare > 0 ? (scaduta ? 'border-left:4px solid var(--red)' : 'border-left:4px solid var(--orange)') : 'border-left:4px solid var(--green)';
+      var borderColor = daVersare>0?(scaduta?'var(--red)':'var(--orange)'):'var(--green)';
       
-      mesiHtml += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);'+bgColor+';cursor:pointer" onclick="this.querySelector(\'.iva-detail\').style.display=this.querySelector(\'.iva-detail\').style.display===\'none\'?\'block\':\'none\'">';
+      mesiHtml += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid '+borderColor+';cursor:pointer" onclick="var det=this.querySelector(\'.iva-det\');det.style.display=det.style.display===\'none\'?\'block\':\'none\'">';
       mesiHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-      mesiHtml += '<div><div style="font-size:15px;font-weight:700">'+nomiMesi[m]+' '+anno+'</div>';
-      mesiHtml += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">Vers. entro '+scadFmt+(scaduta?' \u2014 <span style="color:var(--red);font-weight:700">SCADUTO</span>':'')+'</div></div>';
-      
-      if(daVersare > 0){
-        mesiHtml += '<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fmtE(daVersare)+'</div>';
-        mesiHtml += '<div style="font-size:10px;color:var(--red)">DA VERSARE</div></div>';
+      mesiHtml += '<div><div style="font-size:15px;font-weight:700">'+nomiMesi[m]+'</div>';
+      mesiHtml += '<div style="font-size:11px;color:var(--ink3)">F24 entro '+scadFmt+(scaduta?' \u2014 <b style="color:var(--red)">SCADUTO</b>':'')+'</div></div>';
+      mesiHtml += '<div style="text-align:right">';
+      if(daVersare>0){
+        mesiHtml += '<div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fmtE(daVersare)+'</div><div style="font-size:10px;color:var(--red)">DA VERSARE</div>';
       } else {
-        mesiHtml += '<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fmtE(creditoRes)+'</div>';
-        mesiHtml += '<div style="font-size:10px;color:#1a7a3a">CREDITO</div></div>';
+        mesiHtml += '<div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fmtE(creditoRes)+'</div><div style="font-size:10px;color:#1a7a3a">CREDITO</div>';
       }
+      mesiHtml += '</div></div>';
+      // Mini riepilogo
+      mesiHtml += '<div style="display:flex;gap:12px;margin-top:6px;font-size:12px">';
+      mesiHtml += '<span style="color:var(--blue)">Credito \u20ac'+fmtE(d.credito)+'</span>';
+      mesiHtml += '<span style="color:var(--red)">Debito \u20ac'+fmtE(d.debito)+'</span>';
+      if(creditoRiportato>0) mesiHtml += '<span style="color:var(--ink3)">Riporto \u20ac'+fmtE(creditoRiportato)+'</span>';
       mesiHtml += '</div>';
-      
       // Dettaglio espandibile
-      mesiHtml += '<div class="iva-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
-      mesiHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
-      mesiHtml += '<div style="background:var(--blue-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--blue);font-weight:600">IVA A CREDITO</div><div style="font-size:16px;font-weight:700;color:var(--blue);margin-top:2px">\u20ac '+fmtE(d.credito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.imponibileAcq)+'</div></div>';
-      mesiHtml += '<div style="background:var(--red-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--red);font-weight:600">IVA A DEBITO</div><div style="font-size:16px;font-weight:700;color:var(--red);margin-top:2px">\u20ac '+fmtE(d.debito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.imponibileVen)+'</div></div>';
+      mesiHtml += '<div class="iva-det" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
+      mesiHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:8px">';
+      mesiHtml += '<div style="background:var(--blue-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--blue);font-weight:600">IVA CREDITO (acquisti)</div><div style="font-size:16px;font-weight:700;color:var(--blue)">\u20ac '+fmtE(d.credito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.impAcq)+'</div></div>';
+      mesiHtml += '<div style="background:var(--red-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--red);font-weight:600">IVA DEBITO (vendite)</div><div style="font-size:16px;font-weight:700;color:var(--red)">\u20ac '+fmtE(d.debito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.impVen)+'</div></div>';
       mesiHtml += '</div>';
-      if(creditoRiportato > 0){
-        mesiHtml += '<div style="font-size:12px;color:var(--ink3);margin-top:6px">Credito riportato dal mese precedente: <b>\u20ac '+fmtE(creditoRiportato)+'</b></div>';
-      }
+      if(d.noteDiCredito>0) mesiHtml += '<div style="font-size:12px;color:var(--orange);margin-bottom:4px">Note di credito: -\u20ac'+fmtE(d.noteDiCredito)+'</div>';
+      mesiHtml += '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;font-style:italic">Art.1 DPR 100/98: include fatture datate mese precedente ricevute entro il 15</div>';
       mesiHtml += detHtml;
       mesiHtml += '</div></div>';
       
-      // Aggiorna credito riportato per il mese successivo
       creditoRiportato = creditoRes;
     }
     
-    // Saldo annuale
     var saldoAnnuo = totDebito - totCredito;
     var isCredito = saldoAnnuo < 0;
     
     totDiv.innerHTML = 
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
-        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">IVA A CREDITO (acquisti)</div>'+
-          '<div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:4px">\u20ac '+fmtE(totCredito)+'</div>'+
-          '<div style="font-size:11px;color:var(--ink3)">'+fatt.length+' fatture passive</div>'+
-        '</div>'+
-        '<div style="background:var(--red-light);border-radius:var(--radius);padding:14px">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase">IVA A DEBITO (vendite)</div>'+
-          '<div style="font-size:22px;font-weight:800;color:var(--red);margin-top:4px">\u20ac '+fmtE(totDebito)+'</div>'+
-          '<div style="font-size:11px;color:var(--ink3)">'+corr.length+' corrispettivi</div>'+
-        '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:4px">\u20ac '+fmtE(totCredito)+'</div><div style="font-size:11px;color:var(--ink3)">'+fatt.length+' fatture</div></div>'+
+        '<div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red);margin-top:4px">\u20ac '+fmtE(totDebito)+'</div><div style="font-size:11px;color:var(--ink3)">'+corr.length+' corrispettivi</div></div>'+
       '</div>'+
       '<div style="background:'+(isCredito?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px">'+
-        '<div style="font-size:11px;opacity:.7;text-transform:uppercase">SALDO IVA ANNUALE '+anno+'</div>'+
+        '<div style="font-size:11px;opacity:.7;text-transform:uppercase">SALDO IVA '+anno+'</div>'+
         '<div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fmtE(Math.abs(saldoAnnuo))+'</div>'+
-        '<div style="font-size:13px;opacity:.9;margin-top:2px">'+(isCredito?'A CREDITO \u2014 da compensare':'A DEBITO \u2014 da versare con F24')+'</div>'+
-      '</div>'+
-      '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">LIQUIDAZIONE MENSILE ('+mesiAttivi+' mesi)</div>';
+        '<div style="font-size:13px;opacity:.9">'+(isCredito?'A CREDITO':'A DEBITO \u2014 F24')+'</div>'+
+      '</div>';
     
-    mesiDiv.innerHTML = mesiHtml || '<div class="empty"><p>Nessun dato per '+anno+'</p></div>';
-    toast('IVA calcolata: '+mesiAttivi+' mesi');
-    
+    mesiDiv.innerHTML = mesiHtml || '<div class="empty"><p>Nessun dato</p></div>';
+    toast('IVA '+anno+': '+mesiAttivi+' mesi');
   } catch(e){
-    totDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
+    totDiv.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
   }
 }
 

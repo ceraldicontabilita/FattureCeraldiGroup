@@ -508,6 +508,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 <!-- LISTA -->
 <div id="view-lista" class="view">
+  <div style="margin-bottom:12px"><button class="btn btn-p" onclick="gestSyncClick()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:14px;width:100%">&#128229; Scarica nuove fatture SDI</button></div>
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
   </div>
@@ -929,7 +930,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
-  <button class="tab-item" id="tab-sync" onclick="gestSyncClick();goTab('lista',this)" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
   <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
@@ -1654,6 +1654,8 @@ function renderLista(){
   const lMax=parseFloat((gv('lImpMax')||'').replace(',','.'))||Infinity;
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
   let filt=fatture.filter(f=>{
+    // Nascondi assegni vuoti dal registro (si vedono nel tab Assegni)
+    if(f.pagamento==='assegno' && (!f.fornitore || f.importo===0) && f.note && f.note.indexOf('Assegno da compilare')>=0) return false;
     const okT=filtroL==='tutti'||f.pagamento===filtroL;
     const okS=!s||f.fornitore.toLowerCase().includes(s)||(f.numero||'').toLowerCase().includes(s)||(f.note||'').toLowerCase().includes(s);
     const d=f.data?new Date(f.data+'T12:00:00'):null;
@@ -1799,9 +1801,10 @@ function setPer(tipo,btn){
   updRiep();
 }
 function getFiltered(){
+  var _src=fatture.filter(function(f){return !(f.pagamento==='assegno'&&(!f.fornitore||f.importo===0));});
   const now=new Date(); now.setHours(23,59,59,999);
   const forn=gv('eForn')||'', pag=gv('ePag')||'';
-  return fatture.filter(f=>{
+  return _src.filter(f=>{
     const d=f.data?new Date(f.data+'T12:00:00'):null;
     let okP=true;
     if(periodo==='settimana'&&d){const lun=new Date(now);lun.setDate(now.getDate()-((now.getDay()+6)%7));lun.setHours(0,0,0,0);okP=d>=lun;}

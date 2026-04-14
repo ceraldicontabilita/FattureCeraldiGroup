@@ -132,7 +132,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .add-rata-btn:active{border-color:var(--blue);color:var(--blue)}
 .edit-mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
 .edit-mo.on{display:flex}
-.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
+.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0;animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .edit-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)}
 .edit-sheet-hd h3{font-size:18px;font-weight:700}
@@ -224,15 +224,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-ok{background:var(--blue);color:#fff}
 
 /* ── RESPONSIVE MODAL ── */
-.edit-mo.on, #gestDetailMo[style*="flex"] {
-  align-items: center !important;
-  padding: 16px !important;
+#gestDetailMo {
+  align-items: flex-start !important;
+  padding: 24px 12px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
 #gestDetailSheet {
   border-radius: 20px !important;
-  max-height: 88vh !important;
+  max-height: none !important;
   box-shadow: 0 8px 32px rgba(0,0,0,.25) !important;
-  margin: auto !important;
+  margin: auto 0 !important;
+  flex-shrink: 0 !important;
 }
 /* ── RESPONSIVE LAYOUT ── */
 @media (max-width: 500px) {
@@ -3331,8 +3334,8 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto';
-    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)"></div>';
+    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:24px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0"></div>';
     document.body.appendChild(mo);
     mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
   }

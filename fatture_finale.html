@@ -294,7 +294,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- SCAN -->
-<div id="view-scan" class="view active">
+<div id="view-scan" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -911,7 +911,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica corrispettivi</button>
     </div>
   </div>
-  <button onclick="goTab('iva',null)" style="width:100%;padding:12px;margin-bottom:14px;border:1.5px solid var(--blue);border-radius:var(--radius-sm);background:var(--blue-light);font-family:inherit;font-size:14px;font-weight:600;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">&#128176; Liquidazione IVA mensile</button>
+  
   
   <div id="corrTotali" style="margin-bottom:14px"></div>
   <div id="corrLista"></div>
@@ -938,10 +938,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <nav class="tab-bar">
-  <button class="tab-item" onclick="goTab('assegni',this)">
-    <span class="tab-ico">&#128221;</span>
-    <span class="tab-lbl">Assegni</span>
-  </button>
   <button class="tab-item active" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
@@ -951,12 +947,20 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
-  <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
-  <button class="tab-item" onclick="goTab('riepilogo',this)">
-    <span class="tab-ico">&#128202;</span>
-    <span class="tab-lbl">Riepilogo</span>
+  <button class="tab-item" onclick="goTab('corrispettivi',this)">
+    <span class="tab-ico">&#128179;</span>
+    <span class="tab-lbl">Corrisp.</span>
+  </button>
+  <button class="tab-item" onclick="goTab('iva',this)">
+    <span class="tab-ico">&#128200;</span>
+    <span class="tab-lbl">IVA</span>
+  </button>
+  <button class="tab-item" onclick="goTab('assegni',this)">
+    <span class="tab-ico">&#128221;</span>
+    <span class="tab-lbl">Assegni</span>
   </button>
 </nav>
+
 
 <script>
 // ── SUPABASE CONFIG ──

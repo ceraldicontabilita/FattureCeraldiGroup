@@ -896,6 +896,25 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div id="assegniSalvati" style="margin-top:16px"></div>
 </div>
 
+
+<!-- VIEW CORRISPETTIVI -->
+<div class="view" id="view-corrispettivi" style="padding:16px">
+  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p>
+  
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div style="flex:1">
+      <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Anno</label>
+      <input type="number" id="corrAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
+    </div>
+    <div style="flex:1;display:flex;align-items:flex-end">
+      <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica</button>
+    </div>
+  </div>
+  
+  <div id="corrTotali" style="margin-bottom:14px"></div>
+  <div id="corrLista"></div>
+</div>
+
 <nav class="tab-bar">
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
@@ -911,6 +930,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
   <button class="tab-item" id="tab-sync" onclick="gestSyncClick();goTab('lista',this)" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
+  <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
     <span class="tab-lbl">Riepilogo</span>
@@ -1151,6 +1171,7 @@ function goTab(tab,btn){
   if(tab==='riepilogo'){ updRiep(); renderScadenzario(); renderFornChart(); checkBackup(); }
   if(tab==='scadenzario') renderScadenzario();
   if(tab==='assegni') caricaAssegniSalvati();
+  if(tab==='corrispettivi') caricaCorrispettivi();
 }
 
 // ── UPLOAD ──
@@ -4007,6 +4028,131 @@ async function compilaAssegno(id){
     caricaAssegniSalvati();
   } catch(e){
     toast('Errore: '+e.message);
+  }
+}
+
+// ── CORRISPETTIVI ──
+async function caricaCorrispettivi(){
+  var anno = (document.getElementById('corrAnno').value||'').trim();
+  if(!anno){ toast('Inserisci anno'); return; }
+  
+  var totDiv = document.getElementById('corrTotali');
+  var listaDiv = document.getElementById('corrLista');
+  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento...</div>';
+  listaDiv.innerHTML = '';
+  
+  try {
+    var res = await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var data = await res.json();
+    var lista = Array.isArray(data) ? data : (data.items||data.corrispettivi||[]);
+    
+    if(!lista.length){
+      totDiv.innerHTML = '<div class="empty"><div class="ei">&#128176;</div><p>Nessun corrispettivo trovato</p></div>';
+      return;
+    }
+    
+    // Ordina per data decrescente
+    lista.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+    
+    // Calcola totali
+    var totTot=0, totCont=0, totElet=0, totImp=0, totIva=0;
+    lista.forEach(function(c){
+      totTot  += parseFloat(c.totale||0);
+      totCont += parseFloat(c.pagato_contanti||0);
+      totElet += parseFloat(c.pagato_elettronico||0);
+      totImp  += parseFloat(c.totale_imponibile||0);
+      totIva  += parseFloat(c.totale_iva||0);
+    });
+    
+    var fmtE = function(n){ return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    
+    // Card totali
+    totDiv.innerHTML = 
+      '<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:10px">'+
+        '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px">TOTALE CORRISPETTIVI</div>'+
+        '<div style="font-size:28px;font-weight:800;margin-top:4px">'+fmtE(totTot)+'</div>'+
+        '<div style="font-size:12px;opacity:.8;margin-top:4px">'+lista.length+' chiusure giornaliere</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+        '<div style="background:var(--green-light);border-radius:var(--radius);padding:14px">'+
+          '<div style="font-size:10px;font-weight:600;color:#1a7a3a;text-transform:uppercase">CONTANTI</div>'+
+          '<div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fmtE(totCont)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">ELETTRONICO</div>'+
+          '<div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fmtE(totElet)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IMPONIBILE</div>'+
+          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totImp)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IVA</div>'+
+          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totIva)+'</div>'+
+        '</div>'+
+      '</div>';
+    
+    // Lista giornaliera
+    var html = '';
+    lista.forEach(function(c){
+      var data = c.data||'';
+      var dataFmt = data ? new Date(data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : '—';
+      var tot = parseFloat(c.totale||0);
+      var cont = parseFloat(c.pagato_contanti||0);
+      var elet = parseFloat(c.pagato_elettronico||0);
+      var imp = parseFloat(c.totale_imponibile||0);
+      var iva = parseFloat(c.totale_iva||0);
+      var nDoc = c.numero_documenti||0;
+      
+      // Riepilogo IVA
+      var ivaHtml = '';
+      if(c.riepilogo_iva && c.riepilogo_iva.length){
+        ivaHtml = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:12px">';
+        ivaHtml += '<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Dettaglio IVA</div>';
+        c.riepilogo_iva.forEach(function(r){
+          var ali = r.aliquota_iva||'0';
+          var imposta = parseFloat(r.imposta||0);
+          var ammontare = parseFloat(r.ammontare||0);
+          ivaHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04)">';
+          ivaHtml += '<span>IVA '+ali+'%</span>';
+          ivaHtml += '<span>Imp. '+fmtE(ammontare)+' / IVA '+fmtE(imposta)+'</span>';
+          ivaHtml += '</div>';
+        });
+        ivaHtml += '</div>';
+      }
+      
+      html += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer" onclick="this.querySelector(\'.corr-detail\').style.display=this.querySelector(\'.corr-detail\').style.display===\'none\'?\'block\':\'none\'">';
+      // Header
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html += '<div><div style="font-size:15px;font-weight:700">'+dataFmt+'</div>';
+      html += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+nDoc+' scontrini \u2022 Doc. N\u00b0 '+(c.numero_documento||'')+'</div></div>';
+      html += '<div style="font-size:18px;font-weight:800">'+fmtE(tot)+'</div>';
+      html += '</div>';
+      // Mini riepilogo sempre visibile
+      html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:12px">';
+      html += '<span style="color:#1a7a3a;font-weight:600">\ud83d\udcb5 '+fmtE(cont)+'</span>';
+      html += '<span style="color:var(--blue);font-weight:600">\ud83d\udcb3 '+fmtE(elet)+'</span>';
+      html += '</div>';
+      // Dettaglio espandibile
+      html += '<div class="corr-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">';
+      html += '<div><span style="color:var(--ink3)">Imponibile</span><br><b>'+fmtE(imp)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">IVA</span><br><b>'+fmtE(iva)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">Contanti</span><br><b style="color:#1a7a3a">'+fmtE(cont)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">Elettronico</span><br><b style="color:var(--blue)">'+fmtE(elet)+'</b></div>';
+      html += '</div>';
+      html += ivaHtml;
+      html += '<div style="text-align:center;font-size:11px;color:var(--ink3);margin-top:6px">Matricola RT: '+(c.matricola_rt||'')+'</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    
+    listaDiv.innerHTML = html;
+    toast(lista.length+' corrispettivi caricati');
+    
+  } catch(e){
+    totDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
   }
 }
 

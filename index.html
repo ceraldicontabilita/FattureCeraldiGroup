@@ -132,7 +132,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .add-rata-btn:active{border-color:var(--blue);color:var(--blue)}
 .edit-mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
 .edit-mo.on{display:flex}
-.edit-sheet{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
+.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .edit-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)}
 .edit-sheet-hd h3{font-size:18px;font-weight:700}
@@ -854,6 +854,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
+  <button class="tab-item" id="tab-sync" onclick="gestSyncClick()" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
     <span class="tab-lbl">Riepilogo</span>
@@ -3171,8 +3172,8 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
-    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto"></div>';
+    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)"></div>';
     document.body.appendChild(mo);
     mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
   }
@@ -3403,7 +3404,7 @@ function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
   if(el && !el.value) el.value = new Date().getFullYear();
 })();
 
-// Auto-carica fatture all'avvio (dopo 2 sec)
+// Auto-carica fatture all'avvio
 setTimeout(function(){
   var anno = new Date().getFullYear();
   fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
@@ -3413,148 +3414,90 @@ setTimeout(function(){
       var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
       if(!lista.length) return;
       _gestFatture = lista;
-      // Mostra banner in tutte le tab
+      // UN SOLO banner — rimuovi eventuali duplicati
+      var old = document.getElementById('gestBanner');
+      if(old) old.remove();
+      var old2 = document.getElementById('gestBanner2');
+      if(old2) old2.remove();
+      // Conta nuove
+      var esis = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+      var nuove = lista.filter(function(inv){return !esis.has((inv.invoice_number||inv.numero||'').toString().trim());});
       var banner = document.createElement('div');
       banner.id = 'gestBanner';
-      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:8px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:150;-webkit-tap-highlight-color:rgba(0,0,0,.1)';
-      banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
-      banner.onclick = function(e){
+      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:8px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:200;-webkit-tap-highlight-color:rgba(255,255,255,.2)';
+      if(nuove.length > 0){
+        banner.innerHTML = '<div style="font-size:24px">&#128232;</div><div style="flex:1"><div style="font-size:15px;font-weight:700">'+nuove.length+' nuove fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per importare nel registro</div></div><div style="font-size:18px">&#8250;</div>';
+      } else {
+        banner.innerHTML = '<div style="font-size:24px">&#9989;</div><div style="flex:1"><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Registro aggiornato</div></div><div style="font-size:18px">&#8250;</div>';
+      }
+      banner.addEventListener('click', function(e){
+        e.preventDefault();
         e.stopPropagation();
-        switchTab('lista');
-      };
-      // Inserisci banner subito dopo l'header, con z-index e pointer-events
-      var header = document.querySelector('.ios-header');
-      if(header) header.insertAdjacentElement('afterend', banner);
+        switchTab('riep');
+        setTimeout(function(){
+          var rc = document.getElementById('rbody-gest');
+          if(rc && !rc.classList.contains('open')) toggleRCard('gest');
+          document.getElementById('gestAnno').value = anno;
+          gestScarica();
+        }, 300);
+      });
+      // Inserisci dopo header
+      var views = document.querySelectorAll('.view');
+      if(views.length) views[0].insertBefore(banner, views[0].firstChild);
     })
     .catch(function(){});
 
-  // Auto-importa nuove fatture nel registro
-    _gestFatture = lista;
-    var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-    var nuoveAuto = lista.filter(function(inv){
-      return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
-    });
-    if(nuoveAuto.length > 0){
-      // Mostra banner con conteggio e auto-importa in background
-      banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+nuoveAuto.length+' nuove fatture SDI</div><div style="font-size:12px;opacity:.8">Importazione in corso...</div></div>';
-      // Importa in background
-      (async function(){
-        var count = 0;
-        for(var i=0; i<nuoveAuto.length; i++){
-          var inv = nuoveAuto[i];
-          var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
-          var pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':'contanti';
-          var pagato = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
-          var record = {
-            id: Date.now() + i,
-            tipo: inv.document_type==='TD24'?'ddt':'fattura',
-            fornitore: inv.supplier_name||inv.cedente_denominazione||'',
-            numero: (inv.invoice_number||inv.numero||'').toString(),
-            data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
-            importo: parseFloat(inv.total_amount||0),
-            pagamento: pag,
-            bon_iban: inv.iban||'',
-            note: (inv.descrizione||'').slice(0,120)||'',
-            stato: pagato?'pagata':'da_pagare',
-            scadenza: (inv.due_date||'').toString().slice(0,10)||null,
-            parz_pagato: 0,
-            ts: Date.now() + i
-          };
-          try {
-            await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
-            fatture.unshift(dbToApp(record));
-            count++;
-          } catch(e){}
-        }
-        if(count > 0){
-          save(fatture);
-          renderLista();
-          aggiornaAlertBanner();
-          banner.innerHTML = '<div style="font-size:28px">\u2705</div><div><div style="font-size:15px;font-weight:700">'+count+' fatture importate</div><div style="font-size:12px;opacity:.8">Vai al Registro per vederle</div></div>';
-          banner.onclick = function(e){ e.stopPropagation(); switchTab('lista'); };
-          toast(count+' nuove fatture importate!');
-        }
-      })();
-    } else {
-      banner.innerHTML = '<div style="font-size:28px">\u2705</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tutto aggiornato</div></div>';
-      banner.onclick = function(e){ e.stopPropagation(); switchTab('lista'); };
-    }
-
-  // Controlla fatture sospese nel registro Supabase
+  // Controlla fatture sospese
   sbFetch('fatture?stato=eq.sospesa&select=fornitore,numero,note,importo,parz_pagato')
     .then(function(sospese){
       if(!sospese || !sospese.length) return;
       var alertDiv = document.createElement('div');
-      alertDiv.id = 'sospeseBanner';
       alertDiv.style.cssText = 'background:linear-gradient(135deg,#FF9800,#F57C00);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 10px;box-shadow:0 4px 12px rgba(255,152,0,.3)';
-      var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:24px">&#9888;&#65039;</span><div style="font-size:15px;font-weight:700">'+sospese.length+' fattur'+(sospese.length===1?'a sospesa':'e sospese')+'</div></div>';
-      sospese.slice(0,5).forEach(function(f){
-        var nota = f.note ? ' — '+f.note : '';
-        var pagato = parseFloat(f.parz_pagato||0);
-        var totale = parseFloat(f.importo||0);
-        var resto = totale - pagato;
-        html += '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:12px">';
-        html += '<div style="font-weight:600">'+((f.fornitore||'?')+' — N. '+(f.numero||'?'))+'</div>';
-        if(pagato > 0) html += '<div style="opacity:.85;margin-top:2px">Pagato &#8364; '+pagato.toFixed(2)+' / Resta &#8364; '+resto.toFixed(2)+'</div>';
-        if(nota) html += '<div style="opacity:.9;margin-top:2px;font-style:italic">'+nota+'</div>';
-        html += '</div>';
+      var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:20px">&#9888;&#65039;</span><div style="font-size:14px;font-weight:700">'+sospese.length+' fattur'+(sospese.length===1?'a sospesa':'e sospese')+'</div></div>';
+      sospese.slice(0,3).forEach(function(f){
+        html += '<div style="background:rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;margin-bottom:3px;font-size:12px"><b>'+((f.fornitore||'')+' N.'+( f.numero||''))+'</b>'+(f.note?' — <i>'+f.note+'</i>':'')+'</div>';
       });
-      if(sospese.length > 5) html += '<div style="font-size:11px;opacity:.7;text-align:center;margin-top:4px">...e altre '+(sospese.length-5)+'</div>';
       alertDiv.innerHTML = html;
-      var header = document.querySelector('.ios-header');
-      var bluBanner = document.getElementById('gestBanner');
-      if(bluBanner) bluBanner.insertAdjacentElement('afterend', alertDiv);
-      else if(header) header.insertAdjacentElement('afterend', alertDiv);
-    })
-    .catch(function(e){console.log('Sospese check:',e);});
-}, 2000);
+      var b = document.getElementById('gestBanner');
+      if(b) b.insertAdjacentElement('afterend', alertDiv);
+    }).catch(function(){});
+}, 2500);
 
 
-
-// ── Click sulle card Riepilogo → mostra fatture filtrate per metodo ──
-document.addEventListener('click', function(e){
-  var card = e.target.closest('.tot-card');
-  if(!card) return;
-  var classes = card.className;
-  var filtro = null;
-  if(classes.indexOf('tc-c') >= 0) filtro = 'contanti';
-  else if(classes.indexOf('tc-b') >= 0) filtro = 'bonifico';
-  else if(classes.indexOf('tc-a') >= 0) filtro = 'assegno';
-  else if(classes.indexOf('full') >= 0) filtro = 'tutti';
-  if(!filtro) return;
-
-  // Switch al Registro con filtro
-  switchTab('lista');
-  setTimeout(function(){
-    // Imposta filtro pagamento
-    if(filtro === 'tutti'){
-      // Mostra tutti
-      var filtBtns = document.querySelectorAll('.fil-btn');
-      filtBtns.forEach(function(b){ b.classList.remove('active'); });
-      if(filtBtns[0]) filtBtns[0].classList.add('active');
-      filtroL = 'tutti';
-    } else {
-      var filtBtns = document.querySelectorAll('.fil-btn');
-      filtBtns.forEach(function(b){
-        b.classList.remove('active');
-        if(b.textContent.toLowerCase().indexOf(filtro) >= 0) b.classList.add('active');
-      });
-      filtroL = filtro;
+// Scarica fatture con un click dalla tab bar
+async function gestSyncClick(){
+  toast('Scaricamento fatture...');
+  try {
+    var anno = new Date().getFullYear();
+    var res = await fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var data = await res.json();
+    var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+    if(!lista.length){ toast('Nessuna fattura'); return; }
+    _gestFatture = lista;
+    // Importa nuove
+    var esis = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+    var fornMet = {};
+    fatture.forEach(function(f){ if(f.fornitore&&f.pagamento&&!fornMet[f.fornitore.toUpperCase()]) fornMet[f.fornitore.toUpperCase()]=f.pagamento; });
+    var count = 0;
+    var nuove = lista.filter(function(inv){return !esis.has((inv.invoice_number||inv.numero||'').toString().trim());});
+    for(var i=0; i<nuove.length; i++){
+      var inv = nuove[i];
+      var nomeF = inv.supplier_name||inv.cedente_denominazione||'';
+      var pag = fornMet[nomeF.toUpperCase()]||(function(){
+        var p=(inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+        return p.indexOf('bonif')>=0||p.indexOf('bank')>=0||p.indexOf('sepa')>=0?'bonifico':p.indexOf('contan')>=0||p==='cassa'?'contanti':'contanti';
+      })();
+      var pagato = inv.stato_pagamento==='pagata'||inv.pagato===true;
+      var rec = {id:Date.now()+i, tipo:inv.document_type==='TD24'?'ddt':'fattura', fornitore:nomeF, numero:(inv.invoice_number||'').toString(), data:(inv.invoice_date||'').toString().slice(0,10)||null, importo:parseFloat(inv.total_amount||0), pagamento:pag, bon_iban:inv.iban||'', note:(inv.descrizione||'').slice(0,120), stato:pagato?'pagata':'da_pagare', scadenza:(inv.due_date||'').toString().slice(0,10)||null, parz_pagato:0, ts:Date.now()+i};
+      try { await sbFetch('fatture',{method:'POST',body:JSON.stringify(rec)}); fatture.unshift(dbToApp(rec)); count++; } catch(e){}
     }
-    renderLista();
-    toast('Filtro: ' + filtro.charAt(0).toUpperCase() + filtro.slice(1));
-  }, 200);
-});
-
-// Rendi le card cliccabili visivamente
-setTimeout(function(){
-  document.querySelectorAll('.tot-card').forEach(function(c){
-    c.style.cursor = 'pointer';
-    c.style.transition = 'transform .1s';
-    c.addEventListener('touchstart', function(){ this.style.transform='scale(.97)'; });
-    c.addEventListener('touchend', function(){ this.style.transform=''; });
-  });
-}, 500);
+    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); }
+    toast(count>0 ? count+' nuove fatture importate!' : 'Tutto aggiornato ('+lista.length+' fatture)');
+    // Vai al registro
+    switchTab('lista');
+  } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
+}
 
 init();
 </script>

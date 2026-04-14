@@ -3080,6 +3080,7 @@ async function gestScarica(){
       save(fatture);
       renderLista();
       aggiornaAlertBanner();
+      riconciliaAssegni();
     }
 
     gestSetStatus(true, lista.length+' nel gestionale, '+importate+' nuove importate');
@@ -3621,7 +3622,7 @@ async function gestSyncClick(){
       var rec = {id:Date.now()+i, tipo:inv.document_type==='TD24'?'ddt':'fattura', fornitore:nomeF, numero:(inv.invoice_number||'').toString(), data:(inv.invoice_date||'').toString().slice(0,10)||null, importo:parseFloat(inv.total_amount||0), pagamento:pag, bon_iban:inv.iban||'', note:(inv.descrizione||'').slice(0,120), stato:pagato?'pagata':'da_pagare', scadenza:(inv.due_date||'').toString().slice(0,10)||null, parz_pagato:0, ts:Date.now()+i};
       try { await sbFetch('fatture',{method:'POST',body:JSON.stringify(rec)}); fatture.unshift(dbToApp(rec)); count++; } catch(e){}
     }
-    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); }
+    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); riconciliaAssegni(); }
     toast(count>0 ? count+' nuove fatture importate!' : 'Tutto aggiornato ('+lista.length+' fatture)');
     // Vai al registro
     goTab('lista',null);
@@ -3864,6 +3865,60 @@ async function salvaDataIncasso(){
   } catch(e){ toast('Errore: '+e.message); }
 }
 
+
+// ── RICONCILIAZIONE ASSEGNI ↔ FATTURE ──
+// Cerca match tra assegni compilati e fatture nel registro
+// Match su: numero fattura + fornitore (+ importo come conferma)
+async function riconciliaAssegni(){
+  try {
+    // Carica tutti gli assegni compilati
+    var assegni = await sbFetch('fatture?pagamento=eq.assegno&select=*&limit=200');
+    if(!assegni || !assegni.length) return;
+    
+    var compilati = assegni.filter(function(a){ return a.fornitore && a.importo > 0 && a.numero; });
+    if(!compilati.length) return;
+    
+    var aggiornati = 0;
+    for(var i = 0; i < compilati.length; i++){
+      var ass = compilati[i];
+      var numFatt = (ass.numero||'').toString().trim().toUpperCase();
+      var fornAss = (ass.fornitore||'').toString().trim().toUpperCase();
+      if(!numFatt) continue;
+      
+      // Cerca la fattura nel registro (non assegno) con stesso numero
+      var fatturaMatch = fatture.find(function(f){
+        if(f.pagamento === 'assegno' && f.assegno) return false; // è già un assegno
+        var numF = (f.numero||'').toString().trim().toUpperCase();
+        var fornF = (f.fornitore||'').toString().trim().toUpperCase();
+        return numF === numFatt && fornF.indexOf(fornAss.slice(0,10)) >= 0;
+      });
+      
+      if(fatturaMatch && fatturaMatch.pagamento !== 'assegno'){
+        // MATCH! Aggiorna la fattura con il pagamento assegno
+        fatturaMatch.pagamento = 'assegno';
+        fatturaMatch.assegno = ass.assegno;
+        fatturaMatch.assInt = ass.ass_int || ass.fornitore;
+        fatturaMatch.stato = 'pagata';
+        
+        try {
+          await sbFetch('fatture?id=eq.'+fatturaMatch.id, {method:'PATCH', body:JSON.stringify({
+            pagamento: 'assegno',
+            assegno: ass.assegno,
+            ass_int: ass.ass_int || ass.fornitore,
+            stato: 'pagata'
+          })});
+          aggiornati++;
+        } catch(e){ console.warn('Riconcilia err:', e); }
+      }
+    }
+    
+    if(aggiornati > 0){
+      save(fatture);
+      console.log('Riconciliazione: '+aggiornati+' fatture associate ad assegni');
+    }
+  } catch(e){ console.warn('Riconciliazione assegni:', e); }
+}
+
 async function compilaAssegno(id){
   var benEl = document.getElementById('assB_'+id);
   var impEl = document.getElementById('assI_'+id);
@@ -3908,19 +3963,46 @@ async function compilaAssegno(id){
     }
     save(fatture);
     
-    // Se c'è un N° fattura, aggiorna la fattura nel registro come pagata con assegno
+    // Associa assegno alla fattura nel registro (match robusto)
     if(numFattura){
-      var fReg = fatture.find(function(x){ return x.numero && x.numero.toString().trim()===numFattura.trim() && x.id!==id; });
+      var numUp = numFattura.trim().toUpperCase();
+      var fornUp = beneficiario.trim().toUpperCase();
+      var assNum = '';
+      var fLocal = fatture.find(function(x){return x.id==id;});
+      if(fLocal) assNum = fLocal.assegno || '';
+      
+      // Cerca match: stesso numero fattura E fornitore simile
+      var fReg = fatture.find(function(x){
+        if(x.id === id) return false;
+        var xNum = (x.numero||'').toString().trim().toUpperCase();
+        var xForn = (x.fornitore||'').toString().trim().toUpperCase();
+        return xNum === numUp && (xForn.indexOf(fornUp.slice(0,10))>=0 || fornUp.indexOf(xForn.slice(0,10))>=0);
+      });
+      
+      // Se non trova per fornitore, cerca solo per numero
+      if(!fReg){
+        fReg = fatture.find(function(x){
+          if(x.id === id) return false;
+          return (x.numero||'').toString().trim().toUpperCase() === numUp;
+        });
+      }
+      
       if(fReg){
         fReg.stato = 'pagata';
         fReg.pagamento = 'assegno';
-        var assNum = f ? f.assegno : '';
         fReg.assegno = assNum;
-        sbFetch('fatture?id=eq.'+fReg.id, {method:'PATCH', body:JSON.stringify({stato:'pagata', pagamento:'assegno', assegno:assNum})}).catch(function(){});
+        fReg.assInt = beneficiario;
+        try {
+          await sbFetch('fatture?id=eq.'+fReg.id, {method:'PATCH', body:JSON.stringify({
+            stato:'pagata', pagamento:'assegno', assegno:assNum, ass_int:beneficiario
+          })});
+          toast('Fattura N.'+numFattura+' associata all\'assegno!');
+        } catch(e){}
       }
     }
     
     toast('Assegno salvato!');
+    await riconciliaAssegni();
     caricaAssegniSalvati();
   } catch(e){
     toast('Errore: '+e.message);
@@ -3928,7 +4010,7 @@ async function compilaAssegno(id){
 }
 
 init();
-setTimeout(function(){dedupFatture();},3000);
+setTimeout(function(){dedupFatture(); riconciliaAssegni();},3000);
 </script>
 </body>
 </html>

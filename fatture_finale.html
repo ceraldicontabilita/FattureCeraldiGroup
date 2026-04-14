@@ -2919,12 +2919,11 @@ function gestRenderLista(lista){
   const countEl   = document.getElementById('gestCount');
   const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
   const nuove     = lista.filter(function(inv){
-    return !esistenti.has((inv.invoice_number || inv.numero || inv.numero_fattura || '').toString().trim());
+    return !esistenti.has((inv.invoice_number||inv.numero||inv.numero_fattura||'').toString().trim());
   });
 
-  // Contatore in grande
   var msg = nuove.length === 0
-    ? 'Tutte le fatture sono gia nel registro'
+    ? 'Tutte le fatture sono già nel registro'
     : nuove.length === 1
       ? '1 nuova fattura da importare'
       : nuove.length + ' nuove fatture da importare';
@@ -2936,31 +2935,93 @@ function gestRenderLista(lista){
       '<div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: ' + lista.length + '</div>' +
     '</div>';
 
-  // Lista semplice: solo fornitore e numero, niente importi
   container.innerHTML = '';
-  lista.slice(0, 30).forEach(function(inv, idx){
+  lista.forEach(function(inv, idx){
     var fornitore = inv.supplier_name || inv.cedente_denominazione || inv.fornitore_denominazione || '—';
     var numero    = inv.invoice_number || inv.numero || inv.numero_fattura || '';
-    var data      = (inv.invoice_date || inv.data_effettiva || inv.data_documento || inv.data || '').toString().slice(0,10);
+    var dataDoc   = (inv.invoice_date || inv.data_effettiva || inv.data || '').toString().slice(0,10);
+    var importo   = parseFloat(inv.total_amount || inv.importo_totale || inv.importo || 0);
+    var imponib   = parseFloat(inv.taxable_amount || 0);
+    var iva       = parseFloat(inv.vat_amount || 0);
+    var aliqIva   = inv.vat_rate || '';
+    var descr     = inv.descrizione || '';
+    var scadenza  = (inv.due_date || '').toString().slice(0,10);
+    var tipoDoc   = inv.document_type || '';
+    var tipoBadge = tipoDoc === 'TD24' ? '<span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px">DDT</span>' : '';
+    var pgRaw     = (inv.payment_method || inv.metodo_pagamento_effettivo || inv.metodo_pagamento || '').toLowerCase();
+    var pgLabel   = pgRaw.includes('bonif')||pgRaw.includes('bank')||pgRaw.includes('sepa')||pgRaw==='banca' ? '🏦 Bonifico'
+      : pgRaw.includes('contan')||pgRaw==='cassa'||pgRaw.includes('mp01') ? '💵 Contanti'
+      : pgRaw.includes('assegno') ? '📝 Assegno'
+      : pgRaw.includes('misto') ? '🔀 Misto'
+      : pgRaw || '—';
+    var statoRaw  = inv.stato_pagamento || inv.status || '';
+    var pagato    = statoRaw==='pagata' || statoRaw==='paid' || inv.pagato===true;
+    var statoBadge= pagato
+      ? '<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">PAGATA</span>'
+      : '<span style="background:var(--red-light);color:var(--red);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DA PAGARE</span>';
     var presente  = esistenti.has(numero.toString().trim());
+    var ibanStr   = inv.iban ? '<div style="font-size:10px;color:var(--ink3);margin-top:2px">IBAN: '+gestEsc(inv.iban)+'</div>' : '';
+
+    // Articoli (da descrizione o linee)
+    var articoliHtml = '';
+    if(inv.linee && inv.linee.length) {
+      articoliHtml = '<div style="margin-top:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;max-height:100px;overflow-y:auto">';
+      inv.linee.slice(0,8).forEach(function(l){
+        var desc = (l.descrizione||'').split('|')[0].trim().slice(0,60);
+        var pz = l.prezzo_totale ? (' — € '+parseFloat(l.prezzo_totale).toFixed(2)) : '';
+        articoliHtml += '<div style="padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05)">'+gestEsc(desc)+pz+'</div>';
+      });
+      if(inv.linee.length > 8) articoliHtml += '<div style="color:var(--ink3);padding-top:2px">...e altri '+(inv.linee.length-8)+' articoli</div>';
+      articoliHtml += '</div>';
+    } else if(descr) {
+      var items = descr.split(';').slice(0,4).map(function(s){return s.trim();}).filter(Boolean);
+      if(items.length) {
+        articoliHtml = '<div style="margin-top:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px">';
+        items.forEach(function(item){
+          articoliHtml += '<div style="padding:1px 0">• '+gestEsc(item.slice(0,65))+'</div>';
+        });
+        if(descr.split(';').length > 4) articoliHtml += '<div style="color:var(--ink3)">...e altri</div>';
+        articoliHtml += '</div>';
+      }
+    }
+
     var div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:5px;background:'+(presente?'var(--surface2)':'var(--blue-light, #e3f0fb)');
+    div.style.cssText = 'background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);'+(presente?'opacity:.55':'');
     div.innerHTML =
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + gestEsc(fornitore) + '</div>' +
-        '<div style="font-size:11px;color:var(--ink3)">N° ' + gestEsc(numero) + ' &nbsp;' + data + '</div>' +
+      // Header: fornitore + importo
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gestEsc(fornitore)+tipoBadge+'</div>' +
+          '<div style="font-size:12px;color:var(--ink3);margin-top:2px">N° '+gestEsc(numero)+' — '+dataDoc+'</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0">' +
+          '<div style="font-size:18px;font-weight:800;color:var(--ink)">€ '+importo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>' +
+          '<div style="font-size:10px;color:var(--ink3);margin-top:1px">Imp. €'+imponib.toFixed(2)+' + IVA €'+iva.toFixed(2)+(aliqIva?' ('+aliqIva+'%)':'')+'</div>' +
+        '</div>' +
       '</div>' +
-      (presente
-        ? '<span style="font-size:11px;color:var(--ink3);flex-shrink:0">&#10003; presente</span>'
-        : '<button class="btn btn-p" style="padding:4px 12px;font-size:11px;flex-shrink:0" data-gestidx="'+idx+'">Importa</button>'
-      );
+      // Info riga: pagamento + stato
+      '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">' +
+        statoBadge +
+        '<span style="font-size:11px;color:var(--ink3)">'+pgLabel+'</span>' +
+        (scadenza ? '<span style="font-size:11px;color:var(--ink3)">Scad. '+scadenza+'</span>' : '') +
+      '</div>' +
+      ibanStr +
+      // Articoli
+      articoliHtml +
+      // Bottone
+      '<div style="margin-top:10px">' +
+        (presente
+          ? '<div style="text-align:center;font-size:12px;color:var(--ink3);padding:6px">✓ Già nel registro</div>'
+          : '<button class="btn btn-p" style="width:100%;padding:10px;font-size:14px" data-gestidx="'+idx+'">📥 Importa nel registro</button>'
+        ) +
+      '</div>';
     container.appendChild(div);
   });
 
-  if(lista.length > 30){
+  if(lista.length > 50){
     var more = document.createElement('div');
     more.style.cssText = 'text-align:center;font-size:12px;color:var(--ink3);padding:6px';
-    more.textContent = '... e altre ' + (lista.length-30) + ' fatture';
+    more.textContent = 'Mostrate le prime 50 di ' + lista.length + ' fatture';
     container.appendChild(more);
   }
 
@@ -2971,7 +3032,7 @@ function gestRenderLista(lista){
 
   if(nuove.length > 0){
     document.getElementById('gestBtnTutto').style.display='block';
-    document.getElementById('gestBtnTutto').textContent = 'Importa tutte le ' + nuove.length + ' nuove';
+    document.getElementById('gestBtnTutto').textContent = '📥 Importa tutte le ' + nuove.length + ' nuove fatture';
   }
   document.getElementById('gestRis').style.display='block';
 }

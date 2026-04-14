@@ -2911,6 +2911,13 @@ function gestRenderLista(lista){
     var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
     var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'';
     var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+    // Override con stato salvato localmente
+    var localPag = _pagamentiCache[inv.id||inv.invoice_number||idx];
+    if(localPag){
+      if(localPag.stato==='pagata') pagato=true;
+      else if(localPag.stato==='da_pagare') pagato=false;
+    }
+    var accontoTag = localPag&&localPag.stato==='acconto'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+(parseFloat(localPag.acconto)||0).toFixed(2)+'</span>':'';
     var ddtTag   = tipoDoc==='TD24'?' <span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DDT</span>':'';
     var statoTag = pagato
       ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">PAGATA</span>'
@@ -2939,7 +2946,7 @@ function gestRenderLista(lista){
         '</div>'+
       '</div>'+
       '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+
-        statoTag+
+        accontoTag||statoTag+
         (pgLabel?'<span style="font-size:11px;color:var(--ink3)">\u2022 '+pgLabel+'</span>':'')+
       '</div>'+
       (preview?'<div style="font-size:11px;color:var(--ink3);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\ud83d\udce6 '+gestEsc(preview)+'</div>':'')+
@@ -2962,9 +2969,37 @@ function gestImportaTutto(){ }
 function gestConverti(inv){ return inv; }
 
 
+// ── Salvataggio pagamenti su Supabase (tabella fatture_pagamenti) ──
+var _pagamentiCache = {};
+async function gestLoadPagamento(invoiceId){
+  if(_pagamentiCache[invoiceId]) return _pagamentiCache[invoiceId];
+  try {
+    var rows = await sbFetch('fatture_pagamenti?invoice_id=eq.'+encodeURIComponent(invoiceId)+'&select=*');
+    if(rows && rows.length) { _pagamentiCache[invoiceId]=rows[0]; return rows[0]; }
+  } catch(e){ console.warn('Load pagamento:',e); }
+  return null;
+}
+async function gestSavePagamento(invoiceId, data){
+  _pagamentiCache[invoiceId] = data;
+  try {
+    var existing = await sbFetch('fatture_pagamenti?invoice_id=eq.'+encodeURIComponent(invoiceId)+'&select=id');
+    if(existing && existing.length){
+      await sbFetch('fatture_pagamenti?invoice_id=eq.'+encodeURIComponent(invoiceId), {method:'PATCH', body:JSON.stringify(data)});
+    } else {
+      data.invoice_id = invoiceId;
+      await sbFetch('fatture_pagamenti', {method:'POST', body:JSON.stringify(data)});
+    }
+    toast('Pagamento salvato!');
+  } catch(e){
+    console.error('Save pagamento:',e);
+    toast('Errore salvataggio: '+e.message);
+  }
+}
+
 function gestApriDettaglio(idx){
   var inv = _gestFatture[idx];
   if(!inv) return;
+  var invoiceId = inv.id||inv.invoice_number||idx;
   var nome     = inv.supplier_name||inv.cedente_denominazione||'\u2014';
   var piva     = inv.supplier_vat||'';
   var cf       = inv.supplier_cf||'';
@@ -2981,10 +3016,9 @@ function gestApriDettaglio(idx){
   var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
   var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'\u2014';
   var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
-  var statoTag = pagato?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:6px;padding:4px 12px;font-size:13px;font-weight:700">PAGATA</span>':'<span style="background:var(--red-light);color:var(--red);border-radius:6px;padding:4px 12px;font-size:13px;font-weight:700">DA PAGARE</span>';
-  var tipoLabel = tipoDoc==='TD24'?'DDT (differita)':tipoDoc==='TD01'?'Fattura':'Doc. '+tipoDoc;
+  var tipoLabel = tipoDoc==='TD24'?'DDT':tipoDoc==='TD01'?'Fattura':'Doc. '+tipoDoc;
 
-  // Articoli dettagliati
+  // Articoli
   var artHtml = '';
   if(inv.linee && inv.linee.length){
     artHtml='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Articoli ('+inv.linee.length+')</div>';
@@ -3013,7 +3047,7 @@ function gestApriDettaglio(idx){
     artHtml+='</div>';
   }
 
-  // Crea/aggiorna modal
+  // Modal
   var mo = document.getElementById('gestDetailMo');
   if(!mo){
     mo = document.createElement('div');
@@ -3023,40 +3057,152 @@ function gestApriDettaglio(idx){
     document.body.appendChild(mo);
     mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
   }
-  document.getElementById('gestDetailSheet').innerHTML =
+
+  var sheet = document.getElementById('gestDetailSheet');
+  sheet.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)">'+
-      '<h3 style="font-size:18px;font-weight:700">Dettaglio Fattura</h3>'+
+      '<h3 style="font-size:18px;font-weight:700">'+tipoLabel+' N\u00b0 '+gestEsc(numero)+'</h3>'+
       '<button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:var(--surface2);border:none;border-radius:99px;width:32px;height:32px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3)">\u00d7</button>'+
     '</div>'+
     '<div style="padding:16px 20px 40px">'+
+      // Fornitore
       '<div style="font-size:20px;font-weight:800">'+gestEsc(nome)+'</div>'+
       (piva?'<div style="font-size:12px;color:var(--ink3);margin-top:2px">P.IVA '+gestEsc(piva)+(cf&&cf!==piva?' \u2014 CF '+gestEsc(cf):'')+'</div>':'')+
-      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+statoTag+'<span style="font-size:12px;color:var(--ink2);padding:4px 0">\u2022 '+tipoLabel+' \u2022 '+pgLabel+'</span></div>'+
+      '<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+dataDoc+' \u2022 '+pgLabel+'</div>'+
+
+      // Importi card
       '<div style="margin-top:16px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
-          '<span style="font-size:13px;color:var(--ink3);font-weight:600">TOTALE</span>'+
+          '<span style="font-size:13px;color:var(--ink3);font-weight:600">TOTALE FATTURA</span>'+
           '<span style="font-size:28px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
         '</div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span style="color:var(--ink3)">Imponibile</span><span style="font-weight:600">\u20ac '+impon.toFixed(2)+'</span></div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:13px"><span style="color:var(--ink3)">IVA'+(ivaRate?' ('+ivaRate+'%)':'')+'</span><span style="font-weight:600">\u20ac '+ivaAmt.toFixed(2)+'</span></div>'+
       '</div>'+
+
+      // Info griglia
       '<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
         '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">N\u00b0 Documento</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+gestEsc(numero)+'</div></div>'+
         '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Data</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+dataDoc+'</div></div>'+
         (scad?'<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Scadenza</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+scad+'</div></div>':'')+
         (iban?'<div style="background:var(--surface);border-radius:8px;padding:10px;grid-column:span 2"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">IBAN</div><div style="font-size:12px;font-weight:500;margin-top:2px;word-break:break-all">'+gestEsc(iban)+'</div></div>':'')+
       '</div>'+
+
+      // SEZIONE PAGAMENTO
+      '<div style="margin-top:18px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)" id="gestPagSection">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">\ud83d\udcb0 Gestione Pagamento</div>'+
+        '<div id="gestPagLoader" style="text-align:center;font-size:13px;color:var(--ink3);padding:8px">Caricamento...</div>'+
+        '<div id="gestPagForm" style="display:none">'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px">Stato</div>'+
+          '<div style="display:flex;gap:6px;margin-bottom:12px" id="gestPagBtns">'+
+            '<button class="stato-btn" data-stato="da_pagare" onclick="gestSetPagStato(\'da_pagare\')" style="flex:1;padding:10px 4px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">\u26aa Da pagare</button>'+
+            '<button class="stato-btn" data-stato="acconto" onclick="gestSetPagStato(\'acconto\')" style="flex:1;padding:10px 4px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">\u26ab Acconto</button>'+
+            '<button class="stato-btn" data-stato="pagata" onclick="gestSetPagStato(\'pagata\')" style="flex:1;padding:10px 4px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">\u2705 Pagata</button>'+
+          '</div>'+
+          '<div id="gestAccontoSection" style="display:none">'+
+            '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo pagato (\u20ac)</div>'+
+            '<input type="text" id="gestAccontoInput" placeholder="0,00" inputmode="decimal" autocomplete="off" style="width:100%;padding:12px 14px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:16px;font-family:inherit;background:var(--surface2);box-sizing:border-box;margin-bottom:8px">'+
+            '<div id="gestAccontoBar" style="background:var(--sep);border-radius:99px;height:8px;overflow:hidden;margin-bottom:4px"><div id="gestAccontoFill" style="height:100%;border-radius:99px;background:var(--orange);width:0%;transition:width .3s"></div></div>'+
+            '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)"><span>Pagato: <strong id="gestAccontoPagLbl">\u20ac 0,00</strong></span><span>Resta: <strong id="gestAccontoRestLbl">\u20ac 0,00</strong></span></div>'+
+          '</div>'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px;margin-top:12px">Note</div>'+
+          '<input type="text" id="gestPagNote" placeholder="Annotazioni pagamento..." autocomplete="off" style="width:100%;padding:10px 14px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--surface2);box-sizing:border-box;margin-bottom:12px">'+
+          '<button class="btn btn-p" style="width:100%;padding:13px;font-size:15px" onclick="gestSalvaPag()">\ud83d\udcbe Salva pagamento</button>'+
+        '</div>'+
+      '</div>'+
+
+      // Articoli
       artHtml+
     '</div>';
+
   mo.style.display='flex';
-  document.getElementById('gestDetailSheet').style.animation='slideUp .3s cubic-bezier(.32,.72,0,1)';
+  sheet.style.animation='slideUp .3s cubic-bezier(.32,.72,0,1)';
+
+  // Carica pagamento salvato
+  window._gestCurrentInvoice = {id: invoiceId, totale: totale, idx: idx};
+  gestLoadPagamento(invoiceId).then(function(pag){
+    document.getElementById('gestPagLoader').style.display='none';
+    document.getElementById('gestPagForm').style.display='block';
+    if(pag){
+      gestSetPagStato(pag.stato||'da_pagare');
+      if(pag.acconto) document.getElementById('gestAccontoInput').value = parseFloat(pag.acconto).toFixed(2).replace('.',',');
+      if(pag.note) document.getElementById('gestPagNote').value = pag.note;
+      gestAggiornaAcconto();
+    } else {
+      // Usa stato da impresasemplice se disponibile
+      var autoStato = pagato?'pagata':'da_pagare';
+      gestSetPagStato(autoStato);
+    }
+  });
 }
+
+var _gestPagStato = 'da_pagare';
+function gestSetPagStato(stato){
+  _gestPagStato = stato;
+  var btns = document.querySelectorAll('#gestPagBtns .stato-btn');
+  btns.forEach(function(b){
+    var s = b.getAttribute('data-stato');
+    b.style.borderColor = s===stato?'var(--blue)':'var(--sep)';
+    b.style.background = s===stato?(s==='pagata'?'var(--green-light)':s==='acconto'?'var(--orange-light)':'var(--red-light)'):'var(--surface)';
+    b.style.color = s===stato?(s==='pagata'?'#1a7a3a':s==='acconto'?'#b36a00':'var(--red)'):'var(--ink3)';
+  });
+  var accSec = document.getElementById('gestAccontoSection');
+  if(accSec) accSec.style.display = stato==='acconto'?'block':'none';
+  gestAggiornaAcconto();
+}
+
+function gestAggiornaAcconto(){
+  var inp = document.getElementById('gestAccontoInput');
+  if(!inp || !window._gestCurrentInvoice) return;
+  var val = parseFloat((inp.value||'0').replace(',','.'))||0;
+  var tot = window._gestCurrentInvoice.totale||0;
+  var pct = tot>0?Math.min(100,Math.round(val/tot*100)):0;
+  var fill = document.getElementById('gestAccontoFill');
+  if(fill) fill.style.width = pct+'%';
+  var pagLbl = document.getElementById('gestAccontoPagLbl');
+  var restLbl = document.getElementById('gestAccontoRestLbl');
+  if(pagLbl) pagLbl.textContent = '\u20ac '+val.toFixed(2);
+  if(restLbl) restLbl.textContent = '\u20ac '+Math.max(0,tot-val).toFixed(2);
+}
+
+function gestSalvaPag(){
+  if(!window._gestCurrentInvoice) return;
+  var invoiceId = window._gestCurrentInvoice.id;
+  var acconto = parseFloat((document.getElementById('gestAccontoInput').value||'0').replace(',','.'))||0;
+  var note = (document.getElementById('gestPagNote').value||'').trim();
+  var data = {
+    stato: _gestPagStato,
+    acconto: _gestPagStato==='acconto'?acconto:(_gestPagStato==='pagata'?window._gestCurrentInvoice.totale:0),
+    note: note,
+    totale: window._gestCurrentInvoice.totale,
+    updated_at: new Date().toISOString()
+  };
+  gestSavePagamento(invoiceId, data).then(function(){
+    // Aggiorna la card nella lista se visibile
+    if(_gestFatture) gestRenderLista(_gestFatture);
+  });
+}
+
+// Aggiorna acconto in tempo reale
+document.addEventListener('input', function(e){
+  if(e.target.id==='gestAccontoInput') gestAggiornaAcconto();
+});
 
 function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 (function gestInit(){
   const el = document.getElementById('gestAnno');
   if(el && !el.value) el.value = new Date().getFullYear();
+})();
+
+// Carica pagamenti salvati da Supabase al boot
+(function loadAllPagamenti(){
+  sbFetch('fatture_pagamenti?select=*').then(function(rows){
+    if(rows && rows.length){
+      rows.forEach(function(r){ _pagamentiCache[r.invoice_id]=r; });
+      console.log('Pagamenti caricati:',rows.length);
+    }
+  }).catch(function(e){console.warn('Load pagamenti:',e);});
 })();
 
 // Auto-carica fatture all'avvio (dopo 2 sec)

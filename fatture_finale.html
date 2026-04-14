@@ -3223,7 +3223,8 @@ setTimeout(function(){
       banner.id = 'gestBanner';
       banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:50';
       banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
-      banner.onclick = function(){
+      banner.onclick = function(e){
+        e.stopPropagation();
         switchTab('riep');
         setTimeout(function(){
           var rc = document.getElementById('rbody-gest');
@@ -3232,6 +3233,14 @@ setTimeout(function(){
           gestScarica();
         }, 300);
       };
+      // Inserisci banner dentro ogni view come primo child
+      var views = document.querySelectorAll('.view');
+      views.forEach(function(v){
+        var clone = banner.cloneNode(true);
+        clone.onclick = banner.onclick;
+        v.insertBefore(clone, v.firstChild);
+      });
+      // Anche nell'header
       var header = document.querySelector('.ios-header');
       if(header && header.nextSibling) header.parentNode.insertBefore(banner, header.nextSibling);
     })

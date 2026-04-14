@@ -647,7 +647,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
   <!-- 6. ZONA PERICOLO -->
   <!-- IMPORTA DA GESTIONALE -->
-  <div class="rcard" id="rc-gest">
+  <div class="rcard" id="rc-gest" style="display:none">
     <div class="rcard-hd" onclick="toggleRCard('gest')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#127963;</span>
         <div><div class="rcard-title">Importa da Gestionale</div><div class="rcard-sub" id="rsub-gest">Fatture XML ricevute via SDI</div></div>
@@ -854,7 +854,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
-  <button class="tab-item" id="tab-sync" onclick="gestSyncClick()" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
+  <button class="tab-item" id="tab-sync" onclick="gestSyncClick();goTab('lista',this)" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
     <span class="tab-lbl">Riepilogo</span>
@@ -3433,7 +3433,7 @@ setTimeout(function(){
       banner.addEventListener('click', function(e){
         e.preventDefault();
         e.stopPropagation();
-        switchTab('riep');
+        goTab('riep',null);
         setTimeout(function(){
           var rc = document.getElementById('rbody-gest');
           if(rc && !rc.classList.contains('open')) toggleRCard('gest');
@@ -3495,7 +3495,7 @@ async function gestSyncClick(){
     if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); }
     toast(count>0 ? count+' nuove fatture importate!' : 'Tutto aggiornato ('+lista.length+' fatture)');
     // Vai al registro
-    switchTab('lista');
+    goTab('lista',null);
   } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
 }
 

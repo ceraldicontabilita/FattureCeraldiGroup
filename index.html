@@ -2893,16 +2893,34 @@ async function gestScarica(){
       return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
     });
 
+    // Costruisci mappa metodo pagamento per fornitore (dall'ultima fattura nel registro)
+    var fornMetodo = {};
+    fatture.forEach(function(f){
+      if(f.fornitore && f.pagamento && !fornMetodo[f.fornitore.toUpperCase()]){
+        fornMetodo[f.fornitore.toUpperCase()] = f.pagamento;
+      }
+    });
+
     var importate = 0;
     for(var i=0; i<nuove.length; i++){
       var inv = nuove[i];
-      var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
-      var pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'contanti';
+      var nomeFornitore = inv.supplier_name||inv.cedente_denominazione||'';
+      var nomeUpper = nomeFornitore.toUpperCase();
+
+      // Metodo pagamento: prima cerca nel registro (impostato dall'utente), poi dal XML
+      var pag;
+      if(fornMetodo[nomeUpper]){
+        pag = fornMetodo[nomeUpper]; // Usa il metodo che l'utente ha impostato
+      } else {
+        var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+        pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'contanti';
+      }
+
       var pagato = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
       var record = {
         id: Date.now() + i,
         tipo: inv.document_type==='TD24'?'ddt':'fattura',
-        fornitore: inv.supplier_name||inv.cedente_denominazione||'',
+        fornitore: nomeFornitore,
         numero: (inv.invoice_number||inv.numero||'').toString(),
         data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
         importo: parseFloat(inv.total_amount||0),
@@ -2919,6 +2937,11 @@ async function gestScarica(){
         await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
         fatture.unshift(dbToApp(record));
         importate++;
+        // Crea fornitore se non esiste
+        if(nomeFornitore && fornitori.indexOf(nomeFornitore) < 0){
+          fornitori.push(nomeFornitore);
+          try { await sbFetch('fornitori', {method:'POST', headers:{...SB_H,'Prefer':'resolution=ignore-duplicates,return=representation'}, body:JSON.stringify({nome:nomeFornitore})}); } catch(e){}
+        }
       } catch(e){ console.warn('Import err:', inv.invoice_number, e); }
     }
 
@@ -3284,8 +3307,25 @@ async function gestSalvaPagamento(){
       toast('Fattura salvata nel registro!');
     } catch(e){ toast('Errore: '+e.message); return; }
   }
+  // Se l'utente ha cambiato metodo pagamento, aggiorna anche
+  // le altre fatture dello stesso fornitore nel registro
+  if(_gestCurMetodo && window._gestCur && window._gestCur.inv){
+    var fornUpd = (window._gestCur.inv.supplier_name||window._gestCur.inv.cedente_denominazione||'').toUpperCase();
+    if(fornUpd){
+      fatture.forEach(function(f){
+        if(f.fornitore && f.fornitore.toUpperCase()===fornUpd && f.pagamento!==_gestCurMetodo){
+          f.pagamento = _gestCurMetodo;
+          // Aggiorna su Supabase in background
+          sbFetch('fatture?id=eq.'+f.id, {method:'PATCH', body:JSON.stringify({pagamento:_gestCurMetodo})}).catch(function(){});
+        }
+      });
+      save(fatture);
+    }
+  }
+
   // Aggiorna lista
   if(_gestFatture) gestRenderLista(_gestFatture);
+  renderLista();
   document.getElementById('gestDetailMo').style.display='none';
 }
 
@@ -3310,7 +3350,7 @@ setTimeout(function(){
       // Mostra banner in tutte le tab
       var banner = document.createElement('div');
       banner.id = 'gestBanner';
-      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:50';
+      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:8px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:150;-webkit-tap-highlight-color:rgba(0,0,0,.1)';
       banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
       banner.onclick = function(e){
         e.stopPropagation();

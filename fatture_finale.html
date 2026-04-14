@@ -886,7 +886,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
     <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO ASSEGNI</div>
     <div class="field"><label>Primo numero assegno</label>
-      <input type="text" id="assPrimo" placeholder="1111111111-12" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="none" style="font-size:16px;letter-spacing:1px">
+      <input type="tel" id="assPrimo" placeholder="1111111111-12" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" maxlength="14" oninput="formatAssegno(this)" style="font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700">
       <div style="font-size:11px;color:var(--ink3);margin-top:3px">Formato: 11 cifre + trattino + 2 cifre (es. 12345678901-01)</div>
     </div>
     <button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px">&#128221; Genera 10 assegni</button>
@@ -3630,6 +3630,21 @@ async function gestSyncClick(){
 
 // ── REGISTRO ASSEGNI ──
 var _assegniGenerati = [];
+
+
+// Formatta input assegno: tastierino numerico, trattino auto dopo 10a cifra
+function formatAssegno(el){
+  var v = el.value.replace(/[^0-9-]/g, ''); // solo numeri e trattino
+  var digits = v.replace(/-/g, ''); // solo cifre
+  if(digits.length > 12) digits = digits.slice(0, 12); // max 12 cifre totali
+  // Inserisci trattino dopo la 10a cifra
+  if(digits.length > 10){
+    v = digits.slice(0, 10) + '-' + digits.slice(10);
+  } else {
+    v = digits;
+  }
+  el.value = v;
+}
 
 function generaAssegni(){
   var primo = (document.getElementById('assPrimo').value||'').trim();

@@ -688,7 +688,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       </div>
       <div id="gestEmpty" style="display:none;text-align:center;padding:14px;color:var(--ink3);font-size:13px">&#128219; Nessuna fattura trovata</div>
       <div style="margin-top:10px;font-size:11px;color:var(--ink3);border-top:1px solid var(--bg);padding-top:8px">
-        &#128204; Legge da <strong>impresasemplice.online</strong> &#183; fatture ricevute via SDI/PEC Aruba
+        &#128204; Legge da <strong>MongoDB Atlas</strong> via proxy locale, o <strong>impresasemplice.online</strong> come fallback
       </div>
     </div>
   </div>
@@ -2880,29 +2880,37 @@ async function gestScarica(){
   const mese = document.getElementById('gestMese').value;
   if(!anno){ toast('Inserisci anno'); return; }
 
-  // Se gira su localhost usa il proxy locale (evita errore CORS da file://)
-  const isLocal = location.hostname==='localhost'||location.hostname==='127.0.0.1';
-  const EP = isLocal ? '' : 'https://impresasemplice.online';
-  const invoicesPath = isLocal ? '/proxy/invoices' : '/api/invoices';
-  const token = localStorage.getItem('fatture_gest_token')||'';
-
-  gestSetStatus(null,'Connessione...');
+  gestSetStatus(null,'Connessione a MongoDB...');
   document.getElementById('gestLoader').style.display='block';
   document.getElementById('gestRis').style.display='none';
   document.getElementById('gestEmpty').style.display='none';
   document.getElementById('gestBtnTutto').style.display='none';
+
   try {
     const params = new URLSearchParams({anno, limit:500});
     if(mese) params.append('mese', mese);
     const controller = new AbortController();
-    const tid = setTimeout(function(){controller.abort();}, 20000);
-    const headers = {'Content-Type':'application/json'};
-    if(token) headers['Authorization'] = 'Bearer '+token;
-    const res = await fetch(EP+invoicesPath+'?'+params, {signal:controller.signal, headers});
+    const tid = setTimeout(function(){controller.abort();}, 25000);
+
+    // 1️⃣ Prova MongoDB via proxy locale (python proxy_ceraldi.py)
+    // 2️⃣ Fallback: impresasemplice.online
+    var res, fonte = 'mongodb';
+    try {
+      res = await fetch('/api/fatture-passive?' + params, {signal: controller.signal});
+      if(!res.ok) throw new Error('proxy_unavailable');
+      const testData = await res.clone().json();
+      if(testData && testData.error) throw new Error(testData.error);
+    } catch(e1) {
+      fonte = 'impresasemplice';
+      res = await fetch('https://impresasemplice.online/api/invoices?' + params, {signal: controller.signal});
+    }
     clearTimeout(tid);
-    if(!res.ok) throw new Error('HTTP '+res.status+' — verifica il token in Impostazioni ⚙️');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+
     const data = await res.json();
+    if(data && data.error) throw new Error(data.error);
     const lista = Array.isArray(data) ? data : (data.items||data.invoices||data.results||[]);
+
     document.getElementById('gestLoader').style.display='none';
     if(!lista.length){
       gestSetStatus(true,'Nessuna fattura trovata');
@@ -2910,13 +2918,14 @@ async function gestScarica(){
       return;
     }
     _gestFatture = lista;
-    gestSetStatus(true, lista.length+' fatture trovate');
-    document.getElementById('rsub-gest').textContent = lista.length+' fatture';
+    gestSetStatus(true, lista.length + ' fatture trovate (' + fonte + ')');
+    document.getElementById('rsub-gest').textContent = lista.length + ' fatture';
     gestRenderLista(lista);
+
   } catch(e){
     document.getElementById('gestLoader').style.display='none';
-    gestSetStatus(false,'Errore: '+e.message);
-    toast('Errore: '+e.message.slice(0,50));
+    gestSetStatus(false, 'Errore: ' + e.message);
+    toast('Errore: ' + e.message.slice(0,50));
   }
 }
 
@@ -3004,27 +3013,28 @@ function gestImportaTutto(){
 }
 
 function gestConverti(inv){
-  // Mappatura campi impresasemplice.online → registro fatture
-  var fornitore = inv.supplier_name || inv.cedente_denominazione || inv.fornitore_denominazione || inv.cedente || '';
+  // Campi impresasemplice.online (da JSON reale visto 14/04/2026)
+  var fornitore = inv.supplier_name || inv.cedente_denominazione || inv.fornitore_denominazione
+    || (inv.cedente && typeof inv.cedente==='object' ? inv.cedente.denominazione : inv.cedente) || '';
   var numero    = inv.invoice_number || inv.numero || inv.numero_fattura || '';
   var data      = (inv.invoice_date || inv.data_effettiva || inv.data_documento || inv.data || '').toString().slice(0,10);
   var importo   = parseFloat(inv.total_amount || inv.importo_totale || inv.importo || 0);
   var scadenza  = (inv.due_date || inv.scadenza || '').toString().slice(0,10);
 
-  // Stato: usa stato_pagamento se presente
+  // Stato: pagata se stato_pagamento=pagata/paid, oppure pagato=true
   var statoRaw  = inv.stato_pagamento || inv.status || '';
-  var stato = (statoRaw==='pagata'||statoRaw==='paid') ? 'pagata' : 'da_pagare';
+  var stato     = (statoRaw==='pagata'||statoRaw==='paid'||inv.pagato===true) ? 'pagata' : 'da_pagare';
 
-  // Pagamento: normalizza i valori di impresasemplice
+  // Metodo pagamento: normalizza i codici impresasemplice
   var pgRaw = (inv.payment_method || inv.metodo_pagamento_effettivo || inv.metodo_pagamento || '').toLowerCase();
-  var pagamento = pgRaw.includes('bonifico')||pgRaw.includes('bank')||pgRaw.includes('sepa')||pgRaw.includes('banca') ? 'bonifico'
-    : pgRaw.includes('assegno') ? 'assegno'
-    : pgRaw.includes('contanti')||pgRaw.includes('cassa') ? 'contanti'
+  var pagamento = (pgRaw.includes('bonif')||pgRaw.includes('bank_transfer')||pgRaw.includes('sepa')||pgRaw==='banca') ? 'bonifico'
+    : (pgRaw.includes('assegno')) ? 'assegno'
+    : (pgRaw.includes('contan')||pgRaw==='cassa'||pgRaw==='mp01') ? 'contanti'
     : 'bonifico';
 
   return {
-    id:        'gest_'+(inv.id||inv._id||Date.now()+'_'+Math.random().toString(36).slice(2,6)),
-    tipo:      inv.document_type==='TD24' ? 'ddt' : 'fattura',
+    id:        'gest_' + (inv.id || inv._id || Date.now() + '_' + Math.random().toString(36).slice(2,6)),
+    tipo:      (inv.document_type === 'TD24') ? 'ddt' : 'fattura',
     fornitore: fornitore,
     numero:    numero,
     data:      data,
@@ -3033,7 +3043,7 @@ function gestConverti(inv){
     stato:     stato,
     pagamento: pagamento,
     bonIban:   inv.iban || '',
-    note:      (inv.descrizione||'').slice(0,120) || 'Importata da gestionale SDI',
+    note:      (inv.descrizione || '').slice(0, 120) || 'Importata da gestionale SDI',
     ts:        Date.now()
   };
 }

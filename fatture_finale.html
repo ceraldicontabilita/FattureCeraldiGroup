@@ -2604,30 +2604,22 @@ function condividiRegistrazione(id){
 
 // ── ALERT BANNER SCADUTE + BADGE TAB ──
 function aggiornaAlertBanner(){
-  const oggi2=new Date(); oggi2.setHours(0,0,0,0);
-  const scadute=fatture.filter(f=>{
-    const st=f.stato||'pagata';
-    if(st==='pagata') return false;
+  // Badge scadenze nel tab bar (numeretto rosso)
+  var oggi=new Date(); oggi.setHours(0,0,0,0);
+  var _seenB={};
+  var scadute=fatture.filter(function(f){
+    if(f.stato==='pagata') return false;
     if(!f.scadenza) return false;
-    return new Date(f.scadenza+'T12:00:00')<oggi2;
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(_seenB[k]) return false;
+    _seenB[k]=true;
+    return new Date(f.scadenza+'T12:00:00')<oggi;
   });
-  const incomplete=fatture.filter(f=>f.incompleta&&f.incompleta.length>0);
-  const banner=document.getElementById('alertBanner');
-  const txt=document.getElementById('alertBannerTxt');
-  if(!banner) return;
-  if(scadute.length>0){
-    banner.classList.add('on');
-    txt.textContent=scadute.length+' fattura'+(scadute.length>1?'e':'')+(scadute.length>1?' scadute':' scaduta')+' non pagata'+(scadute.length>1?'e':'');
-  } else {
-    banner.classList.remove('on');
-  }
-  // Badge rosso sul tab Scadenze: mostra scadute + incomplete
-  const totBadge=scadute.length+incomplete.length;
-  const badge=document.getElementById('scadBadge');
+  var badge=document.getElementById('scadBadge');
   if(badge){
-    if(totBadge>0){
-      badge.textContent=totBadge>99?'99+':totBadge;
-      badge.style.display='inline-flex';
+    if(scadute.length>0){
+      badge.style.display='flex';
+      badge.textContent=scadute.length;
     } else {
       badge.style.display='none';
     }

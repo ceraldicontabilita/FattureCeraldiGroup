@@ -2920,11 +2920,7 @@ function gestRenderLista(lista){
     var accontoTag = regFatt&&regFatt.stato==='parziale'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+parseFloat(regFatt.parzPagato||regFatt.parz_pagato||0).toFixed(2)+'</span>':'';
     var inRegistro = !!regFatt;
     // Override con stato salvato localmente
-    if(localPag){
-      if(localPag.stato==='pagata') pagato=true;
-      else if(localPag.stato==='da_pagare') pagato=false;
-    }
-    var accontoTag = localPag&&localPag.stato==='acconto'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+(parseFloat(localPag.acconto)||0).toFixed(2)+'</span>':'';
+    var accontoTag = '';
     var ddtTag   = tipoDoc==='TD24'?' <span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DDT</span>':'';
     var statoTag = pagato
       ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">PAGATA</span>'

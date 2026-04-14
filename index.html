@@ -3115,12 +3115,30 @@ function gestApriDettaglio(idx){
     if(existing){
       window._gestCur.sbId = existing.id;
       gestSetSt(existing.stato||'da_pagare');
+      if(existing.pagamento) gestSetMetodo(existing.pagamento);
       if(existing.parz_pagato) document.getElementById('gestAccInp').value = parseFloat(existing.parz_pagato).toFixed(2).replace('.',',');
       if(existing.note) document.getElementById('gestPagNote').value = existing.note;
       gestCalcResto();
     } else {
       gestSetSt(pagato?'pagata':'da_pagare');
+      // Preseleziona metodo dall'API
+      var autoMetodo = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'';
+      if(autoMetodo) gestSetMetodo(autoMetodo);
     }
+  });
+}
+
+
+var _gestCurMetodo = '';
+function gestSetMetodo(m){
+  _gestCurMetodo = m;
+  ['contanti','bonifico','assegno'].forEach(function(s){
+    var b = document.getElementById('gpm_'+s);
+    if(!b) return;
+    var active = s===m;
+    b.style.borderColor = active?'var(--blue)':'var(--sep)';
+    b.style.background = active?'var(--blue-light)':'var(--surface)';
+    b.style.color = active?'var(--blue)':'var(--ink3)';
   });
 }
 
@@ -3178,13 +3196,13 @@ async function gestSalvaPagamento(){
   } else {
     // Inserisci nuova fattura nel registro Supabase
     var record = {
-      id: 'gest_'+(inv.id||Date.now()),
+      id: Date.now(),
       tipo: inv.document_type==='TD24'?'ddt':'fattura',
       fornitore: inv.supplier_name||inv.cedente_denominazione||'',
       numero: inv.invoice_number||inv.numero||'',
       data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
       importo: totale,
-      pagamento: pag,
+      pagamento: _gestCurMetodo||pag,
       bon_iban: inv.iban||'',
       note: note||(inv.descrizione||'').slice(0,120)||'Da gestionale SDI',
       stato: st,

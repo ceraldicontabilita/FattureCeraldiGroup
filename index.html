@@ -3658,7 +3658,7 @@ async function generaAssegni(){
   toast('Generazione assegni...');
   var count = 0;
   for(var i = 0; i < 10; i++){
-    var numAss = String(prefixNum + i).padStart(padLen, '0') + '-' + suffix;
+    var numAss = String(prefixNum + i).padStart(padLen, '0') + '-' + String(parseInt(suffix) + i).padStart(suffix.length, '0');
     // Verifica che non esista già
     try {
       var existing = await sbFetch('fatture?assegno=eq.'+encodeURIComponent(numAss)+'&select=id&limit=1');

@@ -679,7 +679,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <div id="gestRis" style="display:none">
         <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" id="gestCount"></div>
         <div id="gestItems"></div>
-        <button class="btn btn-p" id="gestBtnTutto" style="width:100%;margin-top:6px;display:none" onclick="gestImportaTutto()">&#9989; Importa tutte nel registro</button>
+        
       </div>
       <div id="gestEmpty" style="display:none;text-align:center;padding:14px;color:var(--ink3);font-size:13px">&#128219; Nessuna fattura trovata</div>
       <div style="margin-top:10px;font-size:11px;color:var(--ink3);border-top:1px solid var(--bg);padding-top:8px">
@@ -2869,7 +2869,6 @@ async function gestScarica(){
   document.getElementById('gestLoader').style.display='block';
   document.getElementById('gestRis').style.display='none';
   document.getElementById('gestEmpty').style.display='none';
-  document.getElementById('gestBtnTutto').style.display='none';
   try {
     var params = new URLSearchParams({anno:anno, limit:'500'});
     if(mese) params.append('mese', mese);
@@ -2887,31 +2886,9 @@ async function gestScarica(){
       return;
     }
     _gestFatture = lista;
-
-    // ── AUTO-IMPORTA TUTTE LE NUOVE ──
-    var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-    var nuove = lista.filter(function(inv){
-      return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
-    });
-    var importate = 0;
-    nuove.forEach(function(inv){
-      fatture.unshift(gestConverti(inv));
-      importate++;
-    });
-    if(importate > 0){
-      saveFatture(); renderLista(); aggiornaAlertBanner();
-    }
-
-    gestSetStatus(true, lista.length+' fatture trovate, '+importate+' importate');
+    gestSetStatus(true, lista.length+' fatture caricate');
     document.getElementById('rsub-gest').textContent = lista.length+' fatture';
     gestRenderLista(lista);
-
-    // Alert visivo
-    if(importate > 0){
-      toast(importate+' fatture importate nel registro!');
-    } else {
-      toast('Tutto aggiornato, nessuna nuova fattura');
-    }
   } catch(e){
     document.getElementById('gestLoader').style.display='none';
     gestSetStatus(false,'Errore: '+e.message);
@@ -2922,12 +2899,7 @@ async function gestScarica(){
 function gestRenderLista(lista){
   var container = document.getElementById('gestItems');
   var countEl   = document.getElementById('gestCount');
-  var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  var nuove = lista.filter(function(inv){
-    return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
-  });
-  var msg = nuove.length===0 ? 'Tutte le fatture sono nel registro' : nuove.length+' nuove fatture da importare';
-  countEl.innerHTML = '<div style="text-align:center;padding:14px 0"><div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">'+nuove.length+'</div><div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">'+msg+'</div><div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: '+lista.length+'</div></div>';
+  countEl.innerHTML = '<div style="text-align:center;padding:14px 0"><div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">'+lista.length+'</div><div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">Fatture nel gestionale</div></div>';
   container.innerHTML = '';
 
   lista.forEach(function(inv, idx){
@@ -2935,36 +2907,27 @@ function gestRenderLista(lista){
     var numero   = inv.invoice_number||inv.numero||'';
     var dataDoc  = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
     var totale   = parseFloat(inv.total_amount||0);
-    var impon    = parseFloat(inv.taxable_amount||0);
-    var ivaAmt   = parseFloat(inv.vat_amount||0);
-    var ivaRate  = inv.vat_rate||'';
     var tipoDoc  = inv.document_type||'';
     var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
-    var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('assegno')>=0?'Assegno':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'\u2014';
+    var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'';
     var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
-    var presente = esistenti.has(numero.toString().trim());
-    var ddtTag   = tipoDoc==='TD24'?'<span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px">DDT</span>':'';
+    var ddtTag   = tipoDoc==='TD24'?' <span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DDT</span>':'';
     var statoTag = pagato
       ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">PAGATA</span>'
       :'<span style="background:var(--red-light);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">DA PAGARE</span>';
-    var statusTag = presente
-      ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:4px">\u2713 Importata</span>'
-      :'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:4px">NUOVA</span>';
 
-    // Breve anteprima articoli (max 2 righe)
+    // Anteprima articoli (1 riga)
     var descr = inv.descrizione||'';
     var preview = '';
     if(inv.linee && inv.linee.length){
-      preview = inv.linee.slice(0,2).map(function(l){return (l.descrizione||'').split('|')[0].trim().slice(0,40);}).join(', ');
-      if(inv.linee.length>2) preview += '... (+' + (inv.linee.length-2) + ')';
+      preview = inv.linee.length+' articoli: '+inv.linee.slice(0,2).map(function(l){return (l.descrizione||'').split('|')[0].trim().slice(0,30);}).join(', ');
     } else if(descr){
-      preview = descr.split(';').slice(0,2).map(function(s){return s.trim().slice(0,40);}).join(', ');
-      if(descr.split(';').length>2) preview += '...';
+      preview = descr.slice(0,80);
     }
 
     var card = document.createElement('div');
-    card.style.cssText='background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .1s'+(presente?';opacity:.6':'');
-    card.setAttribute('data-gestview', idx);
+    card.style.cssText='background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer';
+    card.setAttribute('data-idx', idx);
     card.innerHTML=
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
         '<div style="flex:1;min-width:0">'+
@@ -2975,70 +2938,28 @@ function gestRenderLista(lista){
           '<div style="font-size:18px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
         '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+statoTag+statusTag+'<span style="font-size:11px;color:var(--ink3)">\u2022 '+pgLabel+'</span></div>'+
+      '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+
+        statoTag+
+        (pgLabel?'<span style="font-size:11px;color:var(--ink3)">\u2022 '+pgLabel+'</span>':'')+
+      '</div>'+
       (preview?'<div style="font-size:11px;color:var(--ink3);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\ud83d\udce6 '+gestEsc(preview)+'</div>':'')+
-      '<div style="text-align:right;margin-top:4px;font-size:11px;color:var(--blue);font-weight:500">Tocca per dettaglio \u203a</div>';
+      '<div style="text-align:right;margin-top:4px;font-size:11px;color:var(--blue);font-weight:500">Dettaglio \u203a</div>';
     container.appendChild(card);
   });
 
-  // Click su card → apre dettaglio fattura
+  // Click su card apre dettaglio
   container.onclick = function(e){
-    var card = e.target.closest('[data-gestview]');
-    if(card) gestApriDettaglio(parseInt(card.getAttribute('data-gestview')));
+    var card = e.target.closest('[data-idx]');
+    if(card) gestApriDettaglio(parseInt(card.getAttribute('data-idx')));
   };
-
-  if(nuove.length>0){
-    document.getElementById('gestBtnTutto').style.display='block';
-    document.getElementById('gestBtnTutto').textContent='\ud83d\udce5 Importa tutte le '+nuove.length+' nuove';
-  }
   document.getElementById('gestRis').style.display='block';
 }
 
-function gestImportaUna(idx){
-  const inv = _gestFatture[idx];
-  if(!inv) return;
-  const f = gestConverti(inv);
-  fatture.unshift(f);
-  saveFatture();
-  renderLista();
-  toast('Importata: '+f.fornitore);
-  gestRenderLista(_gestFatture);
-}
+function gestImportaUna(idx){ }
 
-function gestImportaTutto(){
-  const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  const nuove = _gestFatture.filter(function(inv){return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());});
-  nuove.forEach(function(inv){fatture.unshift(gestConverti(inv));});
-  saveFatture();
-  renderLista();
-  toast('Importate '+nuove.length+' fatture');
-  gestRenderLista(_gestFatture);
-}
+function gestImportaTutto(){ }
 
-function gestConverti(inv){
-  var nome    = inv.supplier_name||inv.cedente_denominazione||'';
-  var numero  = inv.invoice_number||inv.numero||'';
-  var data    = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
-  var totale  = parseFloat(inv.total_amount||0);
-  var scad    = (inv.due_date||'').toString().slice(0,10);
-  var pagato  = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
-  var pgRaw   = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
-  var pag     = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'bonifico';
-  return {
-    id:        'gest_'+(inv.id||Date.now()+'_'+Math.random().toString(36).slice(2,6)),
-    tipo:      inv.document_type==='TD24'?'ddt':'fattura',
-    fornitore: nome,
-    numero:    numero,
-    data:      data,
-    importo:   totale,
-    scadenza:  scad,
-    stato:     pagato?'pagata':'da_pagare',
-    pagamento: pag,
-    bonIban:   inv.iban||'',
-    note:      (inv.descrizione||'').slice(0,120)||'Importata da gestionale SDI',
-    ts:        Date.now()
-  };
-}
+function gestConverti(inv){ return inv; }
 
 
 function gestApriDettaglio(idx){
@@ -3046,6 +2967,7 @@ function gestApriDettaglio(idx){
   if(!inv) return;
   var nome     = inv.supplier_name||inv.cedente_denominazione||'\u2014';
   var piva     = inv.supplier_vat||'';
+  var cf       = inv.supplier_cf||'';
   var numero   = inv.invoice_number||inv.numero||'';
   var dataDoc  = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
   var totale   = parseFloat(inv.total_amount||0);
@@ -3059,45 +2981,39 @@ function gestApriDettaglio(idx){
   var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
   var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'\u2014';
   var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
-  var statoTag = pagato?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">PAGATA</span>':'<span style="background:var(--red-light);color:var(--red);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">DA PAGARE</span>';
+  var statoTag = pagato?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:6px;padding:4px 12px;font-size:13px;font-weight:700">PAGATA</span>':'<span style="background:var(--red-light);color:var(--red);border-radius:6px;padding:4px 12px;font-size:13px;font-weight:700">DA PAGARE</span>';
   var tipoLabel = tipoDoc==='TD24'?'DDT (differita)':tipoDoc==='TD01'?'Fattura':'Doc. '+tipoDoc;
 
-  // Articoli
+  // Articoli dettagliati
   var artHtml = '';
   if(inv.linee && inv.linee.length){
-    artHtml='<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Articoli ('+inv.linee.length+')</div>';
+    artHtml='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Articoli ('+inv.linee.length+')</div>';
     inv.linee.forEach(function(l,i){
       var d=(l.descrizione||'').split('|')[0].trim();
       var qty=l.quantita?('x'+l.quantita+' '):'';
-      var pu=l.prezzo_unitario?('\u20ac'+parseFloat(l.prezzo_unitario).toFixed(2)+'/u'):'';
+      var um=l.unita_misura?(l.unita_misura+' '):'';
+      var pu=l.prezzo_unitario?('\u20ac'+parseFloat(l.prezzo_unitario).toFixed(3)+'/u '):'';
       var pt=l.prezzo_totale?parseFloat(l.prezzo_totale).toLocaleString('it-IT',{style:'currency',currency:'EUR'}):'';
-      var ali=l.aliquota_iva!=null?(' IVA '+l.aliquota_iva+'%'):'';
-      artHtml+='<div style="padding:8px 10px;background:'+(i%2===0?'var(--surface2)':'var(--surface)')+';border-radius:6px;margin-bottom:4px;font-size:13px">'+
-        '<div style="font-weight:600">'+gestEsc(d)+'</div>'+
-        '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:12px;color:var(--ink2)">'+
-          '<span>'+qty+pu+ali+'</span>'+
-          '<span style="font-weight:700">'+pt+'</span>'+
+      var ali=l.aliquota_iva!=null?('IVA '+l.aliquota_iva+'%'):'';
+      artHtml+='<div style="padding:10px 12px;background:'+(i%2===0?'var(--surface2)':'var(--surface)')+';border-radius:8px;margin-bottom:4px">'+
+        '<div style="font-size:13px;font-weight:600">'+gestEsc(d)+'</div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--ink2)">'+
+          '<span>'+qty+um+pu+ali+'</span>'+
+          '<span style="font-weight:700;font-size:14px">'+pt+'</span>'+
         '</div>'+
       '</div>';
     });
     artHtml+='</div>';
   } else if(descr){
-    artHtml='<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Descrizione</div>';
+    artHtml='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Descrizione</div>';
     descr.split(';').forEach(function(s){
       s=s.trim();
-      if(s) artHtml+='<div style="padding:6px 10px;background:var(--surface2);border-radius:6px;margin-bottom:3px;font-size:13px">\u2022 '+gestEsc(s)+'</div>';
+      if(s) artHtml+='<div style="padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:13px">\u2022 '+gestEsc(s)+'</div>';
     });
     artHtml+='</div>';
   }
 
-  // Controlla se già importata
-  var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  var presente = esistenti.has(numero.toString().trim());
-  var btnHtml = presente
-    ?'<div style="text-align:center;padding:12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:14px;color:#1a7a3a;font-weight:600">\u2713 Già nel registro</div>'
-    :'<button class="btn btn-p" style="width:100%;padding:13px;font-size:15px" onclick="gestImportaEChiudi('+idx+')">\ud83d\udce5 Importa nel registro</button>';
-
-  // Modal
+  // Crea/aggiorna modal
   var mo = document.getElementById('gestDetailMo');
   if(!mo){
     mo = document.createElement('div');
@@ -3105,54 +3021,35 @@ function gestApriDettaglio(idx){
     mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
     mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto"></div>';
     document.body.appendChild(mo);
-    mo.addEventListener('click', function(e){if(e.target===mo){mo.style.display='none';}});
+    mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
   }
-  var sheet = document.getElementById('gestDetailSheet');
-  sheet.innerHTML =
+  document.getElementById('gestDetailSheet').innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)">'+
       '<h3 style="font-size:18px;font-weight:700">Dettaglio Fattura</h3>'+
       '<button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:var(--surface2);border:none;border-radius:99px;width:32px;height:32px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3)">\u00d7</button>'+
     '</div>'+
     '<div style="padding:16px 20px 40px">'+
-      // Fornitore
-      '<div style="font-size:20px;font-weight:800;margin-bottom:2px">'+gestEsc(nome)+'</div>'+
-      (piva?'<div style="font-size:12px;color:var(--ink3)">P.IVA '+gestEsc(piva)+'</div>':'')+
-      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+statoTag+'<span style="font-size:12px;color:var(--ink2);padding:3px 0">\u2022 '+tipoLabel+' \u2022 '+pgLabel+'</span></div>'+
-      // Importi
+      '<div style="font-size:20px;font-weight:800">'+gestEsc(nome)+'</div>'+
+      (piva?'<div style="font-size:12px;color:var(--ink3);margin-top:2px">P.IVA '+gestEsc(piva)+(cf&&cf!==piva?' \u2014 CF '+gestEsc(cf):'')+'</div>':'')+
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+statoTag+'<span style="font-size:12px;color:var(--ink2);padding:4px 0">\u2022 '+tipoLabel+' \u2022 '+pgLabel+'</span></div>'+
       '<div style="margin-top:16px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
           '<span style="font-size:13px;color:var(--ink3);font-weight:600">TOTALE</span>'+
-          '<span style="font-size:26px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
+          '<span style="font-size:28px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
         '</div>'+
-        '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px">'+
-          '<span style="color:var(--ink3)">Imponibile</span><span style="font-weight:600">\u20ac '+impon.toFixed(2)+'</span>'+
-        '</div>'+
-        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:13px">'+
-          '<span style="color:var(--ink3)">IVA'+(ivaRate?' ('+ivaRate+'%)':'')+'</span><span style="font-weight:600">\u20ac '+ivaAmt.toFixed(2)+'</span>'+
-        '</div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span style="color:var(--ink3)">Imponibile</span><span style="font-weight:600">\u20ac '+impon.toFixed(2)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:13px"><span style="color:var(--ink3)">IVA'+(ivaRate?' ('+ivaRate+'%)':'')+'</span><span style="font-weight:600">\u20ac '+ivaAmt.toFixed(2)+'</span></div>'+
       '</div>'+
-      // Info
       '<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
         '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">N\u00b0 Documento</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+gestEsc(numero)+'</div></div>'+
         '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Data</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+dataDoc+'</div></div>'+
         (scad?'<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Scadenza</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+scad+'</div></div>':'')+
         (iban?'<div style="background:var(--surface);border-radius:8px;padding:10px;grid-column:span 2"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">IBAN</div><div style="font-size:12px;font-weight:500;margin-top:2px;word-break:break-all">'+gestEsc(iban)+'</div></div>':'')+
       '</div>'+
-      // Articoli
       artHtml+
-      // Bottone importa
-      '<div style="margin-top:18px">'+btnHtml+'</div>'+
     '</div>';
   mo.style.display='flex';
-  sheet.style.animation='slideUp .3s cubic-bezier(.32,.72,0,1)';
-}
-
-function gestImportaEChiudi(idx){
-  gestImportaUna(idx);
-  // Aggiorna la lista per mostrare lo stato "Importata"
-  if(_gestFatture && _gestFatture.length) gestRenderLista(_gestFatture);
-  document.getElementById('gestDetailMo').style.display='none';
-  toast('Fattura importata nel registro!');
+  document.getElementById('gestDetailSheet').style.animation='slideUp .3s cubic-bezier(.32,.72,0,1)';
 }
 
 function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -3162,45 +3059,35 @@ function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
   if(el && !el.value) el.value = new Date().getFullYear();
 })();
 
-// ── AUTO-SYNC: controlla nuove fatture all'avvio ──
-(function autoSyncGest(){
-  setTimeout(function(){
-    var anno = new Date().getFullYear();
-    fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
-      .then(function(r){return r.ok?r.json():Promise.reject('HTTP '+r.status);})
-      .then(function(data){
-        var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
-        if(!lista.length) return;
-        var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-        var nuove = lista.filter(function(inv){return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());});
-        if(nuove.length > 0){
-          // Mostra banner alert nella dashboard
-          var banner = document.getElementById('gestAutoAlert');
-          if(!banner){
-            banner = document.createElement('div');
-            banner.id = 'gestAutoAlert';
-            banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);animation:fadeIn .4s ease';
-            banner.onclick = function(){
-              // Apri tab riepilogo e sezione gestionale
-              switchTab('riep');
-              setTimeout(function(){
-                var rc = document.getElementById('rbody-gest');
-                if(rc && !rc.classList.contains('open')) toggleRCard('gest');
-                gestScarica();
-              }, 300);
-            };
-            // Inserisci dopo l'header
-            var header = document.querySelector('.ios-header');
-            if(header && header.nextSibling) header.parentNode.insertBefore(banner, header.nextSibling);
-            else document.body.prepend(banner);
-          }
-          banner.innerHTML = '<div style="font-size:28px">'+String.fromCodePoint(0x1F4E8)+'</div><div><div style="font-size:15px;font-weight:700">'+nuove.length+' nuove fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per vedere e importare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
-          banner.style.display = 'flex';
-        }
-      })
-      .catch(function(e){console.log('Auto-sync:',e);});
-  }, 2000); // 2 sec dopo il caricamento
-})();
+// Auto-carica fatture all'avvio (dopo 2 sec)
+setTimeout(function(){
+  var anno = new Date().getFullYear();
+  fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data) return;
+      var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+      if(!lista.length) return;
+      _gestFatture = lista;
+      // Mostra banner in tutte le tab
+      var banner = document.createElement('div');
+      banner.id = 'gestBanner';
+      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3)';
+      banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
+      banner.onclick = function(){
+        switchTab('riep');
+        setTimeout(function(){
+          var rc = document.getElementById('rbody-gest');
+          if(rc && !rc.classList.contains('open')) toggleRCard('gest');
+          document.getElementById('gestAnno').value = anno;
+          gestScarica();
+        }, 300);
+      };
+      var header = document.querySelector('.ios-header');
+      if(header && header.nextSibling) header.parentNode.insertBefore(banner, header.nextSibling);
+    })
+    .catch(function(){});
+}, 2000);
 
 init();
 </script>

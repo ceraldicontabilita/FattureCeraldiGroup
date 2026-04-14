@@ -222,6 +222,41 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-confirm-btns button{flex:1;padding:15px;border:none;border-radius:var(--radius-sm);font-family:'Inter',-apple-system,sans-serif;font-size:16px;font-weight:600;cursor:pointer}
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
+
+/* ── RESPONSIVE MODAL ── */
+.edit-mo.on, #gestDetailMo[style*="flex"] {
+  align-items: center !important;
+  padding: 16px !important;
+}
+#gestDetailSheet {
+  border-radius: 20px !important;
+  max-height: 88vh !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25) !important;
+  margin: auto !important;
+}
+/* ── RESPONSIVE LAYOUT ── */
+@media (max-width: 500px) {
+  .ios-header { padding: 48px 16px 10px; }
+  .view { padding: 12px; }
+  .fi { padding: 12px 14px; }
+  .fi-nome { font-size: 14px; }
+  .fi-imp { font-size: 16px; }
+  .fi-actions { gap: 4px; }
+  .fi-act-btn { font-size: 12px; padding: 6px; }
+  .tot-grid { gap: 8px; }
+  .tot-card { padding: 14px; }
+  .tv { font-size: 20px; }
+  .tab-bar { padding: 6px 0 16px; }
+  .tab-lbl { font-size: 9px; }
+  .tab-ico { font-size: 20px; }
+}
+@media (min-width: 501px) and (max-width: 768px) {
+  body { max-width: 600px; margin: 0 auto; }
+}
+@media (min-width: 769px) {
+  body { max-width: 500px; margin: 0 auto; }
+  .tab-bar { max-width: 500px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
+}
 </style>
 
 <body>
@@ -1495,34 +1530,35 @@ function apriDettaglioRegistro(fId){
   var f = fatture.find(function(x){return x.id==fId;});
   if(!f) return;
   var num = (f.numero||'').toString().trim();
+  if(!num){ openEdit(fId); return; }
   
-  // Se le fatture SDI sono già caricate, cerca direttamente
+  // Se le fatture SDI sono già in memoria
   if(_gestFatture && _gestFatture.length){
     for(var i=0; i<_gestFatture.length; i++){
-      var inv = _gestFatture[i];
-      if((inv.invoice_number||inv.numero||'').toString().trim() === num){
+      if(((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim())===num){
         gestApriDettaglio(i);
         return;
       }
     }
+    // Numero non trovato in SDI — apri modifica
+    openEdit(fId);
+    return;
   }
   
-  // Fatture SDI non caricate o non trovata — scarica in background
-  toast('Caricamento dettaglio...');
-  var anno = f.data ? f.data.slice(0,4) : new Date().getFullYear();
+  // Scarica fatture SDI (una sola volta, poi restano in memoria)
+  toast('Caricamento...');
+  var anno = f.data ? f.data.slice(0,4) : new Date().getFullYear().toString();
   fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
     .then(function(r){return r.ok?r.json():null;})
     .then(function(data){
       if(!data){ openEdit(fId); return; }
-      var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
-      _gestFatture = lista;
-      for(var i=0; i<lista.length; i++){
-        if((lista[i].invoice_number||lista[i].numero||'').toString().trim()===num){
+      _gestFatture = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+      for(var i=0; i<_gestFatture.length; i++){
+        if(((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim())===num){
           gestApriDettaglio(i);
           return;
         }
       }
-      // Non trovata come XML — apri modifica standard
       openEdit(fId);
     })
     .catch(function(){ openEdit(fId); });
@@ -1581,6 +1617,14 @@ function renderLista(){
     const okF=!lForn||f.fornitore===lForn;
     const imp=f.importo||0;
     return okT&&okS&&okDal&&okAl&&okF&&imp>=lMin&&imp<=lMax;
+  });
+  // Dedup registro
+  var _seenR={};
+  filt=filt.filter(function(f){
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(_seenR[k]) return false;
+    _seenR[k]=true;
+    return true;
   });
   const cnt=document.getElementById('listaCount');
   if(cnt) cnt.textContent=filt.length+' fattura'+(filt.length!==1?'e':'');
@@ -2604,6 +2648,14 @@ function renderScadenzario(){
     const db=b.scadenza?new Date(b.scadenza+'T12:00:00'):new Date('9999-12-31');
     return da-db;
   });
+  // Dedup: rimuovi fatture con stesso numero+fornitore
+  var _seen={};
+  lista=lista.filter(function(f){
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(_seen[k]) return false;
+    _seen[k]=true;
+    return true;
+  });
   const cnt=document.getElementById('scadCount');
   if(cnt) cnt.textContent=lista.length+' fattura'+(lista.length!==1?'e':'');
   const el=document.getElementById('scadEl');
@@ -3278,7 +3330,7 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto';
     mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)"></div>';
     document.body.appendChild(mo);
     mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});

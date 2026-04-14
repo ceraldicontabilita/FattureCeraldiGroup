@@ -886,8 +886,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
     <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO ASSEGNI</div>
     <div class="field"><label>Primo numero assegno</label>
-      <input type="tel" id="assPrimo" placeholder="1111111111-12" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" maxlength="14" oninput="formatAssegno(this)" style="font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700">
-      <div style="font-size:11px;color:var(--ink3);margin-top:3px">Formato: 11 cifre + trattino + 2 cifre (es. 12345678901-01)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="tel" id="assPrimo" placeholder="1111111111-12" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700">
+        <button onclick="scanAssegno()" style="width:52px;height:52px;border:1.5px dashed var(--sep);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0" title="Scansiona assegno">&#128247;</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">Digita o &#128247; inquadra il QR/numero dell'assegno</div>
     </div>
     <button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px">&#128221; Genera 10 assegni</button>
   </div>
@@ -1811,7 +1814,9 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
-  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+</head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
 }

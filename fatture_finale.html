@@ -3735,7 +3735,13 @@ async function caricaAssegniSalvati(){
         html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">N&#176; Fattura</div>';
         html += '<input type="text" id="assF_'+r.id+'" placeholder="001/2026" inputmode="text" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box"></div>';
         html += '</div>';
-        html += '<button class="btn btn-p" style="padding:10px;font-size:13px" onclick="compilaAssegno('+r.id+')">&#128190; Salva assegno</button>';
+        html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">';
+      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assInc_'+r.id+'" style="width:18px;height:18px;accent-color:var(--green)"> Incassato</label>';
+      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assDis_'+r.id+'" style="width:18px;height:18px;accent-color:var(--red)"> Distrutto</label>';
+      html += '<button onclick="event.stopPropagation();apriDataIncasso('+r.id+')" style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1.5px solid var(--sep);border-radius:8px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" id="assDataBtn_'+r.id+'">&#128197; Data</button>';
+      html += '<input type="hidden" id="assData_'+r.id+'" value="">';
+      html += '</div>';
+      html += '<button class="btn btn-p" style="padding:10px;font-size:13px" onclick="compilaAssegno('+r.id+')">&#128190; Salva assegno</button>';
         html += '</div>';
       });
     }
@@ -3746,10 +3752,29 @@ async function caricaAssegniSalvati(){
     if(compilati.length > 0 && elSalvati){
       var htmlS = '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">ASSEGNI COMPILATI ('+compilati.length+')</div>';
       compilati.forEach(function(r){
-        htmlS += '<div style="background:var(--green-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
+        var nota = r.note||'';
+        var isIncassato = nota.indexOf('[INCASSATO]') >= 0;
+        var isDistrutto = nota.indexOf('[DISTRUTTO]') >= 0;
+        var dataMatch = nota.match(/\[DATA:([^\]]+)\]/);
+        var dataIncasso = dataMatch ? dataMatch[1] : '';
+        var bgColor = isDistrutto ? 'var(--red-light)' : isIncassato ? '#E8F5E9' : 'var(--green-light)';
+        var statusBadge = isDistrutto ? '<span style="background:var(--red);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DISTRUTTO</span>' 
+          : isIncassato ? '<span style="background:var(--green);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">INCASSATO</span>' : '';
+        var dataBadge = dataIncasso ? '<span style="font-size:10px;color:var(--ink3)">&#128197; '+dataIncasso+'</span>' : '';
+        
+        htmlS += '<div style="background:'+bgColor+';border-radius:var(--radius);padding:12px 14px;margin-bottom:6px">';
+        htmlS += '<div style="display:flex;justify-content:space-between;align-items:center">';
         htmlS += '<div><div style="font-size:13px;font-weight:700">'+esc(r.fornitore||'')+'</div>';
         htmlS += '<div style="font-size:11px;color:var(--ink3)">Ass. '+esc(r.assegno||'?')+' &#183; Fatt. '+esc(r.numero||'\u2014')+'</div></div>';
         htmlS += '<div style="font-size:15px;font-weight:700">&#8364; '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+        htmlS += '</div>';
+        htmlS += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'+statusBadge+dataBadge;
+        if(!isIncassato && !isDistrutto){
+          htmlS += '<button onclick="segnaIncassato('+r.id+')" style="padding:4px 10px;border:1px solid var(--green);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:#1a7a3a;cursor:pointer;font-family:inherit">&#10003; Incassato</button>';
+          htmlS += '<button onclick="segnaDistrutto('+r.id+')" style="padding:4px 10px;border:1px solid var(--red);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit">&#10005; Distrutto</button>';
+          htmlS += '<button onclick="apriDataIncasso('+r.id+')" style="padding:4px 10px;border:1px solid var(--sep);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit">&#128197; Data</button>';
+        }
+        htmlS += '</div>';
         htmlS += '</div>';
       });
       elSalvati.innerHTML = htmlS;
@@ -3758,6 +3783,85 @@ async function caricaAssegniSalvati(){
   } catch(e){
     el.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
   }
+}
+
+
+// ── Gestione stato assegni: Incassato, Distrutto, Data incasso ──
+function segnaIncassato(id){
+  aggiornaStatoAssegno(id, '[INCASSATO]');
+}
+
+function segnaDistrutto(id){
+  aggiornaStatoAssegno(id, '[DISTRUTTO]');
+}
+
+async function aggiornaStatoAssegno(id, tag){
+  try {
+    // Leggi nota attuale
+    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
+    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
+    // Rimuovi vecchi tag
+    nota = nota.replace('[INCASSATO]','').replace('[DISTRUTTO]','').trim();
+    nota = tag + ' ' + nota;
+    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim()})});
+    // Aggiorna locale
+    var f = fatture.find(function(x){return x.id==id;});
+    if(f) f.note = nota.trim();
+    save(fatture);
+    toast(tag === '[INCASSATO]' ? 'Assegno incassato!' : 'Assegno distrutto!');
+    caricaAssegniSalvati();
+  } catch(e){ toast('Errore: '+e.message); }
+}
+
+function apriDataIncasso(id){
+  // Crea mini modal con input data
+  var mo = document.getElementById('dataIncassoMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'dataIncassoMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px';
+    mo.innerHTML = 
+      '<div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">'+
+        '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Data incasso</div>'+
+        '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px">Quando si incasserà questo assegno?</div>'+
+        '<input type="date" id="dataIncassoInput" style="width:100%;padding:14px;border:1.5px solid var(--sep);border-radius:12px;font-size:18px;font-family:inherit;text-align:center;box-sizing:border-box;margin-bottom:12px">'+
+        '<div style="display:flex;gap:8px">'+
+          '<button onclick="document.getElementById(\'dataIncassoMo\').style.display=\'none\'" style="flex:1;padding:12px;border:1.5px solid var(--sep);border-radius:12px;background:var(--surface);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Annulla</button>'+
+          '<button onclick="salvaDataIncasso()" style="flex:2;padding:12px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Salva</button>'+
+        '</div>'+
+      '</div>';
+    mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
+    document.body.appendChild(mo);
+  }
+  window._dataIncassoId = id;
+  document.getElementById('dataIncassoInput').value = '';
+  mo.style.display = 'flex';
+}
+
+async function salvaDataIncasso(){
+  var id = window._dataIncassoId;
+  var data = document.getElementById('dataIncassoInput').value;
+  if(!data){ toast('Seleziona una data'); return; }
+  
+  try {
+    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
+    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
+    // Rimuovi vecchia data
+    nota = nota.replace(/\[DATA:[^\]]+\]/g, '').trim();
+    nota = '[DATA:'+data+'] ' + nota;
+    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim(), scadenza: data})});
+    var f = fatture.find(function(x){return x.id==id;});
+    if(f){ f.note = nota.trim(); f.scadenza = data; }
+    save(fatture);
+    document.getElementById('dataIncassoMo').style.display = 'none';
+    // Se è un assegno da compilare, aggiorna il bottone
+    var btn = document.getElementById('assDataBtn_'+id);
+    if(btn) btn.innerHTML = '&#128197; ' + data;
+    var hidden = document.getElementById('assData_'+id);
+    if(hidden) hidden.value = data;
+    toast('Data incasso salvata: '+data);
+    caricaAssegniSalvati();
+  } catch(e){ toast('Errore: '+e.message); }
 }
 
 async function compilaAssegno(id){
@@ -3780,7 +3884,17 @@ async function compilaAssegno(id){
       numero: numFattura,
       ass_int: beneficiario,
       stato: 'pagata',
-      note: 'Assegno compilato'
+      scadenza: (document.getElementById('assData_'+id)||{}).value||null,
+      note: (function(){
+        var n = 'Assegno compilato';
+        var incCb = document.getElementById('assInc_'+id);
+        var disCb = document.getElementById('assDis_'+id);
+        var dataVal = document.getElementById('assData_'+id);
+        if(incCb && incCb.checked) n = '[INCASSATO] ' + n;
+        if(disCb && disCb.checked) n = '[DISTRUTTO] ' + n;
+        if(dataVal && dataVal.value) n = '[DATA:'+dataVal.value+'] ' + n;
+        return n;
+      })()
     })});
     
     // Aggiorna locale

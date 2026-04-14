@@ -1148,7 +1148,7 @@ function goTab(tab,btn){
   if(viewEl) viewEl.classList.add('active');
   if(btn) btn.classList.add('active');
   if(tab==='lista') renderLista();
-  if(tab==='riepilogo') renderRiepilogo();
+  if(tab==='riepilogo'){ updRiep(); renderScadenzario(); renderFornChart(); checkBackup(); }
   if(tab==='scadenzario') renderScadenzario();
   if(tab==='assegni') caricaAssegniSalvati();
 }
@@ -1651,7 +1651,7 @@ function renderLista(){
     return true;
   });
   const cnt=document.getElementById('listaCount');
-  if(cnt) cnt.textContent=filt.length+' fattura'+(filt.length!==1?'e':'');
+  if(cnt) cnt.textContent=filt.length+' fattur'+(filt.length!==1?'e':'a');
   const el=document.getElementById('listaEl');
   if(!filt.length){el.innerHTML='<div class="empty"><div class="ei">&#128203;</div><p>Nessuna fattura trovata</p></div>';return;}
   const oggi2=new Date(); oggi2.setHours(0,0,0,0);
@@ -1802,7 +1802,7 @@ function updRiep(){
   document.getElementById('totB').textContent=fmt(sum('bonifico'));
   document.getElementById('totA').textContent=fmt(sum('assegno'));
   const n=rows.length;
-  document.getElementById('expCount').textContent=n+' fattura'+(n!==1?'e':'')+' selezionat'+(n!==1?'e':'a');
+  document.getElementById('expCount').textContent=n+' fattur'+(n!==1?'e':'a')+' selezionat'+(n!==1?'e':'a');
   // Aggiorna subtitle filtri
   const parts=[];
   if(periodo!=='tutti') parts.push({tutti:'Tutti',settimana:'Questa sett.',mese:'Questo mese',anno:'Quest\'anno',custom:'Personalizzato'}[periodo]||periodo);
@@ -2628,7 +2628,7 @@ function renderScadenzario(){
     return true;
   });
   const cnt=document.getElementById('scadCount');
-  if(cnt) cnt.textContent=lista.length+' fattura'+(lista.length!==1?'e':'');
+  if(cnt) cnt.textContent=lista.length+' fattur'+(lista.length!==1?'e':'a');
   const el=document.getElementById('scadEl');
   if(!lista.length){
     el.innerHTML='<div class="empty"><div class="ei">&#9989;</div><p>Nessuna fattura da mostrare</p></div>';
@@ -2658,6 +2658,7 @@ function renderScadenzario(){
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:'DM Serif Display',serif;font-size:18px">${fmt(f.importo)}</div>
           <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="event.stopPropagation();openEdit(${f.id})">&#9998; Modifica</button>
+          <button style="padding:6px 12px;border:1px solid var(--red);border-radius:8px;background:var(--red-light);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;

@@ -1144,11 +1144,13 @@ function salvaApiKey(){
 function goTab(tab,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('view-'+tab).classList.add('active');
+  var viewEl = document.getElementById('view-'+tab);
+  if(viewEl) viewEl.classList.add('active');
   if(btn) btn.classList.add('active');
   if(tab==='lista') renderLista();
   if(tab==='riepilogo') renderRiepilogo();
   if(tab==='scadenzario') renderScadenzario();
+  if(tab==='assegni') caricaAssegniSalvati();
 }
 
 // ── UPLOAD ──
@@ -1809,59 +1811,6 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
-  const ap=document.getElementById('anteprima');
-  if(!rows.length){ap.innerHTML='';return;}
-  ap.innerHTML='<p class="stitle-sm" style="margin-bottom:10px">Anteprima</p>'+
-    rows.slice(0,5).map(f=>{
-      const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}):'—';
-      const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
-      return `<div class="fi"><div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>
-        <div class="fi-body"><div class="fi-top"><div class="fi-nome">${esc(f.fornitore)}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
-        <div class="fi-meta">${df} &middot; ${f.pagamento}</div></div></div>`;
-    }).join('')+(rows.length>5?`<p style="text-align:center;font-size:12px;color:var(--ink3);padding:8px">...e altri ${rows.length-5}</p>`:'');
-}
-function renderRiepilogo(){aggiornaDL();updRiep();}
-
-// ── EXPORT (iOS-compatibile) ──
-function condividi(content, nome, type){
-  const blob=new Blob([content],{type});
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  // Web Share API (iOS 15+, migliore opzione)
-  if(isIOS&&navigator.canShare){
-    const file=new File([blob],nome,{type});
-    if(navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:nome})
-        .then(()=>toast('File condiviso!'))
-        .catch(e=>{if(e.name!=='AbortError') toast('Condivisione annullata');});
-      return;
-    }
-  }
-  // Desktop o Android
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=nome;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-const nomeF=ext=>'fatture_ceraldi_'+new Date().toISOString().split('T')[0]+'.'+ext;
-
-function esportaCSV(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo','Pagamento','N. Assegno','Note'];
-  const lines=rows.map(f=>[f.data||'',`"${(f.fornitore||'').replace(/"/g,'""')}"`,`"${(f.numero||'').replace(/"/g,'""')}"`,
-    (f.importo||0).toFixed(2).replace('.',','),f.pagamento||'',`"${(f.assegno||'').replace(/"/g,'""')}"`,`"${(f.note||'').replace(/"/g,'""')}"`]);
-  condividi('\ufeff'+[h.join(';'),...lines.map(r=>r.join(';'))].join('\n'), nomeF('csv'), 'text/csv;charset=utf-8');
-  toast('CSV pronto!');
-}
-function esportaExcel(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
-  const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
-  const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');

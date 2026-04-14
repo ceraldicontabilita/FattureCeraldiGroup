@@ -132,7 +132,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .add-rata-btn:active{border-color:var(--blue);color:var(--blue)}
 .edit-mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
 .edit-mo.on{display:flex}
-.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0;animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
+.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .edit-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)}
 .edit-sheet-hd h3{font-size:18px;font-weight:700}
@@ -224,18 +224,15 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-ok{background:var(--blue);color:#fff}
 
 /* ── RESPONSIVE MODAL ── */
-#gestDetailMo {
-  align-items: flex-start !important;
-  padding: 24px 12px !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
+.edit-mo.on, #gestDetailMo[style*="flex"] {
+  align-items: center !important;
+  padding: 16px !important;
 }
 #gestDetailSheet {
   border-radius: 20px !important;
-  max-height: none !important;
+  max-height: 88vh !important;
   box-shadow: 0 8px 32px rgba(0,0,0,.25) !important;
-  margin: auto 0 !important;
-  flex-shrink: 0 !important;
+  margin: auto !important;
 }
 /* ── RESPONSIVE LAYOUT ── */
 @media (max-width: 500px) {
@@ -260,9 +257,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   body { max-width: 500px; margin: 0 auto; }
   .tab-bar { max-width: 500px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
 }
-
-.tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.tab-item { min-width: 56px; flex-shrink: 0; }
 </style>
 
 <body>
@@ -297,7 +291,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- SCAN -->
-<div id="view-scan" class="view">
+<div id="view-scan" class="view active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -510,8 +504,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- LISTA -->
-<div id="view-lista" class="view active">
-  <div style="margin-bottom:12px"><button class="btn btn-p" onclick="gestSyncClick()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:14px;width:100%">&#128229; Scarica nuove fatture SDI</button></div>
+<div id="view-lista" class="view">
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
   </div>
@@ -882,66 +875,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- TAB BAR BOTTOM -->
-
-<!-- VIEW ASSEGNI -->
-<div class="view" id="view-assegni" style="padding:16px">
-  <p class="stitle">Registro Assegni</p>
-  
-  <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
-    <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO ASSEGNI</div>
-    <div class="field"><label>Primo numero assegno</label>
-      <input type="tel" id="assPrimo" placeholder="1111111111-12" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" maxlength="14" oninput="formatAssegno(this)" style="font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700">
-      <div style="font-size:11px;color:var(--ink3);margin-top:3px">Es: 0208770851-03 (il numero prima del trattino aumenta)</div>
-    </div>
-    <button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px">&#128221; Genera 10 assegni</button>
-  </div>
-
-  <div id="assegniLista"></div>
-  <div id="assegniSalvati" style="margin-top:16px"></div>
-</div>
-
-
-<!-- VIEW CORRISPETTIVI -->
-<div class="view" id="view-corrispettivi" style="padding:16px">
-  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p>
-  
-  <div style="display:flex;gap:8px;margin-bottom:12px">
-    <div style="flex:1">
-      <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Anno</label>
-      <input type="number" id="corrAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
-    </div>
-    <div style="flex:1;display:flex;align-items:flex-end">
-      <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica corrispettivi</button>
-    </div>
-  </div>
-  
-  
-  <div id="corrTotali" style="margin-bottom:14px"></div>
-  <div id="corrLista"></div>
-</div>
-
-
-<!-- VIEW IVA -->
-<div class="view" id="view-iva" style="padding:16px">
-  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p>
-  <p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98 — Versamento entro il 16 del mese successivo</p>
-  
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <div style="flex:1">
-      <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Anno</label>
-      <input type="number" id="ivaAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
-    </div>
-    <div style="flex:1;display:flex;align-items:flex-end">
-      <button class="btn btn-p" onclick="calcolaIVA()" style="width:100%;padding:10px;font-size:14px">Calcola IVA</button>
-    </div>
-  </div>
-  
-  <div id="ivaTotali"></div>
-  <div id="ivaMesi"></div>
-</div>
-
 <nav class="tab-bar">
-  <button class="tab-item active" onclick="goTab('lista',this)">
+  <button class="tab-item active" onclick="goTab('scan',this)">
+    <span class="tab-ico">&#128247;</span>
+    <span class="tab-lbl">Scansiona</span>
+  </button>
+  <button class="tab-item" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
   </button>
@@ -950,24 +889,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
-  <button class="tab-item" onclick="goTab('corrispettivi',this)">
-    <span class="tab-ico">&#128179;</span>
-    <span class="tab-lbl">Corrisp.</span>
-  </button>
-  <button class="tab-item" onclick="goTab('iva',this)">
-    <span class="tab-ico">&#128200;</span>
-    <span class="tab-lbl">IVA</span>
-  </button>
-  <button class="tab-item" onclick="goTab('assegni',this)">
-    <span class="tab-ico">&#128221;</span>
-    <span class="tab-lbl">Assegni</span>
-  </button>
+  <button class="tab-item" id="tab-sync" onclick="gestSyncClick();goTab('lista',this)" style="position:relative"><span class="tab-ico">&#128229;</span><span class="tab-lbl">Scarica</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
-    <span class="tab-ico">&#9881;</span>
-    <span class="tab-lbl">Altro</span>
+    <span class="tab-ico">&#128202;</span>
+    <span class="tab-lbl">Riepilogo</span>
   </button>
 </nav>
-
 
 <script>
 // ── SUPABASE CONFIG ──
@@ -1196,15 +1123,11 @@ function salvaApiKey(){
 function goTab(tab,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
-  var viewEl = document.getElementById('view-'+tab);
-  if(viewEl) viewEl.classList.add('active');
+  document.getElementById('view-'+tab).classList.add('active');
   if(btn) btn.classList.add('active');
   if(tab==='lista') renderLista();
-  if(tab==='riepilogo'){ updRiep(); renderScadenzario(); renderFornChart(); checkBackup(); }
+  if(tab==='riepilogo') renderRiepilogo();
   if(tab==='scadenzario') renderScadenzario();
-  if(tab==='assegni') caricaAssegniSalvati();
-  if(tab==='corrispettivi') caricaCorrispettivi();
-  if(tab==='iva') calcolaIVA();
 }
 
 // ── UPLOAD ──
@@ -1680,15 +1603,13 @@ function scattaFotoRegistro(fId){
 }
 
 function renderLista(){
-  try { aggiornaDL(); } catch(e) { console.warn('aggiornaDL err:', e); }
+  aggiornaDL();
   const s=(gv('searchInp')||'').toLowerCase();
   const lDal=gv('lDal')||'', lAl=gv('lAl')||'', lForn=gv('lForn')||'';
   const lMin=parseFloat((gv('lImpMin')||'').replace(',','.'))||0;
   const lMax=parseFloat((gv('lImpMax')||'').replace(',','.'))||Infinity;
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
   let filt=fatture.filter(f=>{
-    // Nascondi assegni vuoti dal registro (si vedono nel tab Assegni)
-    if(f.pagamento==='assegno' && (!f.fornitore || f.importo===0) && f.note && f.note.indexOf('Assegno da compilare')>=0) return false;
     const okT=filtroL==='tutti'||f.pagamento===filtroL;
     const okS=!s||f.fornitore.toLowerCase().includes(s)||(f.numero||'').toLowerCase().includes(s)||(f.note||'').toLowerCase().includes(s);
     const d=f.data?new Date(f.data+'T12:00:00'):null;
@@ -1707,7 +1628,7 @@ function renderLista(){
     return true;
   });
   const cnt=document.getElementById('listaCount');
-  if(cnt) cnt.textContent=filt.length+' fattur'+(filt.length!==1?'e':'a');
+  if(cnt) cnt.textContent=filt.length+' fattura'+(filt.length!==1?'e':'');
   const el=document.getElementById('listaEl');
   if(!filt.length){el.innerHTML='<div class="empty"><div class="ei">&#128203;</div><p>Nessuna fattura trovata</p></div>';return;}
   const oggi2=new Date(); oggi2.setHours(0,0,0,0);
@@ -1834,10 +1755,9 @@ function setPer(tipo,btn){
   updRiep();
 }
 function getFiltered(){
-  var _src=fatture.filter(function(f){return !(f.pagamento==='assegno'&&(!f.fornitore||f.importo===0));});
   const now=new Date(); now.setHours(23,59,59,999);
   const forn=gv('eForn')||'', pag=gv('ePag')||'';
-  return _src.filter(f=>{
+  return fatture.filter(f=>{
     const d=f.data?new Date(f.data+'T12:00:00'):null;
     let okP=true;
     if(periodo==='settimana'&&d){const lun=new Date(now);lun.setDate(now.getDate()-((now.getDay()+6)%7));lun.setHours(0,0,0,0);okP=d>=lun;}
@@ -1859,7 +1779,7 @@ function updRiep(){
   document.getElementById('totB').textContent=fmt(sum('bonifico'));
   document.getElementById('totA').textContent=fmt(sum('assegno'));
   const n=rows.length;
-  document.getElementById('expCount').textContent=n+' fattur'+(n!==1?'e':'a')+' selezionat'+(n!==1?'e':'a');
+  document.getElementById('expCount').textContent=n+' fattura'+(n!==1?'e':'')+' selezionat'+(n!==1?'e':'a');
   // Aggiorna subtitle filtri
   const parts=[];
   if(periodo!=='tutti') parts.push({tutti:'Tutti',settimana:'Questa sett.',mese:'Questo mese',anno:'Quest\'anno',custom:'Personalizzato'}[periodo]||periodo);
@@ -1868,6 +1788,59 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
+  const ap=document.getElementById('anteprima');
+  if(!rows.length){ap.innerHTML='';return;}
+  ap.innerHTML='<p class="stitle-sm" style="margin-bottom:10px">Anteprima</p>'+
+    rows.slice(0,5).map(f=>{
+      const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}):'—';
+      const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
+      return `<div class="fi"><div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>
+        <div class="fi-body"><div class="fi-top"><div class="fi-nome">${esc(f.fornitore)}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
+        <div class="fi-meta">${df} &middot; ${f.pagamento}</div></div></div>`;
+    }).join('')+(rows.length>5?`<p style="text-align:center;font-size:12px;color:var(--ink3);padding:8px">...e altri ${rows.length-5}</p>`:'');
+}
+function renderRiepilogo(){aggiornaDL();updRiep();}
+
+// ── EXPORT (iOS-compatibile) ──
+function condividi(content, nome, type){
+  const blob=new Blob([content],{type});
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  // Web Share API (iOS 15+, migliore opzione)
+  if(isIOS&&navigator.canShare){
+    const file=new File([blob],nome,{type});
+    if(navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:nome})
+        .then(()=>toast('File condiviso!'))
+        .catch(e=>{if(e.name!=='AbortError') toast('Condivisione annullata');});
+      return;
+    }
+  }
+  // Desktop o Android
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=nome;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+const nomeF=ext=>'fatture_ceraldi_'+new Date().toISOString().split('T')[0]+'.'+ext;
+
+function esportaCSV(){
+  const rows=getFiltered();
+  if(!rows.length){toast('Nessuna fattura');return;}
+  const h=['Data','Fornitore','N. Fattura','Importo','Pagamento','N. Assegno','Note'];
+  const lines=rows.map(f=>[f.data||'',`"${(f.fornitore||'').replace(/"/g,'""')}"`,`"${(f.numero||'').replace(/"/g,'""')}"`,
+    (f.importo||0).toFixed(2).replace('.',','),f.pagamento||'',`"${(f.assegno||'').replace(/"/g,'""')}"`,`"${(f.note||'').replace(/"/g,'""')}"`]);
+  condividi('\ufeff'+[h.join(';'),...lines.map(r=>r.join(';'))].join('\n'), nomeF('csv'), 'text/csv;charset=utf-8');
+  toast('CSV pronto!');
+}
+function esportaExcel(){
+  const rows=getFiltered();
+  if(!rows.length){toast('Nessuna fattura');return;}
+  const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
+  const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
+  const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
@@ -2611,22 +2584,30 @@ function condividiRegistrazione(id){
 
 // ── ALERT BANNER SCADUTE + BADGE TAB ──
 function aggiornaAlertBanner(){
-  // Badge scadenze nel tab bar (numeretto rosso)
-  var oggi=new Date(); oggi.setHours(0,0,0,0);
-  var _seenB={};
-  var scadute=fatture.filter(function(f){
-    if(f.stato==='pagata') return false;
+  const oggi2=new Date(); oggi2.setHours(0,0,0,0);
+  const scadute=fatture.filter(f=>{
+    const st=f.stato||'pagata';
+    if(st==='pagata') return false;
     if(!f.scadenza) return false;
-    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
-    if(_seenB[k]) return false;
-    _seenB[k]=true;
-    return new Date(f.scadenza+'T12:00:00')<oggi;
+    return new Date(f.scadenza+'T12:00:00')<oggi2;
   });
-  var badge=document.getElementById('scadBadge');
+  const incomplete=fatture.filter(f=>f.incompleta&&f.incompleta.length>0);
+  const banner=document.getElementById('alertBanner');
+  const txt=document.getElementById('alertBannerTxt');
+  if(!banner) return;
+  if(scadute.length>0){
+    banner.classList.add('on');
+    txt.textContent=scadute.length+' fattura'+(scadute.length>1?'e':'')+(scadute.length>1?' scadute':' scaduta')+' non pagata'+(scadute.length>1?'e':'');
+  } else {
+    banner.classList.remove('on');
+  }
+  // Badge rosso sul tab Scadenze: mostra scadute + incomplete
+  const totBadge=scadute.length+incomplete.length;
+  const badge=document.getElementById('scadBadge');
   if(badge){
-    if(scadute.length>0){
-      badge.style.display='flex';
-      badge.textContent=scadute.length;
+    if(totBadge>0){
+      badge.textContent=totBadge>99?'99+':totBadge;
+      badge.style.display='inline-flex';
     } else {
       badge.style.display='none';
     }
@@ -2677,7 +2658,7 @@ function renderScadenzario(){
     return true;
   });
   const cnt=document.getElementById('scadCount');
-  if(cnt) cnt.textContent=lista.length+' fattur'+(lista.length!==1?'e':'a');
+  if(cnt) cnt.textContent=lista.length+' fattura'+(lista.length!==1?'e':'');
   const el=document.getElementById('scadEl');
   if(!lista.length){
     el.innerHTML='<div class="empty"><div class="ei">&#9989;</div><p>Nessuna fattura da mostrare</p></div>';
@@ -2707,7 +2688,6 @@ function renderScadenzario(){
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:'DM Serif Display',serif;font-size:18px">${fmt(f.importo)}</div>
           <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="event.stopPropagation();openEdit(${f.id})">&#9998; Modifica</button>
-          <button style="padding:6px 12px;border:1px solid var(--red);border-radius:8px;background:var(--red-light);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;
@@ -3130,7 +3110,6 @@ async function gestScarica(){
       save(fatture);
       renderLista();
       aggiornaAlertBanner();
-      riconciliaAssegni();
     }
 
     gestSetStatus(true, lista.length+' nel gestionale, '+importate+' nuove importate');
@@ -3352,8 +3331,8 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:24px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch';
-    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0"></div>';
+    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto';
+    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)"></div>';
     document.body.appendChild(mo);
     mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
   }
@@ -3672,736 +3651,15 @@ async function gestSyncClick(){
       var rec = {id:Date.now()+i, tipo:inv.document_type==='TD24'?'ddt':'fattura', fornitore:nomeF, numero:(inv.invoice_number||'').toString(), data:(inv.invoice_date||'').toString().slice(0,10)||null, importo:parseFloat(inv.total_amount||0), pagamento:pag, bon_iban:inv.iban||'', note:(inv.descrizione||'').slice(0,120), stato:pagato?'pagata':'da_pagare', scadenza:(inv.due_date||'').toString().slice(0,10)||null, parz_pagato:0, ts:Date.now()+i};
       try { await sbFetch('fatture',{method:'POST',body:JSON.stringify(rec)}); fatture.unshift(dbToApp(rec)); count++; } catch(e){}
     }
-    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); riconciliaAssegni(); }
+    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); }
     toast(count>0 ? count+' nuove fatture importate!' : 'Tutto aggiornato ('+lista.length+' fatture)');
     // Vai al registro
     goTab('lista',null);
   } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
 }
 
-// ── REGISTRO ASSEGNI ──
-// Usa la tabella fatture di Supabase con pagamento='assegno'
-// Il campo 'assegno' contiene il numero assegno
-// Il campo 'ass_int' contiene il beneficiario
-
-
-function formatAssegno(el){
-  var v = el.value.replace(/[^0-9-]/g, '');
-  var digits = v.replace(/-/g, '');
-  if(digits.length > 12) digits = digits.slice(0, 12);
-  if(digits.length > 10){
-    v = digits.slice(0, 10) + '-' + digits.slice(10);
-  } else { v = digits; }
-  el.value = v;
-}
-
-async function generaAssegni(){
-  var primo = (document.getElementById('assPrimo').value||'').trim();
-  if(!primo || primo.indexOf('-') < 0){ toast('Inserisci numero assegno (es. 1234567890-01)'); return; }
-  
-  var parts = primo.split('-');
-  var prefixStr = parts[0];
-  var suffix = parts[1];
-  var prefixNum = parseInt(prefixStr);
-  var padLen = prefixStr.length;
-  if(isNaN(prefixNum)){ toast('Formato non valido'); return; }
-
-  toast('Generazione assegni...');
-  var count = 0;
-  for(var i = 0; i < 10; i++){
-    var numAss = String(prefixNum + i).padStart(padLen, '0') + '-' + String(parseInt(suffix) + i).padStart(suffix.length, '0');
-    // Verifica che non esista già
-    try {
-      var existing = await sbFetch('fatture?assegno=eq.'+encodeURIComponent(numAss)+'&select=id&limit=1');
-      if(existing && existing.length > 0) continue; // già esiste
-    } catch(e){}
-    
-    var record = {
-      id: Date.now() + i,
-      tipo: 'fattura',
-      fornitore: '',
-      numero: '',
-      data: new Date().toISOString().slice(0,10),
-      importo: 0,
-      pagamento: 'assegno',
-      assegno: numAss,
-      ass_int: '',
-      ass_banca: '',
-      note: 'Assegno da compilare',
-      stato: 'da_pagare',
-      parz_pagato: 0,
-      ts: Date.now() + i
-    };
-    try {
-      await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
-      fatture.unshift(dbToApp(record));
-      count++;
-    } catch(e){ console.warn('Err assegno:', e); }
-  }
-  if(count > 0){
-    save(fatture);
-    toast(count + ' assegni generati e salvati!');
-  } else {
-    toast('Assegni già esistenti');
-  }
-  document.getElementById('assPrimo').value = '';
-  caricaAssegniSalvati();
-}
-
-async function caricaAssegniSalvati(){
-  var el = document.getElementById('assegniLista');
-  var elSalvati = document.getElementById('assegniSalvati');
-  if(!el) return;
-  
-  try {
-    var rows = await sbFetch('fatture?pagamento=eq.assegno&select=*&order=assegno.asc&limit=100');
-    if(!rows || !rows.length){
-      el.innerHTML = '<div class="empty"><div class="ei">&#128221;</div><p>Nessun assegno. Genera un blocchetto!</p></div>';
-      if(elSalvati) elSalvati.innerHTML = '';
-      return;
-    }
-    
-    // Dividi in: da compilare (importo=0 o fornitore vuoto) e compilati
-    var daCompilare = rows.filter(function(r){ return !r.fornitore || r.importo === 0; });
-    var compilati = rows.filter(function(r){ return r.fornitore && r.importo > 0; });
-    
-    // Menu fornitori
-    var fornOptions = '<option value="">— Seleziona fornitore —</option>';
-    fornitori.forEach(function(f){
-      fornOptions += '<option value="'+esc(f)+'">'+esc(f)+'</option>';
-    });
-    
-    var html = '';
-    
-    if(daCompilare.length > 0){
-      html += '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">DA COMPILARE ('+daCompilare.length+')</div>';
-      daCompilare.forEach(function(r, idx){
-        html += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)">';
-        html += '<div style="font-size:16px;font-weight:800;letter-spacing:1px;font-family:monospace;margin-bottom:10px">&#128221; '+esc(r.assegno||'')+'</div>';
-        html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Beneficiario</div>';
-        html += '<select id="assB_'+r.id+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--surface);-webkit-appearance:none">'+fornOptions+'</select></div>';
-        html += '<div style="display:flex;gap:8px;margin-bottom:10px">';
-        html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo &#8364;</div>';
-        html += '<input type="text" id="assI_'+r.id+'" placeholder="0,00" inputmode="decimal" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box"></div>';
-        html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">N&#176; Fattura</div>';
-        html += '<input type="text" id="assF_'+r.id+'" placeholder="001/2026" inputmode="text" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box"></div>';
-        html += '</div>';
-        html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">';
-      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assInc_'+r.id+'" style="width:18px;height:18px;accent-color:var(--green)"> Incassato</label>';
-      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assDis_'+r.id+'" style="width:18px;height:18px;accent-color:var(--red)"> Distrutto</label>';
-      html += '<button onclick="event.stopPropagation();apriDataIncasso('+r.id+')" style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1.5px solid var(--sep);border-radius:8px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" id="assDataBtn_'+r.id+'">&#128197; Data</button>';
-      html += '<input type="hidden" id="assData_'+r.id+'" value="">';
-      html += '</div>';
-      html += '<button class="btn btn-p" style="padding:10px;font-size:13px" onclick="compilaAssegno('+r.id+')">&#128190; Salva assegno</button>';
-        html += '</div>';
-      });
-    }
-    
-    el.innerHTML = html;
-    
-    // Compilati
-    if(compilati.length > 0 && elSalvati){
-      var htmlS = '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">ASSEGNI COMPILATI ('+compilati.length+')</div>';
-      compilati.forEach(function(r){
-        var nota = r.note||'';
-        var isIncassato = nota.indexOf('[INCASSATO]') >= 0;
-        var isDistrutto = nota.indexOf('[DISTRUTTO]') >= 0;
-        var dataMatch = nota.match(/\[DATA:([^\]]+)\]/);
-        var dataIncasso = dataMatch ? dataMatch[1] : '';
-        var bgColor = isDistrutto ? 'var(--red-light)' : isIncassato ? '#E8F5E9' : 'var(--green-light)';
-        var statusBadge = isDistrutto ? '<span style="background:var(--red);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DISTRUTTO</span>' 
-          : isIncassato ? '<span style="background:var(--green);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">INCASSATO</span>' : '';
-        var dataBadge = dataIncasso ? '<span style="font-size:10px;color:var(--ink3)">&#128197; '+dataIncasso+'</span>' : '';
-        
-        htmlS += '<div style="background:'+bgColor+';border-radius:var(--radius);padding:12px 14px;margin-bottom:6px">';
-        htmlS += '<div style="display:flex;justify-content:space-between;align-items:center">';
-        htmlS += '<div><div style="font-size:13px;font-weight:700">'+esc(r.fornitore||'')+'</div>';
-        htmlS += '<div style="font-size:11px;color:var(--ink3)">Ass. '+esc(r.assegno||'?')+' &#183; Fatt. '+esc(r.numero||'\u2014')+'</div></div>';
-        htmlS += '<div style="font-size:15px;font-weight:700">&#8364; '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
-        htmlS += '</div>';
-        htmlS += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'+statusBadge+dataBadge;
-        if(!isIncassato && !isDistrutto){
-          htmlS += '<button onclick="segnaIncassato('+r.id+')" style="padding:4px 10px;border:1px solid var(--green);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:#1a7a3a;cursor:pointer;font-family:inherit">&#10003; Incassato</button>';
-          htmlS += '<button onclick="segnaDistrutto('+r.id+')" style="padding:4px 10px;border:1px solid var(--red);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit">&#10005; Distrutto</button>';
-          htmlS += '<button onclick="apriDataIncasso('+r.id+')" style="padding:4px 10px;border:1px solid var(--sep);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit">&#128197; Data</button>';
-        }
-        htmlS += '</div>';
-        htmlS += '</div>';
-      });
-      elSalvati.innerHTML = htmlS;
-    }
-    
-  } catch(e){
-    el.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
-  }
-}
-
-
-// ── Gestione stato assegni: Incassato, Distrutto, Data incasso ──
-function segnaIncassato(id){
-  aggiornaStatoAssegno(id, '[INCASSATO]');
-}
-
-function segnaDistrutto(id){
-  aggiornaStatoAssegno(id, '[DISTRUTTO]');
-}
-
-async function aggiornaStatoAssegno(id, tag){
-  try {
-    // Leggi nota attuale
-    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
-    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
-    // Rimuovi vecchi tag
-    nota = nota.replace('[INCASSATO]','').replace('[DISTRUTTO]','').trim();
-    nota = tag + ' ' + nota;
-    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim()})});
-    // Aggiorna locale
-    var f = fatture.find(function(x){return x.id==id;});
-    if(f) f.note = nota.trim();
-    save(fatture);
-    toast(tag === '[INCASSATO]' ? 'Assegno incassato!' : 'Assegno distrutto!');
-    caricaAssegniSalvati();
-  } catch(e){ toast('Errore: '+e.message); }
-}
-
-function apriDataIncasso(id){
-  // Crea mini modal con input data
-  var mo = document.getElementById('dataIncassoMo');
-  if(!mo){
-    mo = document.createElement('div');
-    mo.id = 'dataIncassoMo';
-    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px';
-    mo.innerHTML = 
-      '<div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">'+
-        '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Data incasso</div>'+
-        '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px">Quando si incasserà questo assegno?</div>'+
-        '<input type="date" id="dataIncassoInput" style="width:100%;padding:14px;border:1.5px solid var(--sep);border-radius:12px;font-size:18px;font-family:inherit;text-align:center;box-sizing:border-box;margin-bottom:12px">'+
-        '<div style="display:flex;gap:8px">'+
-          '<button onclick="document.getElementById(\'dataIncassoMo\').style.display=\'none\'" style="flex:1;padding:12px;border:1.5px solid var(--sep);border-radius:12px;background:var(--surface);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Annulla</button>'+
-          '<button onclick="salvaDataIncasso()" style="flex:2;padding:12px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Salva</button>'+
-        '</div>'+
-      '</div>';
-    mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
-    document.body.appendChild(mo);
-  }
-  window._dataIncassoId = id;
-  document.getElementById('dataIncassoInput').value = '';
-  mo.style.display = 'flex';
-}
-
-async function salvaDataIncasso(){
-  var id = window._dataIncassoId;
-  var data = document.getElementById('dataIncassoInput').value;
-  if(!data){ toast('Seleziona una data'); return; }
-  
-  try {
-    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
-    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
-    // Rimuovi vecchia data
-    nota = nota.replace(/\[DATA:[^\]]+\]/g, '').trim();
-    nota = '[DATA:'+data+'] ' + nota;
-    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim(), scadenza: data})});
-    var f = fatture.find(function(x){return x.id==id;});
-    if(f){ f.note = nota.trim(); f.scadenza = data; }
-    save(fatture);
-    document.getElementById('dataIncassoMo').style.display = 'none';
-    // Se è un assegno da compilare, aggiorna il bottone
-    var btn = document.getElementById('assDataBtn_'+id);
-    if(btn) btn.innerHTML = '&#128197; ' + data;
-    var hidden = document.getElementById('assData_'+id);
-    if(hidden) hidden.value = data;
-    toast('Data incasso salvata: '+data);
-    caricaAssegniSalvati();
-  } catch(e){ toast('Errore: '+e.message); }
-}
-
-
-// ── RICONCILIAZIONE ASSEGNI ↔ FATTURE ──
-// Cerca match tra assegni compilati e fatture nel registro
-// Match su: numero fattura + fornitore (+ importo come conferma)
-async function riconciliaAssegni(){
-  try {
-    // Carica tutti gli assegni compilati
-    var assegni = await sbFetch('fatture?pagamento=eq.assegno&select=*&limit=200');
-    if(!assegni || !assegni.length) return;
-    
-    var compilati = assegni.filter(function(a){ return a.fornitore && a.importo > 0 && a.numero; });
-    if(!compilati.length) return;
-    
-    var aggiornati = 0;
-    for(var i = 0; i < compilati.length; i++){
-      var ass = compilati[i];
-      var numFatt = (ass.numero||'').toString().trim().toUpperCase();
-      var fornAss = (ass.fornitore||'').toString().trim().toUpperCase();
-      if(!numFatt) continue;
-      
-      // Cerca la fattura nel registro (non assegno) con stesso numero
-      var fatturaMatch = fatture.find(function(f){
-        if(f.pagamento === 'assegno' && f.assegno) return false; // è già un assegno
-        var numF = (f.numero||'').toString().trim().toUpperCase();
-        var fornF = (f.fornitore||'').toString().trim().toUpperCase();
-        return numF === numFatt && fornF.indexOf(fornAss.slice(0,10)) >= 0;
-      });
-      
-      if(fatturaMatch && fatturaMatch.pagamento !== 'assegno'){
-        // MATCH! Aggiorna la fattura con il pagamento assegno
-        fatturaMatch.pagamento = 'assegno';
-        fatturaMatch.assegno = ass.assegno;
-        fatturaMatch.assInt = ass.ass_int || ass.fornitore;
-        fatturaMatch.stato = 'pagata';
-        
-        try {
-          await sbFetch('fatture?id=eq.'+fatturaMatch.id, {method:'PATCH', body:JSON.stringify({
-            pagamento: 'assegno',
-            assegno: ass.assegno,
-            ass_int: ass.ass_int || ass.fornitore,
-            stato: 'pagata'
-          })});
-          aggiornati++;
-        } catch(e){ console.warn('Riconcilia err:', e); }
-      }
-    }
-    
-    if(aggiornati > 0){
-      save(fatture);
-      console.log('Riconciliazione: '+aggiornati+' fatture associate ad assegni');
-    }
-  } catch(e){ console.warn('Riconciliazione assegni:', e); }
-}
-
-async function compilaAssegno(id){
-  var benEl = document.getElementById('assB_'+id);
-  var impEl = document.getElementById('assI_'+id);
-  var fatEl = document.getElementById('assF_'+id);
-  
-  var beneficiario = benEl ? benEl.value : '';
-  var importo = impEl ? parseFloat((impEl.value||'0').replace(',','.'))||0 : 0;
-  var numFattura = fatEl ? fatEl.value.trim() : '';
-  
-  if(!beneficiario){ toast('Seleziona il beneficiario'); return; }
-  if(!importo){ toast('Inserisci l\'importo'); return; }
-  
-  try {
-    // Aggiorna l'assegno su Supabase
-    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({
-      fornitore: beneficiario,
-      importo: importo,
-      numero: numFattura,
-      ass_int: beneficiario,
-      stato: 'pagata',
-      scadenza: (document.getElementById('assData_'+id)||{}).value||null,
-      note: (function(){
-        var n = 'Assegno compilato';
-        var incCb = document.getElementById('assInc_'+id);
-        var disCb = document.getElementById('assDis_'+id);
-        var dataVal = document.getElementById('assData_'+id);
-        if(incCb && incCb.checked) n = '[INCASSATO] ' + n;
-        if(disCb && disCb.checked) n = '[DISTRUTTO] ' + n;
-        if(dataVal && dataVal.value) n = '[DATA:'+dataVal.value+'] ' + n;
-        return n;
-      })()
-    })});
-    
-    // Aggiorna locale
-    var f = fatture.find(function(x){return x.id==id;});
-    if(f){
-      f.fornitore = beneficiario;
-      f.importo = importo;
-      f.numero = numFattura;
-      f.assInt = beneficiario;
-      f.stato = 'pagata';
-    }
-    save(fatture);
-    
-    // Associa assegno alla fattura nel registro (match robusto)
-    if(numFattura){
-      var numUp = numFattura.trim().toUpperCase();
-      var fornUp = beneficiario.trim().toUpperCase();
-      var assNum = '';
-      var fLocal = fatture.find(function(x){return x.id==id;});
-      if(fLocal) assNum = fLocal.assegno || '';
-      
-      // Cerca match: stesso numero fattura E fornitore simile
-      var fReg = fatture.find(function(x){
-        if(x.id === id) return false;
-        var xNum = (x.numero||'').toString().trim().toUpperCase();
-        var xForn = (x.fornitore||'').toString().trim().toUpperCase();
-        return xNum === numUp && (xForn.indexOf(fornUp.slice(0,10))>=0 || fornUp.indexOf(xForn.slice(0,10))>=0);
-      });
-      
-      // Se non trova per fornitore, cerca solo per numero
-      if(!fReg){
-        fReg = fatture.find(function(x){
-          if(x.id === id) return false;
-          return (x.numero||'').toString().trim().toUpperCase() === numUp;
-        });
-      }
-      
-      if(fReg){
-        fReg.stato = 'pagata';
-        fReg.pagamento = 'assegno';
-        fReg.assegno = assNum;
-        fReg.assInt = beneficiario;
-        try {
-          await sbFetch('fatture?id=eq.'+fReg.id, {method:'PATCH', body:JSON.stringify({
-            stato:'pagata', pagamento:'assegno', assegno:assNum, ass_int:beneficiario
-          })});
-          toast('Fattura N.'+numFattura+' associata all\'assegno!');
-        } catch(e){}
-      }
-    }
-    
-    toast('Assegno salvato!');
-    await riconciliaAssegni();
-    caricaAssegniSalvati();
-  } catch(e){
-    toast('Errore: '+e.message);
-  }
-}
-
-// ── CORRISPETTIVI ──
-async function caricaCorrispettivi(){
-  var anno = (document.getElementById('corrAnno').value||'').trim();
-  if(!anno){ toast('Inserisci anno'); return; }
-  
-  var totDiv = document.getElementById('corrTotali');
-  var listaDiv = document.getElementById('corrLista');
-  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento...</div>';
-  listaDiv.innerHTML = '';
-  
-  try {
-    var res = await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    var data = await res.json();
-    var lista = Array.isArray(data) ? data : (data.items||data.corrispettivi||[]);
-    
-    if(!lista.length){
-      totDiv.innerHTML = '<div class="empty"><div class="ei">&#128176;</div><p>Nessun corrispettivo trovato</p></div>';
-      return;
-    }
-    
-    // Ordina per data decrescente
-    lista.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
-    
-    // Calcola totali
-    var totTot=0, totCont=0, totElet=0, totImp=0, totIva=0;
-    lista.forEach(function(c){
-      totTot  += parseFloat(c.totale||0);
-      totCont += parseFloat(c.pagato_contanti||0);
-      totElet += parseFloat(c.pagato_elettronico||0);
-      totImp  += parseFloat(c.totale_imponibile||0);
-      totIva  += parseFloat(c.totale_iva||0);
-    });
-    
-    var fmtE = function(n){ return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); };
-    
-    // Card totali
-    totDiv.innerHTML = 
-      '<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:10px">'+
-        '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px">TOTALE CORRISPETTIVI</div>'+
-        '<div style="font-size:28px;font-weight:800;margin-top:4px">'+fmtE(totTot)+'</div>'+
-        '<div style="font-size:12px;opacity:.8;margin-top:4px">'+lista.length+' chiusure giornaliere</div>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
-        '<div style="background:var(--green-light);border-radius:var(--radius);padding:14px">'+
-          '<div style="font-size:10px;font-weight:600;color:#1a7a3a;text-transform:uppercase">CONTANTI</div>'+
-          '<div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fmtE(totCont)+'</div>'+
-        '</div>'+
-        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">ELETTRONICO</div>'+
-          '<div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fmtE(totElet)+'</div>'+
-        '</div>'+
-        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IMPONIBILE</div>'+
-          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totImp)+'</div>'+
-        '</div>'+
-        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
-          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IVA</div>'+
-          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totIva)+'</div>'+
-        '</div>'+
-      '</div>';
-    
-    // Lista giornaliera
-    var html = '';
-    lista.forEach(function(c){
-      var data = c.data||'';
-      var dataFmt = data ? new Date(data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : '—';
-      var tot = parseFloat(c.totale||0);
-      var cont = parseFloat(c.pagato_contanti||0);
-      var elet = parseFloat(c.pagato_elettronico||0);
-      var imp = parseFloat(c.totale_imponibile||0);
-      var iva = parseFloat(c.totale_iva||0);
-      var nDoc = c.numero_documenti||0;
-      
-      // Riepilogo IVA
-      var ivaHtml = '';
-      if(c.riepilogo_iva && c.riepilogo_iva.length){
-        ivaHtml = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:12px">';
-        ivaHtml += '<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Dettaglio IVA</div>';
-        c.riepilogo_iva.forEach(function(r){
-          var ali = r.aliquota_iva||'0';
-          var imposta = parseFloat(r.imposta||0);
-          var ammontare = parseFloat(r.ammontare||0);
-          ivaHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04)">';
-          ivaHtml += '<span>IVA '+ali+'%</span>';
-          ivaHtml += '<span>Imp. '+fmtE(ammontare)+' / IVA '+fmtE(imposta)+'</span>';
-          ivaHtml += '</div>';
-        });
-        ivaHtml += '</div>';
-      }
-      
-      html += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer" onclick="this.querySelector(\'.corr-detail\').style.display=this.querySelector(\'.corr-detail\').style.display===\'none\'?\'block\':\'none\'">';
-      // Header
-      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-      html += '<div><div style="font-size:15px;font-weight:700">'+dataFmt+'</div>';
-      html += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+nDoc+' scontrini \u2022 Doc. N\u00b0 '+(c.numero_documento||'')+'</div></div>';
-      html += '<div style="font-size:18px;font-weight:800">'+fmtE(tot)+'</div>';
-      html += '</div>';
-      // Mini riepilogo sempre visibile
-      html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:12px">';
-      html += '<span style="color:#1a7a3a;font-weight:600">\ud83d\udcb5 '+fmtE(cont)+'</span>';
-      html += '<span style="color:var(--blue);font-weight:600">\ud83d\udcb3 '+fmtE(elet)+'</span>';
-      html += '</div>';
-      // Dettaglio espandibile
-      html += '<div class="corr-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">';
-      html += '<div><span style="color:var(--ink3)">Imponibile</span><br><b>'+fmtE(imp)+'</b></div>';
-      html += '<div><span style="color:var(--ink3)">IVA</span><br><b>'+fmtE(iva)+'</b></div>';
-      html += '<div><span style="color:var(--ink3)">Contanti</span><br><b style="color:#1a7a3a">'+fmtE(cont)+'</b></div>';
-      html += '<div><span style="color:var(--ink3)">Elettronico</span><br><b style="color:var(--blue)">'+fmtE(elet)+'</b></div>';
-      html += '</div>';
-      html += ivaHtml;
-      html += '<div style="text-align:center;font-size:11px;color:var(--ink3);margin-top:6px">Matricola RT: '+(c.matricola_rt||'')+'</div>';
-      html += '</div>';
-      html += '</div>';
-    });
-    
-    listaDiv.innerHTML = html;
-    toast(lista.length+' corrispettivi caricati');
-    
-  } catch(e){
-    totDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
-  }
-}
-
-// ── LIQUIDAZIONE IVA ──
-// IVA a credito: dalle fatture passive (acquisti) — campo vat_amount o totale_iva
-// IVA a debito: dai corrispettivi (vendite) — campo totale_iva
-// Liquidazione mensile: debito - credito = da versare
-// Versamento: F24 entro il 16 del mese successivo
-// Se credito > debito → credito IVA (si riporta al mese dopo)
-
-async function calcolaIVA(){
-  var anno = (document.getElementById('ivaAnno').value||'').trim();
-  if(!anno){ toast('Inserisci anno'); return; }
-  
-  var totDiv = document.getElementById('ivaTotali');
-  var mesiDiv = document.getElementById('ivaMesi');
-  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento...</div>';
-  mesiDiv.innerHTML = '';
-  
-  try {
-    var [resFatt, resCorr] = await Promise.all([
-      fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500'),
-      fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno)
-    ]);
-    if(!resFatt.ok) throw new Error('Fatture: HTTP '+resFatt.status);
-    if(!resCorr.ok) throw new Error('Corrispettivi: HTTP '+resCorr.status);
-    
-    var fatt = await resFatt.json();
-    var corr = await resCorr.json();
-    fatt = Array.isArray(fatt)?fatt:(fatt.items||fatt.invoices||[]);
-    corr = Array.isArray(corr)?corr:(corr.items||corr.corrispettivi||[]);
-    
-    var fmtE = function(n){ return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); };
-    var nomiMesi = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-    
-    // Raggruppa per mese
-    var mesi = {};
-    for(var m=1; m<=12; m++){
-      mesi[m] = { credito:0, debito:0, impAcq:0, impVen:0, detCredito:{}, detDebito:{}, noteDiCredito:0 };
-    }
-    
-    // ── IVA A CREDITO (fatture passive = acquisti) ──
-    // Art. 1 DPR 100/98 + Art. 25 DPR 633/72:
-    // La fattura si porta in detrazione nel mese della DATA FATTURA,
-    // PURCHE' sia stata RICEVUTA entro il 15 del mese successivo.
-    // Campo imported_at = data ricezione PEC
-    // Campo invoice_date = data fattura
-    fatt.forEach(function(f){
-      var dataFatt = (f.invoice_date||f.data_effettiva||'').toString().slice(0,10);
-      var dataRic = (f.imported_at||'').toString().slice(0,10);
-      if(!dataFatt) return;
-      
-      var meseFatt = parseInt(dataFatt.slice(5,7)); // mese della fattura
-      var annoFatt = dataFatt.slice(0,4);
-      if(annoFatt !== anno) return;
-      
-      // Determina il mese di competenza IVA
-      var meseCompetenza = meseFatt;
-      
-      if(dataRic){
-        var meseRic = parseInt(dataRic.slice(5,7));
-        var annoRic = dataRic.slice(0,4);
-        var giornoRic = parseInt(dataRic.slice(8,10));
-        
-        // Se ricevuta nello stesso mese della fattura → competenza = mese fattura
-        // Se ricevuta entro il 15 del mese successivo → competenza = mese fattura
-        // Se ricevuta DOPO il 15 del mese successivo → competenza = mese di ricezione
-        if(annoRic === anno && meseRic === meseFatt){
-          meseCompetenza = meseFatt; // stesso mese
-        } else if(
-          (annoRic === anno && meseRic === meseFatt + 1 && giornoRic <= 15) ||
-          (meseFatt === 12 && annoRic === String(parseInt(anno)+1) && meseRic === 1 && giornoRic <= 15)
-        ){
-          meseCompetenza = meseFatt; // ricevuta entro il 15 del mese dopo → competenza mese fattura
-        } else if(annoRic === anno){
-          meseCompetenza = meseRic; // ricevuta dopo il 15 → competenza mese ricezione
-        }
-      }
-      
-      if(meseCompetenza < 1 || meseCompetenza > 12) return;
-      
-      var iva = parseFloat(f.vat_amount||f.totale_iva||0);
-      var imp = parseFloat(f.taxable_amount||f.totale_imponibile||0);
-      var ali = f.vat_rate||0;
-      
-      // Escludi fatture marcate come in corrispettivo (evita doppio conteggio)
-      if(f.inclusa_in_corrispettivo) return;
-      
-      // Note di credito (TD04) → riducono l'IVA a credito
-      if(f.document_type === 'TD04'){
-        mesi[meseCompetenza].credito -= iva;
-        mesi[meseCompetenza].noteDiCredito += iva;
-        return;
-      }
-      
-      mesi[meseCompetenza].credito += iva;
-      mesi[meseCompetenza].impAcq += imp;
-      if(ali){
-        var k = ali+'%';
-        mesi[meseCompetenza].detCredito[k] = (mesi[meseCompetenza].detCredito[k]||0) + iva;
-      }
-    });
-    
-    // ── IVA A DEBITO (corrispettivi = vendite) ──
-    corr.forEach(function(c){
-      var data = (c.data||'').toString().slice(0,10);
-      var mese = parseInt((data||'').slice(5,7));
-      if(!mese || mese<1 || mese>12) return;
-      
-      var iva = parseFloat(c.totale_iva||0);
-      var imp = parseFloat(c.totale_imponibile||0);
-      mesi[mese].debito += iva;
-      mesi[mese].impVen += imp;
-      
-      if(c.riepilogo_iva && c.riepilogo_iva.length){
-        c.riepilogo_iva.forEach(function(r){
-          var k = (r.aliquota_iva||'0')+'%';
-          mesi[mese].detDebito[k] = (mesi[mese].detDebito[k]||0) + parseFloat(r.imposta||0);
-        });
-      }
-    });
-    
-    // ── CALCOLO LIQUIDAZIONE ──
-    var totCredito=0, totDebito=0, creditoRiportato=0;
-    var mesiHtml = '';
-    var mesiAttivi = 0;
-    
-    for(var m=1; m<=12; m++){
-      var d = mesi[m];
-      if(d.credito===0 && d.debito===0) continue;
-      mesiAttivi++;
-      totCredito += d.credito;
-      totDebito += d.debito;
-      
-      // Saldo = debito - credito - credito riportato
-      var saldo = d.debito - d.credito - creditoRiportato;
-      var daVersare = saldo > 0 ? saldo : 0;
-      var creditoRes = saldo < 0 ? Math.abs(saldo) : 0;
-      
-      // Scadenza: 16 del mese successivo
-      var ms = m<12 ? m+1 : 1;
-      var as = m<12 ? parseInt(anno) : parseInt(anno)+1;
-      var scadStr = as+'-'+String(ms).padStart(2,'0')+'-16';
-      var scadFmt = new Date(scadStr+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
-      var scaduta = new Date(scadStr+'T12:00:00') < new Date() && daVersare > 0;
-      
-      // Dettaglio aliquote
-      var detHtml = '';
-      var aliTutte = new Set([...Object.keys(d.detCredito),...Object.keys(d.detDebito)]);
-      if(aliTutte.size){
-        detHtml = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:12px">';
-        detHtml += '<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px">DETTAGLIO PER ALIQUOTA</div>';
-        detHtml += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px;font-size:11px"><div style="font-weight:700">Aliq.</div><div style="font-weight:700;text-align:right">Credito</div><div style="font-weight:700;text-align:right">Debito</div></div>';
-        aliTutte.forEach(function(ali){
-          detHtml += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:2px;font-size:11px;padding:2px 0;border-top:1px solid rgba(0,0,0,.04)">';
-          detHtml += '<div>'+ali+'</div>';
-          detHtml += '<div style="text-align:right;color:var(--blue)">\u20ac'+fmtE(d.detCredito[ali]||0)+'</div>';
-          detHtml += '<div style="text-align:right;color:var(--red)">\u20ac'+fmtE(d.detDebito[ali]||0)+'</div>';
-          detHtml += '</div>';
-        });
-        detHtml += '</div>';
-      }
-      
-      var borderColor = daVersare>0?(scaduta?'var(--red)':'var(--orange)'):'var(--green)';
-      
-      mesiHtml += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid '+borderColor+';cursor:pointer" onclick="var det=this.querySelector(\'.iva-det\');det.style.display=det.style.display===\'none\'?\'block\':\'none\'">';
-      mesiHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-      mesiHtml += '<div><div style="font-size:15px;font-weight:700">'+nomiMesi[m]+'</div>';
-      mesiHtml += '<div style="font-size:11px;color:var(--ink3)">F24 entro '+scadFmt+(scaduta?' \u2014 <b style="color:var(--red)">SCADUTO</b>':'')+'</div></div>';
-      mesiHtml += '<div style="text-align:right">';
-      if(daVersare>0){
-        mesiHtml += '<div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fmtE(daVersare)+'</div><div style="font-size:10px;color:var(--red)">DA VERSARE</div>';
-      } else {
-        mesiHtml += '<div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fmtE(creditoRes)+'</div><div style="font-size:10px;color:#1a7a3a">CREDITO</div>';
-      }
-      mesiHtml += '</div></div>';
-      // Mini riepilogo
-      mesiHtml += '<div style="display:flex;gap:12px;margin-top:6px;font-size:12px">';
-      mesiHtml += '<span style="color:var(--blue)">Credito \u20ac'+fmtE(d.credito)+'</span>';
-      mesiHtml += '<span style="color:var(--red)">Debito \u20ac'+fmtE(d.debito)+'</span>';
-      if(creditoRiportato>0) mesiHtml += '<span style="color:var(--ink3)">Riporto \u20ac'+fmtE(creditoRiportato)+'</span>';
-      mesiHtml += '</div>';
-      // Dettaglio espandibile
-      mesiHtml += '<div class="iva-det" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
-      mesiHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:8px">';
-      mesiHtml += '<div style="background:var(--blue-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--blue);font-weight:600">IVA CREDITO (acquisti)</div><div style="font-size:16px;font-weight:700;color:var(--blue)">\u20ac '+fmtE(d.credito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.impAcq)+'</div></div>';
-      mesiHtml += '<div style="background:var(--red-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--red);font-weight:600">IVA DEBITO (vendite)</div><div style="font-size:16px;font-weight:700;color:var(--red)">\u20ac '+fmtE(d.debito)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fmtE(d.impVen)+'</div></div>';
-      mesiHtml += '</div>';
-      if(d.noteDiCredito>0) mesiHtml += '<div style="font-size:12px;color:var(--orange);margin-bottom:4px">Note di credito: -\u20ac'+fmtE(d.noteDiCredito)+'</div>';
-      mesiHtml += '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;font-style:italic">Art.1 DPR 100/98: include fatture datate mese precedente ricevute entro il 15</div>';
-      mesiHtml += detHtml;
-      mesiHtml += '</div></div>';
-      
-      creditoRiportato = creditoRes;
-    }
-    
-    var saldoAnnuo = totDebito - totCredito;
-    var isCredito = saldoAnnuo < 0;
-    
-    totDiv.innerHTML = 
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:4px">\u20ac '+fmtE(totCredito)+'</div><div style="font-size:11px;color:var(--ink3)">'+fatt.length+' fatture</div></div>'+
-        '<div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red);margin-top:4px">\u20ac '+fmtE(totDebito)+'</div><div style="font-size:11px;color:var(--ink3)">'+corr.length+' corrispettivi</div></div>'+
-      '</div>'+
-      '<div style="background:'+(isCredito?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px">'+
-        '<div style="font-size:11px;opacity:.7;text-transform:uppercase">SALDO IVA '+anno+'</div>'+
-        '<div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fmtE(Math.abs(saldoAnnuo))+'</div>'+
-        '<div style="font-size:13px;opacity:.9">'+(isCredito?'A CREDITO':'A DEBITO \u2014 F24')+'</div>'+
-      '</div>';
-    
-    mesiDiv.innerHTML = mesiHtml || '<div class="empty"><p>Nessun dato</p></div>';
-    toast('IVA '+anno+': '+mesiAttivi+' mesi');
-  } catch(e){
-    totDiv.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
-  }
-}
-
-}
-
 init();
-setTimeout(function(){dedupFatture(); riconciliaAssegni();},3000);
+setTimeout(function(){dedupFatture();},3000);
 </script>
 </body>
 </html>

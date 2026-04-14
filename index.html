@@ -919,6 +919,36 @@ async function loadAll(){
     fatture = cacheGet(K,[]); fornitori = cacheGet(KF,[]);
     return false;
   }
+
+// Dedup fatture dopo il caricamento
+function dedupFatture(){
+  var seen = {};
+  var toRemove = [];
+  fatture.forEach(function(f){
+    var key = ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(seen[key]){
+      // Duplicato — tieni quello con ts più alto (più recente) o con foto
+      var existing = seen[key];
+      if(f.foto && !existing.foto){
+        toRemove.push(existing.id);
+        seen[key] = f;
+      } else {
+        toRemove.push(f.id);
+      }
+    } else {
+      seen[key] = f;
+    }
+  });
+  if(toRemove.length > 0){
+    console.log('Dedup: rimuovo '+toRemove.length+' duplicati');
+    fatture = fatture.filter(function(f){ return toRemove.indexOf(f.id) < 0; });
+    save(fatture);
+    // Rimuovi anche da Supabase
+    toRemove.forEach(function(id){
+      sbFetch('fatture?id=eq.'+id, {method:'DELETE'}).catch(function(){});
+    });
+  }
+}
 }
 
 // ── SAVE ──
@@ -1464,9 +1494,10 @@ function resetLFiltri(){
 function apriDettaglioRegistro(fId){
   var f = fatture.find(function(x){return x.id==fId;});
   if(!f) return;
-  // Cerca nel _gestFatture per numero fattura
+  var num = (f.numero||'').toString().trim();
+  
+  // Se le fatture SDI sono già caricate, cerca direttamente
   if(_gestFatture && _gestFatture.length){
-    var num = (f.numero||'').toString().trim();
     for(var i=0; i<_gestFatture.length; i++){
       var inv = _gestFatture[i];
       if((inv.invoice_number||inv.numero||'').toString().trim() === num){
@@ -1475,30 +1506,26 @@ function apriDettaglioRegistro(fId){
       }
     }
   }
-  // Fattura non trovata in _gestFatture — prova a scaricare
-  if(!_gestFatture || !_gestFatture.length){
-    toast('Caricamento fatture SDI...');
-    fetch('https://impresasemplice.online/api/invoices?anno='+new Date().getFullYear()+'&limit=500')
-      .then(function(r){return r.ok?r.json():null;})
-      .then(function(data){
-        if(!data) { openEdit(fId); return; }
-        var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
-        _gestFatture = lista;
-        var num = (f.numero||'').toString().trim();
-        for(var i=0; i<lista.length; i++){
-          if((lista[i].invoice_number||lista[i].numero||'').toString().trim()===num){
-            gestApriDettaglio(i);
-            return;
-          }
+  
+  // Fatture SDI non caricate o non trovata — scarica in background
+  toast('Caricamento dettaglio...');
+  var anno = f.data ? f.data.slice(0,4) : new Date().getFullYear();
+  fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data){ openEdit(fId); return; }
+      var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+      _gestFatture = lista;
+      for(var i=0; i<lista.length; i++){
+        if((lista[i].invoice_number||lista[i].numero||'').toString().trim()===num){
+          gestApriDettaglio(i);
+          return;
         }
-        // Non trovata → apri modifica normale
-        openEdit(fId);
-      })
-      .catch(function(){ openEdit(fId); });
-    return;
-  }
-  // Non è una fattura XML → apri modifica normale
-  openEdit(fId);
+      }
+      // Non trovata come XML — apri modifica standard
+      openEdit(fId);
+    })
+    .catch(function(){ openEdit(fId); });
 }
 
 // Scatta foto da registro e salva su Supabase
@@ -2968,9 +2995,9 @@ async function gestScarica(){
     _gestFatture = lista;
 
     // ── AUTO-IMPORTA nel registro Supabase ──
-    var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+    var esistenti = new Set(fatture.map(function(f){return ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();}));
     var nuove = lista.filter(function(inv){
-      return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
+      return !esistenti.has(((inv.invoice_number||inv.numero||'')+'|||'+(inv.supplier_name||inv.cedente_denominazione||'')).toUpperCase());
     });
 
     // Costruisci mappa metodo pagamento per fornitore (dall'ultima fattura nel registro)
@@ -3579,6 +3606,7 @@ async function gestSyncClick(){
 }
 
 init();
+setTimeout(function(){dedupFatture();},3000);
 </script>
 </body>
 </html>

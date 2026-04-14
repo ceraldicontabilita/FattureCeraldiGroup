@@ -1459,6 +1459,85 @@ function resetLFiltri(){
   const s=document.getElementById('lForn');if(s)s.value='';
   renderLista();
 }
+
+// Click su card nel Registro → apre dettaglio XML se disponibile
+function apriDettaglioRegistro(fId){
+  var f = fatture.find(function(x){return x.id==fId;});
+  if(!f) return;
+  // Cerca nel _gestFatture per numero fattura
+  if(_gestFatture && _gestFatture.length){
+    var num = (f.numero||'').toString().trim();
+    for(var i=0; i<_gestFatture.length; i++){
+      var inv = _gestFatture[i];
+      if((inv.invoice_number||inv.numero||'').toString().trim() === num){
+        gestApriDettaglio(i);
+        return;
+      }
+    }
+  }
+  // Fattura non trovata in _gestFatture — prova a scaricare
+  if(!_gestFatture || !_gestFatture.length){
+    toast('Caricamento fatture SDI...');
+    fetch('https://impresasemplice.online/api/invoices?anno='+new Date().getFullYear()+'&limit=500')
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(data){
+        if(!data) { openEdit(fId); return; }
+        var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+        _gestFatture = lista;
+        var num = (f.numero||'').toString().trim();
+        for(var i=0; i<lista.length; i++){
+          if((lista[i].invoice_number||lista[i].numero||'').toString().trim()===num){
+            gestApriDettaglio(i);
+            return;
+          }
+        }
+        // Non trovata → apri modifica normale
+        openEdit(fId);
+      })
+      .catch(function(){ openEdit(fId); });
+    return;
+  }
+  // Non è una fattura XML → apri modifica normale
+  openEdit(fId);
+}
+
+// Scatta foto da registro e salva su Supabase
+function scattaFotoRegistro(fId){
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.onchange = function(){
+    if(!input.files||!input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement('canvas');
+        var maxW = 800, w = img.width, h = img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        var dataUrl = canvas.toDataURL('image/jpeg',0.7);
+        // Salva su Supabase
+        sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify({foto:dataUrl})})
+          .then(function(){
+            // Aggiorna locale
+            var f = fatture.find(function(x){return x.id==fId;});
+            if(f) f.foto = dataUrl;
+            save(fatture);
+            renderLista();
+            toast('Foto salvata!');
+          })
+          .catch(function(e){ toast('Errore foto: '+e.message); });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  };
+  input.click();
+}
+
 function renderLista(){
   aggiornaDL();
   const s=(gv('searchInp')||'').toLowerCase();
@@ -1514,9 +1593,9 @@ function renderLista(){
     }
     // badge incompleta
     const incompletaBadge=(f.incompleta&&f.incompleta.length>0)?`<span style="display:inline-flex;align-items:center;gap:3px;background:#FFF0EF;color:var(--red);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:4px">⚠️ Incompleta</span>`:'';
-    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="apriF('${f.id}')">&#128247; Foto</button>`:'';
-    return `<div class="fi" id="fi-${f.id}" style="${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
-      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
+    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="event.stopPropagation();apriF('${f.id}')">&#128247; Foto</button>`:`<button class="fi-act-btn" onclick="event.stopPropagation();scattaFotoRegistro(${f.id})">&#128247; Foto</button>`;
+    return `<div class="fi" id="fi-${f.id}" onclick="apriDettaglioRegistro(${f.id})" style="cursor:pointer;${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
+      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="event.stopPropagation();apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
       <div class="fi-body">
         <div class="fi-top"><div class="fi-nome">${ddtBadge}${esc(f.fornitore)}${incompletaBadge}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
         <div class="fi-meta">${df} · ${pag1}${extra}${rateInfo}${scadInfo}</div>
@@ -1525,11 +1604,11 @@ function renderLista(){
         ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note)}</div>`:''}
         ${parzInfo}
         <div class="fi-actions">
-          ${ddtOpen?`<button class="fi-act-btn primary" onclick="openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
+          ${ddtOpen?`<button class="fi-act-btn primary" onclick="event.stopPropagation();openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
           ${fotoBtn}
-          <button class="fi-act-btn" onclick="condividiRegistrazione(${f.id})">📤 Condividi</button>
-          <button class="fi-act-btn" onclick="openEdit(${f.id})">✏️ Modifica</button>
-          <button class="fi-act-btn danger" onclick="askDel(${f.id})">&#128465;</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();condividiRegistrazione(${f.id})">📤 Condividi</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();openEdit(${f.id})">✏️ Modifica</button>
+          <button class="fi-act-btn danger" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;
@@ -2528,7 +2607,7 @@ function renderScadenzario(){
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:'DM Serif Display',serif;font-size:18px">${fmt(f.importo)}</div>
-          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="openEdit(${f.id})">&#9998; Modifica</button>
+          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="event.stopPropagation();openEdit(${f.id})">&#9998; Modifica</button>
         </div>
       </div>
     </div>`;

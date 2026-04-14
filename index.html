@@ -955,35 +955,6 @@ async function loadAll(){
     return false;
   }
 
-// Dedup fatture dopo il caricamento
-function dedupFatture(){
-  var seen = {};
-  var toRemove = [];
-  fatture.forEach(function(f){
-    var key = ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
-    if(seen[key]){
-      // Duplicato — tieni quello con ts più alto (più recente) o con foto
-      var existing = seen[key];
-      if(f.foto && !existing.foto){
-        toRemove.push(existing.id);
-        seen[key] = f;
-      } else {
-        toRemove.push(f.id);
-      }
-    } else {
-      seen[key] = f;
-    }
-  });
-  if(toRemove.length > 0){
-    console.log('Dedup: rimuovo '+toRemove.length+' duplicati');
-    fatture = fatture.filter(function(f){ return toRemove.indexOf(f.id) < 0; });
-    save(fatture);
-    // Rimuovi anche da Supabase
-    toRemove.forEach(function(id){
-      sbFetch('fatture?id=eq.'+id, {method:'DELETE'}).catch(function(){});
-    });
-  }
-}
 }
 
 // ── SAVE ──
@@ -1101,6 +1072,36 @@ function buildPromptApprendimento(){
 }
 
 let fatture=[], fornitori=[], filtroL='tutti', periodo='tutti', delId=null;
+
+// Dedup fatture dopo il caricamento
+function dedupFatture(){
+  var seen = {};
+  var toRemove = [];
+  fatture.forEach(function(f){
+    var key = ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(seen[key]){
+      // Duplicato — tieni quello con ts più alto (più recente) o con foto
+      var existing = seen[key];
+      if(f.foto && !existing.foto){
+        toRemove.push(existing.id);
+        seen[key] = f;
+      } else {
+        toRemove.push(f.id);
+      }
+    } else {
+      seen[key] = f;
+    }
+  });
+  if(toRemove.length > 0){
+    console.log('Dedup: rimuovo '+toRemove.length+' duplicati');
+    fatture = fatture.filter(function(f){ return toRemove.indexOf(f.id) < 0; });
+    save(fatture);
+    // Rimuovi anche da Supabase
+    toRemove.forEach(function(id){
+      sbFetch('fatture?id=eq.'+id, {method:'DELETE'}).catch(function(){});
+    });
+  }
+}
 let rPag='', mPag='';
 
 // ── TABS ──

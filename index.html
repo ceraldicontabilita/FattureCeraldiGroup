@@ -3081,7 +3081,15 @@ function gestApriDettaglio(idx){
         '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">\ud83d\udcb0 Pagamento</div>'+
         '<div id="gestPagLoading" style="text-align:center;color:var(--ink3);font-size:13px;padding:8px">Caricamento...</div>'+
         '<div id="gestPagUI" style="display:none">'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Metodo pagamento</div>'+
+          '<div style="display:flex;gap:6px;margin-bottom:14px">'+
+            '<button id="gpm_contanti" onclick="gestSetMetodo(\'contanti\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#128181; Contanti</button>'+
+            '<button id="gpm_bonifico" onclick="gestSetMetodo(\'bonifico\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#127974; Bonifico</button>'+
+            '<button id="gpm_assegno" onclick="gestSetMetodo(\'assegno\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#128221; Assegno</button>'+
+          '</div>'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Stato</div>'+
           '<div style="display:flex;gap:6px;margin-bottom:12px">'+
+
             '<button id="gps_da_pagare" onclick="gestSetSt(\'da_pagare\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Da pagare</button>'+
             '<button id="gps_parziale" onclick="gestSetSt(\'parziale\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Acconto</button>'+
             '<button id="gps_pagata" onclick="gestSetSt(\'pagata\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Pagata</button>'+

@@ -2917,6 +2917,7 @@ function gestRenderLista(lista){
       if(regFatt.stato==='pagata') pagato=true;
       else if(regFatt.stato==='da_pagare') pagato=false;
     }
+    var sospesoTag = regFatt&&regFatt.stato==='sospesa'?'<span style="background:#FFF3E0;color:#E65100;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">&#9888; SOSPESA'+(regFatt.note?' — '+gestEsc(regFatt.note.slice(0,30)):'')+'</span>':'';
     var accontoTag = regFatt&&regFatt.stato==='parziale'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+parseFloat(regFatt.parzPagato||regFatt.parz_pagato||0).toFixed(2)+'</span>':'';
     var inRegistro = !!regFatt;
     // Override con stato salvato localmente
@@ -2949,7 +2950,7 @@ function gestRenderLista(lista){
         '</div>'+
       '</div>'+
       '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+
-        accontoTag||(accontoTag||statoTag)+
+        accontoTag||(sospesoTag||accontoTag||statoTag)+
         (pgLabel?'<span style="font-size:11px;color:var(--ink3)">\u2022 '+pgLabel+'</span>':'')+
       '</div>'+
       (inRegistro?'<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:4px">✓ Nel registro</div>':'')+
@@ -3096,9 +3097,10 @@ function gestApriDettaglio(idx){
           '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Stato</div>'+
           '<div style="display:flex;gap:6px;margin-bottom:12px">'+
 
-            '<button id="gps_da_pagare" onclick="gestSetSt(\'da_pagare\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Da pagare</button>'+
-            '<button id="gps_parziale" onclick="gestSetSt(\'parziale\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Acconto</button>'+
-            '<button id="gps_pagata" onclick="gestSetSt(\'pagata\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Pagata</button>'+
+            '<button id="gps_da_pagare" onclick="gestSetSt(\'da_pagare\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Da pagare</button>'+
+            '<button id="gps_parziale" onclick="gestSetSt(\'parziale\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Acconto</button>'+
+            '<button id="gps_sospesa" onclick="gestSetSt(\'sospesa\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Sospesa</button>'+
+            '<button id="gps_pagata" onclick="gestSetSt(\'pagata\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Pagata</button>'+
           '</div>'+
           '<div id="gestAccDiv" style="display:none">'+
             '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo gi\u00e0 pagato (\u20ac)</div>'+
@@ -3158,16 +3160,16 @@ function gestSetMetodo(m){
 
 function gestSetSt(st){
   window._gestCurStato = st;
-  ['da_pagare','parziale','pagata'].forEach(function(s){
+  ['da_pagare','parziale','sospesa','pagata'].forEach(function(s){
     var b = document.getElementById('gps_'+s);
     if(!b) return;
     var active = s===st;
     b.style.borderColor = active?'var(--blue)':'var(--sep)';
-    b.style.background = active?(s==='pagata'?'var(--green-light)':s==='parziale'?'var(--orange-light)':'var(--red-light)'):'var(--surface)';
-    b.style.color = active?(s==='pagata'?'#1a7a3a':s==='parziale'?'#b36a00':'var(--red)'):'var(--ink3)';
+    b.style.background = active?(s==='pagata'?'var(--green-light)':s==='parziale'?'var(--orange-light)':s==='sospesa'?'#FFF3E0':'var(--red-light)'):'var(--surface)';
+    b.style.color = active?(s==='pagata'?'#1a7a3a':s==='parziale'?'#b36a00':s==='sospesa'?'#E65100':'var(--red)'):'var(--ink3)';
   });
   var ad = document.getElementById('gestAccDiv');
-  if(ad) ad.style.display = st==='parziale'?'block':'none';
+  if(ad) ad.style.display = (st==='parziale'||st==='sospesa')?'block':'none';
 }
 
 function gestCalcResto(){
@@ -3192,7 +3194,7 @@ async function gestSalvaPagamento(){
   var totale = window._gestCur.totale;
 
   // Prepara pagamento parziale
-  var parzPagato = st==='parziale'?accVal:(st==='pagata'?totale:0);
+  var parzPagato = (st==='parziale'||st==='sospesa')?accVal:(st==='pagata'?totale:0);
 
   // Metodo pagamento
   var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
@@ -3276,6 +3278,34 @@ setTimeout(function(){
       if(header) header.insertAdjacentElement('afterend', banner);
     })
     .catch(function(){});
+
+  // Controlla fatture sospese nel registro Supabase
+  sbFetch('fatture?stato=eq.sospesa&select=fornitore,numero,note,importo,parz_pagato')
+    .then(function(sospese){
+      if(!sospese || !sospese.length) return;
+      var alertDiv = document.createElement('div');
+      alertDiv.id = 'sospeseBanner';
+      alertDiv.style.cssText = 'background:linear-gradient(135deg,#FF9800,#F57C00);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 10px;box-shadow:0 4px 12px rgba(255,152,0,.3)';
+      var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:24px">&#9888;&#65039;</span><div style="font-size:15px;font-weight:700">'+sospese.length+' fattur'+(sospese.length===1?'a sospesa':'e sospese')+'</div></div>';
+      sospese.slice(0,5).forEach(function(f){
+        var nota = f.note ? ' — '+f.note : '';
+        var pagato = parseFloat(f.parz_pagato||0);
+        var totale = parseFloat(f.importo||0);
+        var resto = totale - pagato;
+        html += '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:12px">';
+        html += '<div style="font-weight:600">'+((f.fornitore||'?')+' — N. '+(f.numero||'?'))+'</div>';
+        if(pagato > 0) html += '<div style="opacity:.85;margin-top:2px">Pagato &#8364; '+pagato.toFixed(2)+' / Resta &#8364; '+resto.toFixed(2)+'</div>';
+        if(nota) html += '<div style="opacity:.9;margin-top:2px;font-style:italic">'+nota+'</div>';
+        html += '</div>';
+      });
+      if(sospese.length > 5) html += '<div style="font-size:11px;opacity:.7;text-align:center;margin-top:4px">...e altre '+(sospese.length-5)+'</div>';
+      alertDiv.innerHTML = html;
+      var header = document.querySelector('.ios-header');
+      var bluBanner = document.getElementById('gestBanner');
+      if(bluBanner) bluBanner.insertAdjacentElement('afterend', alertDiv);
+      else if(header) header.insertAdjacentElement('afterend', alertDiv);
+    })
+    .catch(function(e){console.log('Sospese check:',e);});
 }, 2000);
 
 

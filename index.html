@@ -878,12 +878,30 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- TAB BAR BOTTOM -->
+
+<!-- VIEW ASSEGNI -->
+<div class="view" id="view-assegni" style="padding:16px">
+  <p class="stitle">Registro Assegni</p>
+  
+  <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
+    <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO ASSEGNI</div>
+    <div class="field"><label>Primo numero assegno</label>
+      <input type="text" id="assPrimo" placeholder="1111111111-12" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="none" style="font-size:16px;letter-spacing:1px">
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">Formato: 11 cifre + trattino + 2 cifre (es. 12345678901-01)</div>
+    </div>
+    <button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px">&#128221; Genera 10 assegni</button>
+  </div>
+
+  <div id="assegniLista"></div>
+  <div id="assegniSalvati" style="margin-top:16px"></div>
+</div>
+
 <nav class="tab-bar">
-  <button class="tab-item active" onclick="goTab('scan',this)">
-    <span class="tab-ico">&#128247;</span>
-    <span class="tab-lbl">Scansiona</span>
+  <button class="tab-item" onclick="goTab('assegni',this)">
+    <span class="tab-ico">&#128221;</span>
+    <span class="tab-lbl">Assegni</span>
   </button>
-  <button class="tab-item" onclick="goTab('lista',this)">
+  <button class="tab-item active" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
   </button>
@@ -3659,6 +3677,157 @@ async function gestSyncClick(){
     // Vai al registro
     goTab('lista',null);
   } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
+}
+
+// ── REGISTRO ASSEGNI ──
+var _assegniGenerati = [];
+
+function generaAssegni(){
+  var primo = (document.getElementById('assPrimo').value||'').trim();
+  if(!primo || primo.indexOf('-') < 0){ toast('Inserisci numero assegno valido (es. 12345678901-01)'); return; }
+  
+  var parts = primo.split('-');
+  var prefix = parts[0]; // 11 cifre
+  var suffix = parseInt(parts[1]); // 2 cifre
+  if(isNaN(suffix)){ toast('Formato non valido'); return; }
+
+  _assegniGenerati = [];
+  for(var i = 0; i < 10; i++){
+    var num = prefix + '-' + String(suffix + i).padStart(parts[1].length, '0');
+    _assegniGenerati.push({
+      numero: num,
+      beneficiario: '',
+      importo: 0,
+      fattura: '',
+      salvato: false
+    });
+  }
+
+  renderAssegni();
+  toast('10 assegni generati!');
+}
+
+function renderAssegni(){
+  var el = document.getElementById('assegniLista');
+  if(!_assegniGenerati.length){ el.innerHTML=''; return; }
+
+  var fornOptions = '<option value="">— Seleziona fornitore —</option>';
+  fornitori.forEach(function(f){
+    fornOptions += '<option value="'+esc(f)+'">'+esc(f)+'</option>';
+  });
+
+  var html = '';
+  _assegniGenerati.forEach(function(a, idx){
+    var bgColor = a.salvato ? 'var(--green-light)' : 'var(--surface)';
+    var savedBadge = a.salvato ? '<span style="background:var(--green);color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">&#10003; SALVATO</span>' : '';
+    
+    html += '<div style="background:'+bgColor+';border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div style="font-size:16px;font-weight:800;letter-spacing:1px;font-family:monospace">&#128221; '+esc(a.numero)+'</div>';
+    html += savedBadge;
+    html += '</div>';
+    
+    if(!a.salvato){
+      html += '<div style="margin-bottom:8px">';
+      html += '<div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Beneficiario (fornitore)</div>';
+      html += '<select id="assBen'+idx+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--surface);-webkit-appearance:none" onchange="_assegniGenerati['+idx+'].beneficiario=this.value">';
+      html += fornOptions;
+      html += '</select></div>';
+      
+      html += '<div style="display:flex;gap:8px;margin-bottom:8px">';
+      html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo (&#8364;)</div>';
+      html += '<input type="text" id="assImp'+idx+'" placeholder="0,00" inputmode="decimal" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box" onchange="_assegniGenerati['+idx+'].importo=parseFloat((this.value||\x270\x27).replace(\x27,\x27,\x27.\x27))||0"></div>';
+      html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">N&#176; Fattura pagata</div>';
+      html += '<input type="text" id="assFatt'+idx+'" placeholder="Es. 001/2026" inputmode="text" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box" onchange="_assegniGenerati['+idx+'].fattura=this.value"></div>';
+      html += '</div>';
+      
+      html += '<button class="btn btn-p" style="padding:10px;font-size:13px" onclick="salvaAssegno('+idx+')">&#128190; Salva assegno</button>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--ink2)">';
+      html += '<div><b>Beneficiario:</b> '+esc(a.beneficiario||'—')+'</div>';
+      html += '<div><b>Importo:</b> &#8364; '+(a.importo||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+      html += '<div><b>Fattura:</b> '+esc(a.fattura||'—')+'</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  
+  el.innerHTML = html;
+}
+
+async function salvaAssegno(idx){
+  var a = _assegniGenerati[idx];
+  if(!a) return;
+  
+  // Leggi i valori dai campi
+  var benEl = document.getElementById('assBen'+idx);
+  var impEl = document.getElementById('assImp'+idx);
+  var fatEl = document.getElementById('assFatt'+idx);
+  if(benEl) a.beneficiario = benEl.value;
+  if(impEl) a.importo = parseFloat((impEl.value||'0').replace(',','.'))||0;
+  if(fatEl) a.fattura = fatEl.value;
+  
+  if(!a.beneficiario){ toast('Seleziona il beneficiario'); return; }
+  if(!a.importo){ toast('Inserisci l\x27importo'); return; }
+
+  // Salva come fattura nel registro Supabase con pagamento=assegno
+  var record = {
+    id: Date.now() + idx,
+    tipo: 'fattura',
+    fornitore: a.beneficiario,
+    numero: a.fattura || '',
+    data: new Date().toISOString().slice(0,10),
+    importo: a.importo,
+    pagamento: 'assegno',
+    assegno: a.numero,
+    ass_int: a.beneficiario,
+    note: 'Assegno N. '+a.numero,
+    stato: 'pagata',
+    parz_pagato: 0,
+    ts: Date.now() + idx
+  };
+
+  try {
+    await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+    fatture.unshift(dbToApp(record));
+    save(fatture);
+    
+    // Se c'è un numero fattura, aggiorna la fattura nel registro
+    if(a.fattura){
+      var fReg = fatture.find(function(f){ return f.numero && f.numero.toString().trim() === a.fattura.trim(); });
+      if(fReg && fReg.id !== record.id){
+        fReg.stato = 'pagata';
+        fReg.pagamento = 'assegno';
+        fReg.assegno = a.numero;
+        sbFetch('fatture?id=eq.'+fReg.id, {method:'PATCH', body:JSON.stringify({stato:'pagata', pagamento:'assegno', assegno:a.numero})}).catch(function(){});
+      }
+    }
+
+    a.salvato = true;
+    renderAssegni();
+    toast('Assegno '+a.numero+' salvato!');
+  } catch(e){
+    toast('Errore: '+e.message);
+  }
+}
+
+// Carica assegni salvati all'apertura del tab
+function caricaAssegniSalvati(){
+  sbFetch('fatture?pagamento=eq.assegno&select=fornitore,numero,importo,assegno,data&order=ts.desc&limit=20')
+    .then(function(rows){
+      if(!rows || !rows.length) return;
+      var el = document.getElementById('assegniSalvati');
+      var html = '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">Ultimi assegni emessi</div>';
+      rows.forEach(function(r){
+        html += '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center">';
+        html += '<div><div style="font-size:13px;font-weight:600">'+esc(r.fornitore||'')+'</div>';
+        html += '<div style="font-size:11px;color:var(--ink3)">Ass. '+(r.assegno||'?')+' &#183; Fatt. '+(r.numero||'—')+' &#183; '+(r.data||'').slice(0,10)+'</div></div>';
+        html += '<div style="font-size:15px;font-weight:700">&#8364; '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+        html += '</div>';
+      });
+      el.innerHTML = html;
+    })
+    .catch(function(){});
 }
 
 init();

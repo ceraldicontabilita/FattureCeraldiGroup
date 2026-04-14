@@ -234,16 +234,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <!-- MODAL IMPOSTAZIONI API KEY -->
 <div id="modalApiKey" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-end;justify-content:center">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:500px">
-    <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;text-align:center">&#9881;&#65039; Impostazioni</h3>
-    <p style="color:var(--ink3);font-size:13px;margin-bottom:14px;text-align:center;line-height:1.5">Tutti i dati restano sul dispositivo.</p>
-    <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">API Key Anthropic (analisi IA)</div>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;text-align:center">&#128273; API Key Anthropic</h3>
+    <p style="color:var(--ink3);font-size:13px;margin-bottom:16px;text-align:center;line-height:1.5">Inserisci la tua chiave per usare l'analisi IA delle fatture.<br>Viene salvata solo sul tuo dispositivo.</p>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"
-      style="width:100%;padding:12px 14px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:'Inter',-apple-system,sans-serif;background:var(--surface2);box-sizing:border-box;margin-bottom:4px">
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">Ottienila su <strong>console.anthropic.com</strong></div>
-    <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Token Gestionale (importa fatture SDI)</div>
-    <input type="text" id="gestTokenInput" placeholder="Token di accesso impresasemplice..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="none"
-      style="width:100%;padding:12px 14px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:13px;font-family:'Inter',-apple-system,sans-serif;background:var(--surface2);box-sizing:border-box;margin-bottom:4px">
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:16px">Richiesto per scaricare le fatture SDI da <strong>impresasemplice.online</strong></div>
+      style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Inter',-apple-system,sans-serif;background:var(--surface2);box-sizing:border-box;margin-bottom:8px">
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:16px">Ottienila su <strong>console.anthropic.com</strong></div>
     <div style="display:flex;gap:10px">
       <button onclick="chiudiImpostazioni()" style="flex:1;padding:14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:none;font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',-apple-system,sans-serif">Annulla</button>
       <button onclick="salvaApiKey()" style="flex:2;padding:14px;border:none;border-radius:var(--radius-sm);background:var(--blue);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',-apple-system,sans-serif">Salva</button>
@@ -688,7 +683,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       </div>
       <div id="gestEmpty" style="display:none;text-align:center;padding:14px;color:var(--ink3);font-size:13px">&#128219; Nessuna fattura trovata</div>
       <div style="margin-top:10px;font-size:11px;color:var(--ink3);border-top:1px solid var(--bg);padding-top:8px">
-        &#128204; Legge da <strong>impresasemplice.online</strong> &#183; fatture SDI ricevute via PEC Aruba
+        &#128204; Legge da <strong>impresasemplice.online</strong> &#183; fatture ricevute via SDI/PEC Aruba
       </div>
     </div>
   </div>
@@ -1046,8 +1041,6 @@ let rPag='', mPag='';
 function apriImpostazioni(){
   const m=document.getElementById('modalApiKey');
   document.getElementById('apiKeyInput').value=localStorage.getItem('fatture_apikey')||'';
-  const gt=document.getElementById('gestTokenInput');
-  if(gt) gt.value=localStorage.getItem('fatture_gest_token')||'';
   m.style.display='flex';
 }
 function chiudiImpostazioni(){
@@ -1055,15 +1048,8 @@ function chiudiImpostazioni(){
 }
 function salvaApiKey(){
   const k=document.getElementById('apiKeyInput').value.trim();
-  if(k) localStorage.setItem('fatture_apikey',k);
-  else  localStorage.removeItem('fatture_apikey');
-  const gt=document.getElementById('gestTokenInput');
-  if(gt){
-    const t=(gt.value||'').trim();
-    if(t) localStorage.setItem('fatture_gest_token',t);
-    else  localStorage.removeItem('fatture_gest_token');
-  }
-  toast('Impostazioni salvate ✓');
+  if(k){localStorage.setItem('fatture_apikey',k);toast('API Key salvata ✓');}
+  else{localStorage.removeItem('fatture_apikey');toast('API Key rimossa');}
   chiudiImpostazioni();
 }
 
@@ -2876,27 +2862,24 @@ function gestSetStatus(ok, txt){
 }
 
 async function gestScarica(){
-  const anno = (document.getElementById('gestAnno').value||'').trim();
-  const mese = document.getElementById('gestMese').value;
+  var anno = (document.getElementById('gestAnno').value||'').trim();
+  var mese = document.getElementById('gestMese').value;
   if(!anno){ toast('Inserisci anno'); return; }
-
   gestSetStatus(null,'Connessione...');
   document.getElementById('gestLoader').style.display='block';
   document.getElementById('gestRis').style.display='none';
   document.getElementById('gestEmpty').style.display='none';
   document.getElementById('gestBtnTutto').style.display='none';
-
   try {
-    const params = new URLSearchParams({anno, limit:500});
+    var params = new URLSearchParams({anno:anno, limit:'500'});
     if(mese) params.append('mese', mese);
-    const controller = new AbortController();
-    const tid = setTimeout(function(){controller.abort();}, 20000);
-    const res = await fetch('https://impresasemplice.online/api/invoices?' + params, {signal: controller.signal});
+    var controller = new AbortController();
+    var tid = setTimeout(function(){controller.abort();}, 20000);
+    var res = await fetch('https://impresasemplice.online/api/invoices?' + params.toString(), {signal: controller.signal});
     clearTimeout(tid);
     if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if(data && data.error) throw new Error(data.error);
-    const lista = Array.isArray(data) ? data : (data.items||data.invoices||data.results||[]);
+    var data = await res.json();
+    var lista = Array.isArray(data) ? data : (data.items||data.invoices||data.results||[]);
     document.getElementById('gestLoader').style.display='none';
     if(!lista.length){
       gestSetStatus(true,'Nessuna fattura trovata');
@@ -2904,135 +2887,112 @@ async function gestScarica(){
       return;
     }
     _gestFatture = lista;
-    gestSetStatus(true, lista.length + ' fatture trovate');
-    document.getElementById('rsub-gest').textContent = lista.length + ' fatture';
+    gestSetStatus(true, lista.length+' fatture trovate');
+    document.getElementById('rsub-gest').textContent = lista.length+' fatture';
     gestRenderLista(lista);
   } catch(e){
     document.getElementById('gestLoader').style.display='none';
-    gestSetStatus(false, 'Errore: ' + e.message);
-    toast('Errore: ' + e.message.slice(0,50));
+    gestSetStatus(false,'Errore: '+e.message);
+    toast('Errore: '+e.message.slice(0,50));
   }
 }
 
 function gestRenderLista(lista){
-  const container = document.getElementById('gestItems');
-  const countEl   = document.getElementById('gestCount');
-  const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  const nuove     = lista.filter(function(inv){
-    return !esistenti.has((inv.invoice_number||inv.numero||inv.numero_fattura||'').toString().trim());
+  var container = document.getElementById('gestItems');
+  var countEl   = document.getElementById('gestCount');
+  var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+  var nuove = lista.filter(function(inv){
+    return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
   });
-
-  var msg = nuove.length === 0
-    ? 'Tutte le fatture sono già nel registro'
-    : nuove.length === 1
-      ? '1 nuova fattura da importare'
-      : nuove.length + ' nuove fatture da importare';
-
-  countEl.innerHTML =
-    '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">' + nuove.length + '</div>' +
-      '<div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">' + msg + '</div>' +
-      '<div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: ' + lista.length + '</div>' +
-    '</div>';
-
+  var msg = nuove.length===0 ? 'Tutte le fatture sono nel registro' : nuove.length+' nuove fatture da importare';
+  countEl.innerHTML = '<div style="text-align:center;padding:14px 0"><div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">'+nuove.length+'</div><div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">'+msg+'</div><div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: '+lista.length+'</div></div>';
   container.innerHTML = '';
-  lista.forEach(function(inv, idx){
-    var fornitore = inv.supplier_name || inv.cedente_denominazione || inv.fornitore_denominazione || '—';
-    var numero    = inv.invoice_number || inv.numero || inv.numero_fattura || '';
-    var dataDoc   = (inv.invoice_date || inv.data_effettiva || inv.data || '').toString().slice(0,10);
-    var importo   = parseFloat(inv.total_amount || inv.importo_totale || inv.importo || 0);
-    var imponib   = parseFloat(inv.taxable_amount || 0);
-    var iva       = parseFloat(inv.vat_amount || 0);
-    var aliqIva   = inv.vat_rate || '';
-    var descr     = inv.descrizione || '';
-    var scadenza  = (inv.due_date || '').toString().slice(0,10);
-    var tipoDoc   = inv.document_type || '';
-    var tipoBadge = tipoDoc === 'TD24' ? '<span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px">DDT</span>' : '';
-    var pgRaw     = (inv.payment_method || inv.metodo_pagamento_effettivo || inv.metodo_pagamento || '').toLowerCase();
-    var pgLabel   = pgRaw.includes('bonif')||pgRaw.includes('bank')||pgRaw.includes('sepa')||pgRaw==='banca' ? '🏦 Bonifico'
-      : pgRaw.includes('contan')||pgRaw==='cassa'||pgRaw.includes('mp01') ? '💵 Contanti'
-      : pgRaw.includes('assegno') ? '📝 Assegno'
-      : pgRaw.includes('misto') ? '🔀 Misto'
-      : pgRaw || '—';
-    var statoRaw  = inv.stato_pagamento || inv.status || '';
-    var pagato    = statoRaw==='pagata' || statoRaw==='paid' || inv.pagato===true;
-    var statoBadge= pagato
-      ? '<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">PAGATA</span>'
-      : '<span style="background:var(--red-light);color:var(--red);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DA PAGARE</span>';
-    var presente  = esistenti.has(numero.toString().trim());
-    var ibanStr   = inv.iban ? '<div style="font-size:10px;color:var(--ink3);margin-top:2px">IBAN: '+gestEsc(inv.iban)+'</div>' : '';
 
-    // Articoli (da descrizione o linee)
-    var articoliHtml = '';
-    if(inv.linee && inv.linee.length) {
-      articoliHtml = '<div style="margin-top:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;max-height:100px;overflow-y:auto">';
-      inv.linee.slice(0,8).forEach(function(l){
-        var desc = (l.descrizione||'').split('|')[0].trim().slice(0,60);
-        var pz = l.prezzo_totale ? (' — € '+parseFloat(l.prezzo_totale).toFixed(2)) : '';
-        articoliHtml += '<div style="padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05)">'+gestEsc(desc)+pz+'</div>';
+  lista.forEach(function(inv, idx){
+    var nome     = inv.supplier_name||inv.cedente_denominazione||'—';
+    var numero   = inv.invoice_number||inv.numero||'';
+    var dataDoc  = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+    var totale   = parseFloat(inv.total_amount||0);
+    var impon    = parseFloat(inv.taxable_amount||0);
+    var ivaAmt   = parseFloat(inv.vat_amount||0);
+    var ivaRate  = inv.vat_rate||'';
+    var scad     = (inv.due_date||'').toString().slice(0,10);
+    var descr    = inv.descrizione||'';
+    var tipoDoc  = inv.document_type||'';
+    var iban     = inv.iban||'';
+    var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+    var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('assegno')>=0?'Assegno':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'—';
+    var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+    var presente = esistenti.has(numero.toString().trim());
+
+    // DDT badge
+    var ddtTag = tipoDoc==='TD24'?'<span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px">DDT</span>':'';
+
+    // Stato badge
+    var statoTag = pagato
+      ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">PAGATA</span>'
+      :'<span style="background:var(--red-light);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">DA PAGARE</span>';
+
+    // Articoli
+    var artHtml = '';
+    if(inv.linee && inv.linee.length){
+      artHtml='<div style="margin-top:8px;background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12px">';
+      artHtml+='<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">ARTICOLI ('+inv.linee.length+')</div>';
+      inv.linee.slice(0,6).forEach(function(l){
+        var d=(l.descrizione||'').split('|')[0].trim().slice(0,55);
+        var p=l.prezzo_totale?(' '+parseFloat(l.prezzo_totale).toLocaleString('it-IT',{style:'currency',currency:'EUR'})):'';
+        artHtml+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.04)"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gestEsc(d)+'</span><span style="flex-shrink:0;font-weight:600;margin-left:8px">'+p+'</span></div>';
       });
-      if(inv.linee.length > 8) articoliHtml += '<div style="color:var(--ink3);padding-top:2px">...e altri '+(inv.linee.length-8)+' articoli</div>';
-      articoliHtml += '</div>';
-    } else if(descr) {
-      var items = descr.split(';').slice(0,4).map(function(s){return s.trim();}).filter(Boolean);
-      if(items.length) {
-        articoliHtml = '<div style="margin-top:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px">';
-        items.forEach(function(item){
-          articoliHtml += '<div style="padding:1px 0">• '+gestEsc(item.slice(0,65))+'</div>';
-        });
-        if(descr.split(';').length > 4) articoliHtml += '<div style="color:var(--ink3)">...e altri</div>';
-        articoliHtml += '</div>';
+      if(inv.linee.length>6) artHtml+='<div style="color:var(--ink3);font-size:11px;padding-top:3px;text-align:center">...e altri '+(inv.linee.length-6)+' articoli</div>';
+      artHtml+='</div>';
+    } else if(descr){
+      var arts=descr.split(';').slice(0,4).map(function(s){return s.trim();}).filter(Boolean);
+      if(arts.length){
+        artHtml='<div style="margin-top:8px;background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12px">';
+        arts.forEach(function(a){artHtml+='<div style="padding:2px 0">\u2022 '+gestEsc(a.slice(0,60))+'</div>';});
+        if(descr.split(';').length>4) artHtml+='<div style="color:var(--ink3);font-size:11px">...e altri</div>';
+        artHtml+='</div>';
       }
     }
 
-    var div = document.createElement('div');
-    div.style.cssText = 'background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);'+(presente?'opacity:.55':'');
-    div.innerHTML =
-      // Header: fornitore + importo
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gestEsc(fornitore)+tipoBadge+'</div>' +
-          '<div style="font-size:12px;color:var(--ink3);margin-top:2px">N° '+gestEsc(numero)+' — '+dataDoc+'</div>' +
-        '</div>' +
-        '<div style="text-align:right;flex-shrink:0">' +
-          '<div style="font-size:18px;font-weight:800;color:var(--ink)">€ '+importo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>' +
-          '<div style="font-size:10px;color:var(--ink3);margin-top:1px">Imp. €'+imponib.toFixed(2)+' + IVA €'+iva.toFixed(2)+(aliqIva?' ('+aliqIva+'%)':'')+'</div>' +
-        '</div>' +
-      '</div>' +
-      // Info riga: pagamento + stato
-      '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">' +
-        statoBadge +
-        '<span style="font-size:11px;color:var(--ink3)">'+pgLabel+'</span>' +
-        (scadenza ? '<span style="font-size:11px;color:var(--ink3)">Scad. '+scadenza+'</span>' : '') +
-      '</div>' +
-      ibanStr +
-      // Articoli
-      articoliHtml +
-      // Bottone
-      '<div style="margin-top:10px">' +
-        (presente
-          ? '<div style="text-align:center;font-size:12px;color:var(--ink3);padding:6px">✓ Già nel registro</div>'
-          : '<button class="btn btn-p" style="width:100%;padding:10px;font-size:14px" data-gestidx="'+idx+'">📥 Importa nel registro</button>'
-        ) +
-      '</div>';
-    container.appendChild(div);
-  });
+    // IBAN riga
+    var ibanRow = iban?'<div style="font-size:10px;color:var(--ink3);margin-top:4px">IBAN: '+gestEsc(iban)+'</div>':'';
 
-  if(lista.length > 50){
-    var more = document.createElement('div');
-    more.style.cssText = 'text-align:center;font-size:12px;color:var(--ink3);padding:6px';
-    more.textContent = 'Mostrate le prime 50 di ' + lista.length + ' fatture';
-    container.appendChild(more);
-  }
+    var card = document.createElement('div');
+    card.style.cssText='background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)'+(presente?';opacity:.5':'');
+    card.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gestEsc(nome)+ddtTag+'</div>'+
+          '<div style="font-size:12px;color:var(--ink3);margin-top:2px">N\u00b0 '+gestEsc(numero)+' \u2014 '+dataDoc+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="font-size:19px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
+          '<div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+impon.toFixed(2)+' + IVA \u20ac'+ivaAmt.toFixed(2)+(ivaRate?' ('+ivaRate+'%)':'')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">'+
+        statoTag+
+        '<span style="font-size:11px;color:var(--ink2)">\u2022 '+pgLabel+'</span>'+
+        (scad?'<span style="font-size:11px;color:var(--ink3)">\u2022 Scad. '+scad+'</span>':'')+
+      '</div>'+
+      ibanRow+
+      artHtml+
+      '<div style="margin-top:10px">'+
+        (presente
+          ?'<div style="text-align:center;font-size:12px;color:var(--green);padding:8px;background:var(--green-light);border-radius:var(--radius-sm)">\u2713 Gi\u00e0 nel registro</div>'
+          :'<button class="btn btn-p" style="width:100%;padding:11px;font-size:14px" data-gestidx="'+idx+'">\ud83d\udce5 Importa nel registro</button>')+
+      '</div>';
+    container.appendChild(card);
+  });
 
   container.onclick = function(e){
     var btn = e.target.closest('[data-gestidx]');
     if(btn) gestImportaUna(parseInt(btn.dataset.gestidx));
   };
-
-  if(nuove.length > 0){
+  if(nuove.length>0){
     document.getElementById('gestBtnTutto').style.display='block';
-    document.getElementById('gestBtnTutto').textContent = '📥 Importa tutte le ' + nuove.length + ' nuove fatture';
+    document.getElementById('gestBtnTutto').textContent='\ud83d\udce5 Importa tutte le '+nuove.length+' nuove';
   }
   document.getElementById('gestRis').style.display='block';
 }
@@ -3050,7 +3010,7 @@ function gestImportaUna(idx){
 
 function gestImportaTutto(){
   const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  const nuove = _gestFatture.filter(function(inv){return !esistenti.has((inv.invoice_number || inv.numero || inv.numero_fattura || '').toString().trim());});
+  const nuove = _gestFatture.filter(function(inv){return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());});
   nuove.forEach(function(inv){fatture.unshift(gestConverti(inv));});
   saveFatture();
   renderLista();
@@ -3059,30 +3019,26 @@ function gestImportaTutto(){
 }
 
 function gestConverti(inv){
-  var fornitore = inv.supplier_name || inv.cedente_denominazione || inv.fornitore_denominazione || '';
-  var numero    = inv.invoice_number || inv.numero || '';
-  var data      = (inv.invoice_date || inv.data_effettiva || inv.data || '').toString().slice(0,10);
-  var importo   = parseFloat(inv.total_amount || inv.importo || 0);
-  var scadenza  = (inv.due_date || '').toString().slice(0,10);
-  var pagato    = inv.pagato === true || inv.stato_pagamento === 'pagata' || inv.status === 'paid';
-  var stato     = pagato ? 'pagata' : 'da_pagare';
-  var pgRaw     = (inv.payment_method || inv.metodo_pagamento_effettivo || '').toLowerCase();
-  var pagamento = (pgRaw.includes('bonif')||pgRaw.includes('bank')||pgRaw.includes('sepa')||pgRaw==='banca') ? 'bonifico'
-    : (pgRaw.includes('contan')||pgRaw==='cassa'||pgRaw==='mp01') ? 'contanti'
-    : (pgRaw.includes('assegno')) ? 'assegno'
-    : 'bonifico';
+  var nome    = inv.supplier_name||inv.cedente_denominazione||'';
+  var numero  = inv.invoice_number||inv.numero||'';
+  var data    = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+  var totale  = parseFloat(inv.total_amount||0);
+  var scad    = (inv.due_date||'').toString().slice(0,10);
+  var pagato  = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+  var pgRaw   = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+  var pag     = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'bonifico';
   return {
-    id:        'gest_' + (inv.id || Date.now() + '_' + Math.random().toString(36).slice(2,6)),
-    tipo:      inv.document_type === 'TD24' ? 'ddt' : 'fattura',
-    fornitore: fornitore,
+    id:        'gest_'+(inv.id||Date.now()+'_'+Math.random().toString(36).slice(2,6)),
+    tipo:      inv.document_type==='TD24'?'ddt':'fattura',
+    fornitore: nome,
     numero:    numero,
     data:      data,
-    importo:   importo,
-    scadenza:  scadenza,
-    stato:     stato,
-    pagamento: pagamento,
-    bonIban:   inv.iban || '',
-    note:      (inv.descrizione || '').slice(0, 120) || 'Importata da gestionale SDI',
+    importo:   totale,
+    scadenza:  scad,
+    stato:     pagato?'pagata':'da_pagare',
+    pagamento: pag,
+    bonIban:   inv.iban||'',
+    note:      (inv.descrizione||'').slice(0,120)||'Importata da gestionale SDI',
     ts:        Date.now()
   };
 }

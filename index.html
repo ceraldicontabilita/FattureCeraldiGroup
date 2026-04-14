@@ -260,6 +260,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   body { max-width: 500px; margin: 0 auto; }
   .tab-bar { max-width: 500px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
 }
+
+.tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tab-item { min-width: 56px; flex-shrink: 0; }
 </style>
 
 <body>
@@ -958,6 +961,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
     <span class="tab-lbl">Assegni</span>
+  </button>
+  <button class="tab-item" onclick="goTab('riepilogo',this)">
+    <span class="tab-ico">&#9881;</span>
+    <span class="tab-lbl">Altro</span>
   </button>
 </nav>
 
@@ -1673,7 +1680,7 @@ function scattaFotoRegistro(fId){
 }
 
 function renderLista(){
-  aggiornaDL();
+  try { aggiornaDL(); } catch(e) { console.warn('aggiornaDL err:', e); }
   const s=(gv('searchInp')||'').toLowerCase();
   const lDal=gv('lDal')||'', lAl=gv('lAl')||'', lForn=gv('lForn')||'';
   const lMin=parseFloat((gv('lImpMin')||'').replace(',','.'))||0;

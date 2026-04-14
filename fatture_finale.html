@@ -2920,7 +2920,6 @@ function gestRenderLista(lista){
     var accontoTag = regFatt&&regFatt.stato==='parziale'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+parseFloat(regFatt.parzPagato||regFatt.parz_pagato||0).toFixed(2)+'</span>':'';
     var inRegistro = !!regFatt;
     // Override con stato salvato localmente
-    var localPag = _pagamentiCache[inv.id||inv.invoice_number||idx];
     if(localPag){
       if(localPag.stato==='pagata') pagato=true;
       else if(localPag.stato==='da_pagare') pagato=false;
@@ -3213,16 +3212,6 @@ function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
   if(el && !el.value) el.value = new Date().getFullYear();
 })();
 
-// Carica pagamenti salvati da Supabase al boot
-(function loadAllPagamenti(){
-  sbFetch('fatture_pagamenti?select=*').then(function(rows){
-    if(rows && rows.length){
-      rows.forEach(function(r){ _pagamentiCache[r.invoice_id]=r; });
-      console.log('Pagamenti caricati:',rows.length);
-    }
-  }).catch(function(e){console.warn('Load pagamenti:',e);});
-})();
-
 // Auto-carica fatture all'avvio (dopo 2 sec)
 setTimeout(function(){
   var anno = new Date().getFullYear();
@@ -3236,7 +3225,7 @@ setTimeout(function(){
       // Mostra banner in tutte le tab
       var banner = document.createElement('div');
       banner.id = 'gestBanner';
-      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3)';
+      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:50';
       banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
       banner.onclick = function(){
         switchTab('riep');
@@ -3252,6 +3241,53 @@ setTimeout(function(){
     })
     .catch(function(){});
 }, 2000);
+
+
+
+// ── Click sulle card Riepilogo → mostra fatture filtrate per metodo ──
+document.addEventListener('click', function(e){
+  var card = e.target.closest('.tot-card');
+  if(!card) return;
+  var classes = card.className;
+  var filtro = null;
+  if(classes.indexOf('tc-c') >= 0) filtro = 'contanti';
+  else if(classes.indexOf('tc-b') >= 0) filtro = 'bonifico';
+  else if(classes.indexOf('tc-a') >= 0) filtro = 'assegno';
+  else if(classes.indexOf('full') >= 0) filtro = 'tutti';
+  if(!filtro) return;
+
+  // Switch al Registro con filtro
+  switchTab('lista');
+  setTimeout(function(){
+    // Imposta filtro pagamento
+    if(filtro === 'tutti'){
+      // Mostra tutti
+      var filtBtns = document.querySelectorAll('.fil-btn');
+      filtBtns.forEach(function(b){ b.classList.remove('active'); });
+      if(filtBtns[0]) filtBtns[0].classList.add('active');
+      filtroL = 'tutti';
+    } else {
+      var filtBtns = document.querySelectorAll('.fil-btn');
+      filtBtns.forEach(function(b){
+        b.classList.remove('active');
+        if(b.textContent.toLowerCase().indexOf(filtro) >= 0) b.classList.add('active');
+      });
+      filtroL = filtro;
+    }
+    renderLista();
+    toast('Filtro: ' + filtro.charAt(0).toUpperCase() + filtro.slice(1));
+  }, 200);
+});
+
+// Rendi le card cliccabili visivamente
+setTimeout(function(){
+  document.querySelectorAll('.tot-card').forEach(function(c){
+    c.style.cursor = 'pointer';
+    c.style.transition = 'transform .1s';
+    c.addEventListener('touchstart', function(){ this.style.transform='scale(.97)'; });
+    c.addEventListener('touchend', function(){ this.style.transform=''; });
+  });
+}, 500);
 
 init();
 </script>

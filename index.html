@@ -2886,9 +2886,58 @@ async function gestScarica(){
       return;
     }
     _gestFatture = lista;
-    gestSetStatus(true, lista.length+' fatture caricate');
+
+    // ── AUTO-IMPORTA nel registro Supabase ──
+    var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+    var nuove = lista.filter(function(inv){
+      return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
+    });
+
+    var importate = 0;
+    for(var i=0; i<nuove.length; i++){
+      var inv = nuove[i];
+      var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+      var pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'contanti';
+      var pagato = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+      var record = {
+        id: Date.now() + i,
+        tipo: inv.document_type==='TD24'?'ddt':'fattura',
+        fornitore: inv.supplier_name||inv.cedente_denominazione||'',
+        numero: (inv.invoice_number||inv.numero||'').toString(),
+        data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
+        importo: parseFloat(inv.total_amount||0),
+        pagamento: pag,
+        bon_iban: inv.iban||'',
+        note: (inv.descrizione||'').slice(0,120)||'',
+        stato: pagato?'pagata':'da_pagare',
+        scadenza: (inv.due_date||'').toString().slice(0,10)||null,
+        parz_pagato: 0,
+        ts: Date.now() + i
+      };
+      // Salva su Supabase
+      try {
+        await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+        fatture.unshift(dbToApp(record));
+        importate++;
+      } catch(e){ console.warn('Import err:', inv.invoice_number, e); }
+    }
+
+    // Salva cache locale
+    if(importate > 0){
+      save(fatture);
+      renderLista();
+      aggiornaAlertBanner();
+    }
+
+    gestSetStatus(true, lista.length+' nel gestionale, '+importate+' nuove importate');
     document.getElementById('rsub-gest').textContent = lista.length+' fatture';
     gestRenderLista(lista);
+
+    if(importate > 0){
+      toast(importate+' fatture importate nel registro!');
+    } else {
+      toast('Tutto aggiornato — nessuna nuova');
+    }
   } catch(e){
     document.getElementById('gestLoader').style.display='none';
     gestSetStatus(false,'Errore: '+e.message);
@@ -3265,19 +3314,65 @@ setTimeout(function(){
       banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per visualizzare</div></div><div style="margin-left:auto;font-size:20px">\u203a</div>';
       banner.onclick = function(e){
         e.stopPropagation();
-        switchTab('riep');
-        setTimeout(function(){
-          var rc = document.getElementById('rbody-gest');
-          if(rc && !rc.classList.contains('open')) toggleRCard('gest');
-          document.getElementById('gestAnno').value = anno;
-          gestScarica();
-        }, 300);
+        switchTab('lista');
       };
       // Inserisci banner subito dopo l'header, con z-index e pointer-events
       var header = document.querySelector('.ios-header');
       if(header) header.insertAdjacentElement('afterend', banner);
     })
     .catch(function(){});
+
+  // Auto-importa nuove fatture nel registro
+    _gestFatture = lista;
+    var esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+    var nuoveAuto = lista.filter(function(inv){
+      return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
+    });
+    if(nuoveAuto.length > 0){
+      // Mostra banner con conteggio e auto-importa in background
+      banner.innerHTML = '<div style="font-size:28px">\ud83d\udce8</div><div><div style="font-size:15px;font-weight:700">'+nuoveAuto.length+' nuove fatture SDI</div><div style="font-size:12px;opacity:.8">Importazione in corso...</div></div>';
+      // Importa in background
+      (async function(){
+        var count = 0;
+        for(var i=0; i<nuoveAuto.length; i++){
+          var inv = nuoveAuto[i];
+          var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+          var pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':'contanti';
+          var pagato = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+          var record = {
+            id: Date.now() + i,
+            tipo: inv.document_type==='TD24'?'ddt':'fattura',
+            fornitore: inv.supplier_name||inv.cedente_denominazione||'',
+            numero: (inv.invoice_number||inv.numero||'').toString(),
+            data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
+            importo: parseFloat(inv.total_amount||0),
+            pagamento: pag,
+            bon_iban: inv.iban||'',
+            note: (inv.descrizione||'').slice(0,120)||'',
+            stato: pagato?'pagata':'da_pagare',
+            scadenza: (inv.due_date||'').toString().slice(0,10)||null,
+            parz_pagato: 0,
+            ts: Date.now() + i
+          };
+          try {
+            await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+            fatture.unshift(dbToApp(record));
+            count++;
+          } catch(e){}
+        }
+        if(count > 0){
+          save(fatture);
+          renderLista();
+          aggiornaAlertBanner();
+          banner.innerHTML = '<div style="font-size:28px">\u2705</div><div><div style="font-size:15px;font-weight:700">'+count+' fatture importate</div><div style="font-size:12px;opacity:.8">Vai al Registro per vederle</div></div>';
+          banner.onclick = function(e){ e.stopPropagation(); switchTab('lista'); };
+          toast(count+' nuove fatture importate!');
+        }
+      })();
+    } else {
+      banner.innerHTML = '<div style="font-size:28px">\u2705</div><div><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Tutto aggiornato</div></div>';
+      banner.onclick = function(e){ e.stopPropagation(); switchTab('lista'); };
+    }
 
   // Controlla fatture sospese nel registro Supabase
   sbFetch('fatture?stato=eq.sospesa&select=fornitore,numero,note,importo,parz_pagato')

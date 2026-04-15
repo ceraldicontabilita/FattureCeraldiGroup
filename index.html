@@ -223,105 +223,33 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
 
-.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}.tab-item{min-width:52px;flex-shrink:0}
 
-.mo.on{display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important}
-.mo .modal{max-height:80vh;overflow-y:auto}
-
-.fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
-
-#gestDetailMo {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  z-index: 300;
-  align-items: center !important;
-  justify-content: center !important;
-  backdrop-filter: blur(4px);
-  padding: 16px !important;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-#gestDetailMo > div {
-  max-height: 85vh !important;
-  overflow-y: auto !important;
-  margin: auto !important;
-  border-radius: 20px !important;
-}
-
-
-/* ── RESPONSIVE GLOBALE ── */
-* { box-sizing: border-box; }
-.view { padding: 16px !important; }
-body { margin: 0; padding: 0; overflow-x: hidden; }
-
-/* Modal dettaglio fattura CENTRATO */
-#gestDetailMo {
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(0,0,0,.5) !important;
-  z-index: 300 !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  backdrop-filter: blur(4px);
-}
-#gestDetailMo > div {
-  max-height: 85vh !important;
-  max-width: 440px !important;
-  width: 100% !important;
-  overflow-y: auto !important;
-  margin: auto !important;
-  border-radius: 20px !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,.3) !important;
-}
-
-/* Modal elimina centrato */
-.mo { padding: 20px !important; }
-.mo.on { display: flex !important; align-items: center !important; justify-content: center !important; }
-.mo .modal { max-height: 80vh; overflow-y: auto; max-width: 400px; width: 100%; }
-
-/* Modal modifica centrato */
-.edit-mo { padding: 16px !important; }
-.edit-mo.on { align-items: center !important; }
-.edit-mo .edit-sheet { max-height: 88vh; overflow-y: auto; border-radius: 20px !important; max-width: 440px; margin: auto; }
-
-/* Card registro responsive */
-.fi { margin: 0 0 10px 0 !important; }
-.fi-actions { flex-wrap: wrap; gap: 6px !important; }
-.fi-act-btn { font-size: 12px !important; padding: 6px 8px !important; }
-
-/* Tab bar responsive */
-.tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 6px 0 env(safe-area-inset-bottom, 8px) !important; }
-.tab-item { min-width: 52px; flex-shrink: 0; }
-
-/* Assegni card responsive */
-#view-assegni .stitle { padding: 0 !important; }
-
-@media (max-width: 400px) {
-  .view { padding: 10px !important; }
-  .fi-act-btn { font-size: 11px !important; padding: 5px 6px !important; }
-  .tab-lbl { font-size: 9px !important; }
-}
-
-
-/* ── TAB BAR FISSA IN BASSO ── */
+/* == CUSTOM CSS == */
 .tab-bar {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 100 !important;
-  background: #fff !important;
-  border-top: 1px solid var(--sep) !important;
-  padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(255,255,255,.97);
+  border-top: 1px solid rgba(0,0,0,.1);
+  padding-bottom: env(safe-area-inset-bottom, 6px);
 }
-/* Spazio per la tab bar fissa */
-body { padding-bottom: 80px !important; }
-
+.tab-item { min-width: 50px; flex-shrink: 0; }
+body { padding-bottom: 72px; }
+.fi { cursor: pointer; -webkit-tap-highlight-color: rgba(0,122,255,.1); }
+#gestDetailMo > div {
+  max-height: 85vh;
+  max-width: 440px;
+  width: calc(100% - 32px);
+  overflow-y: auto;
+  margin: auto;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.3);
+}
+.mo.on { display: flex; align-items: center; justify-content: center; padding: 20px; }
 </style>
 
 <body>
@@ -354,7 +282,7 @@ body { padding-bottom: 80px !important; }
 </div>
 
 <!-- SCAN -->
-<div id="view-scan" class="view active">
+<div id="view-scan" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -567,7 +495,7 @@ body { padding-bottom: 80px !important; }
 </div>
 
 <!-- LISTA -->
-<div id="view-lista" class="view">
+<div id="view-lista" class="view active">
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
   </div>

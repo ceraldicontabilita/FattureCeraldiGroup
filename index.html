@@ -1529,9 +1529,9 @@ function renderLista(){
     }
     // badge incompleta
     const incompletaBadge=(f.incompleta&&f.incompleta.length>0)?`<span style="display:inline-flex;align-items:center;gap:3px;background:#FFF0EF;color:var(--red);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:4px">⚠️ Incompleta</span>`:'';
-    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="apriF('${f.id}')">&#128247; Foto</button>`:'';
-    return `<div class="fi" id="fi-${f.id}" style="${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
-      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
+    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="event.stopPropagation();apriF('${f.id}')">&#128247; Foto</button>`:'';
+    return `<div class="fi" id="fi-${f.id}" onclick="apriDettaglioRegistro(${f.id})" style="cursor:pointer;${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
+      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="event.stopPropagation();apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
       <div class="fi-body">
         <div class="fi-top"><div class="fi-nome">${ddtBadge}${esc(f.fornitore)}${incompletaBadge}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
         <div class="fi-meta">${df} · ${pag1}${extra}${rateInfo}${scadInfo}</div>
@@ -1540,11 +1540,11 @@ function renderLista(){
         ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note)}</div>`:''}
         ${parzInfo}
         <div class="fi-actions">
-          ${ddtOpen?`<button class="fi-act-btn primary" onclick="openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
+          ${ddtOpen?`<button class="fi-act-btn primary" onclick="event.stopPropagation();openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
           ${fotoBtn}
-          <button class="fi-act-btn" onclick="condividiRegistrazione(${f.id})">📤 Condividi</button>
-          <button class="fi-act-btn" onclick="openEdit(${f.id})">✏️ Modifica</button>
-          <button class="fi-act-btn danger" onclick="askDel(${f.id})">&#128465;</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();condividiRegistrazione(${f.id})">📤 Condividi</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();openEdit(${f.id})">✏️ Modifica</button>
+          <button class="fi-act-btn danger" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;
@@ -2543,7 +2543,7 @@ function renderScadenzario(){
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:'DM Serif Display',serif;font-size:18px">${fmt(f.importo)}</div>
-          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="openEdit(${f.id})">&#9998; Modifica</button>
+          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="event.stopPropagation();openEdit(${f.id})">&#9998; Modifica</button>
         </div>
       </div>
     </div>`;
@@ -3106,6 +3106,61 @@ async function calcolaIVA(){
   var sa=tdb-tc;var ic=sa<0;
   td.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#E3F2FD;border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue)">\u20ac '+fe(tc)+'</div></div><div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red)">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red)">\u20ac '+fe(tdb)+'</div></div></div><div style="background:'+(ic?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px"><div style="font-size:11px;opacity:.7">SALDO '+anno+'</div><div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(Math.abs(sa))+'</div><div style="font-size:13px;opacity:.9">'+(ic?'A CREDITO':'A DEBITO')+'</div></div>';
   md.innerHTML=mh||'<div style="text-align:center;padding:20px">Nessun dato</div>';toast('IVA: '+ma+' mesi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
+}
+
+
+
+// == CLICK CARD REGISTRO ==
+var _gestFatture = [];
+
+function apriDettaglioRegistro(fId){
+  var f = fatture.find(function(x){return x.id==fId;});
+  if(!f){openEdit(fId);return;}
+  var num = (f.numero||'').toString().trim();
+  if(!num){openEdit(fId);return;}
+  if(_gestFatture && _gestFatture.length){
+    for(var i=0;i<_gestFatture.length;i++){
+      if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
+        gestApriDettaglio(i);return;
+      }
+    }
+    openEdit(fId);return;
+  }
+  toast('Caricamento...');
+  var anno=f.data?f.data.slice(0,4):new Date().getFullYear().toString();
+  fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data){openEdit(fId);return;}
+      _gestFatture=Array.isArray(data)?data:(data.items||[]);
+      for(var i=0;i<_gestFatture.length;i++){
+        if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
+          gestApriDettaglio(i);return;
+        }
+      }
+      openEdit(fId);
+    }).catch(function(){openEdit(fId);});
+}
+
+function scattaFotoRegistro(fId){
+  var input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.capture='environment';
+  input.onchange=function(){
+    if(!input.files||!input.files[0])return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');var mW=800,w=img.width,h=img.height;
+        if(w>mW){h=Math.round(h*mW/w);w=mW;}c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        var du=c.toDataURL('image/jpeg',0.7);
+        sbFetch('fatture?id=eq.'+fId,{method:'PATCH',body:JSON.stringify({foto:du})})
+          .then(function(){var f=fatture.find(function(x){return x.id==fId;});if(f)f.foto=du;save(fatture);renderLista();toast('Foto salvata!');})
+          .catch(function(e){toast('Errore: '+e.message);});
+      };img.src=e.target.result;
+    };reader.readAsDataURL(input.files[0]);
+  };input.click();
 }
 
 

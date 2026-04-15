@@ -132,7 +132,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .add-rata-btn:active{border-color:var(--blue);color:var(--blue)}
 .edit-mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
 .edit-mo.on{display:flex}
-.edit-sheet{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
+.edit-sheet{background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0;animation:slideUp .3s cubic-bezier(.32,.72,0,1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .edit-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)}
 .edit-sheet-hd h3{font-size:18px;font-weight:700}
@@ -222,6 +222,44 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-confirm-btns button{flex:1;padding:15px;border:none;border-radius:var(--radius-sm);font-family:'Inter',-apple-system,sans-serif;font-size:16px;font-weight:600;cursor:pointer}
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
+
+/* ── RESPONSIVE MODAL ── */
+#gestDetailMo {
+  align-items: flex-start !important;
+  padding: 24px 12px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+#gestDetailSheet {
+  border-radius: 20px !important;
+  max-height: none !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25) !important;
+  margin: auto 0 !important;
+  flex-shrink: 0 !important;
+}
+/* ── RESPONSIVE LAYOUT ── */
+@media (max-width: 500px) {
+  .ios-header { padding: 48px 16px 10px; }
+  .view { padding: 12px; }
+  .fi { padding: 12px 14px; }
+  .fi-nome { font-size: 14px; }
+  .fi-imp { font-size: 16px; }
+  .fi-actions { gap: 4px; }
+  .fi-act-btn { font-size: 12px; padding: 6px; }
+  .tot-grid { gap: 8px; }
+  .tot-card { padding: 14px; }
+  .tv { font-size: 20px; }
+  .tab-bar { padding: 6px 0 16px; }
+  .tab-lbl { font-size: 9px; }
+  .tab-ico { font-size: 20px; }
+}
+@media (min-width: 501px) and (max-width: 768px) {
+  body { max-width: 600px; margin: 0 auto; }
+}
+@media (min-width: 769px) {
+  body { max-width: 500px; margin: 0 auto; }
+  .tab-bar { max-width: 500px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
+}
 </style>
 
 <body>
@@ -256,7 +294,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- SCAN -->
-<div id="view-scan" class="view active">
+<div id="view-scan" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -470,6 +508,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 <!-- LISTA -->
 <div id="view-lista" class="view">
+  <div style="margin-bottom:12px"><button class="btn btn-p" onclick="gestSyncClick()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:14px;width:100%">&#128229; Scarica nuove fatture SDI</button></div>
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
   </div>
@@ -647,7 +686,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
   <!-- 6. ZONA PERICOLO -->
   <!-- IMPORTA DA GESTIONALE -->
-  <div class="rcard" id="rc-gest">
+  <div class="rcard" id="rc-gest" style="display:none">
     <div class="rcard-hd" onclick="toggleRCard('gest')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#127963;</span>
         <div><div class="rcard-title">Importa da Gestionale</div><div class="rcard-sub" id="rsub-gest">Fatture XML ricevute via SDI</div></div>
@@ -679,7 +718,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <div id="gestRis" style="display:none">
         <div style="font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" id="gestCount"></div>
         <div id="gestItems"></div>
-        <button class="btn btn-p" id="gestBtnTutto" style="width:100%;margin-top:6px;display:none" onclick="gestImportaTutto()">&#9989; Importa tutte nel registro</button>
+        
       </div>
       <div id="gestEmpty" style="display:none;text-align:center;padding:14px;color:var(--ink3);font-size:13px">&#128219; Nessuna fattura trovata</div>
       <div style="margin-top:10px;font-size:11px;color:var(--ink3);border-top:1px solid var(--bg);padding-top:8px">
@@ -840,12 +879,49 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- TAB BAR BOTTOM -->
+
+<!-- VIEW ASSEGNI -->
+<div class="view" id="view-assegni" style="padding:16px">
+  <p class="stitle">Registro Assegni</p>
+  
+  <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
+    <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO ASSEGNI</div>
+    <div class="field"><label>Primo numero assegno</label>
+      <input type="tel" id="assPrimo" placeholder="1111111111-12" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" maxlength="14" oninput="formatAssegno(this)" style="font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700">
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">Es: 0208770851-03 (il numero prima del trattino aumenta)</div>
+    </div>
+    <button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px">&#128221; Genera 10 assegni</button>
+  </div>
+
+  <div id="assegniLista"></div>
+  <div id="assegniSalvati" style="margin-top:16px"></div>
+</div>
+
+
+<!-- VIEW CORRISPETTIVI -->
+<div class="view" id="view-corrispettivi" style="padding:16px">
+  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p>
+  
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div style="flex:1">
+      <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Anno</label>
+      <input type="number" id="corrAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
+    </div>
+    <div style="flex:1;display:flex;align-items:flex-end">
+      <button class="btn btn-p" onclick="caricaCorrispettivi()" style="width:100%;padding:10px;font-size:14px">&#128176; Carica</button>
+    </div>
+  </div>
+  
+  <div id="corrTotali" style="margin-bottom:14px"></div>
+  <div id="corrLista"></div>
+</div>
+
 <nav class="tab-bar">
-  <button class="tab-item active" onclick="goTab('scan',this)">
-    <span class="tab-ico">&#128247;</span>
-    <span class="tab-lbl">Scansiona</span>
+  <button class="tab-item" onclick="goTab('assegni',this)">
+    <span class="tab-ico">&#128221;</span>
+    <span class="tab-lbl">Assegni</span>
   </button>
-  <button class="tab-item" onclick="goTab('lista',this)">
+  <button class="tab-item active" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
   </button>
@@ -854,6 +930,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="tab-lbl">Scadenze</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
+  <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
     <span class="tab-lbl">Riepilogo</span>
@@ -918,6 +995,7 @@ async function loadAll(){
     fatture = cacheGet(K,[]); fornitori = cacheGet(KF,[]);
     return false;
   }
+
 }
 
 // ── SAVE ──
@@ -1035,6 +1113,36 @@ function buildPromptApprendimento(){
 }
 
 let fatture=[], fornitori=[], filtroL='tutti', periodo='tutti', delId=null;
+
+// Dedup fatture dopo il caricamento
+function dedupFatture(){
+  var seen = {};
+  var toRemove = [];
+  fatture.forEach(function(f){
+    var key = ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(seen[key]){
+      // Duplicato — tieni quello con ts più alto (più recente) o con foto
+      var existing = seen[key];
+      if(f.foto && !existing.foto){
+        toRemove.push(existing.id);
+        seen[key] = f;
+      } else {
+        toRemove.push(f.id);
+      }
+    } else {
+      seen[key] = f;
+    }
+  });
+  if(toRemove.length > 0){
+    console.log('Dedup: rimuovo '+toRemove.length+' duplicati');
+    fatture = fatture.filter(function(f){ return toRemove.indexOf(f.id) < 0; });
+    save(fatture);
+    // Rimuovi anche da Supabase
+    toRemove.forEach(function(id){
+      sbFetch('fatture?id=eq.'+id, {method:'DELETE'}).catch(function(){});
+    });
+  }
+}
 let rPag='', mPag='';
 
 // ── TABS ──
@@ -1056,11 +1164,14 @@ function salvaApiKey(){
 function goTab(tab,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('view-'+tab).classList.add('active');
+  var viewEl = document.getElementById('view-'+tab);
+  if(viewEl) viewEl.classList.add('active');
   if(btn) btn.classList.add('active');
   if(tab==='lista') renderLista();
-  if(tab==='riepilogo') renderRiepilogo();
+  if(tab==='riepilogo'){ updRiep(); renderScadenzario(); renderFornChart(); checkBackup(); }
   if(tab==='scadenzario') renderScadenzario();
+  if(tab==='assegni') caricaAssegniSalvati();
+  if(tab==='corrispettivi') caricaCorrispettivi();
 }
 
 // ── UPLOAD ──
@@ -1458,6 +1569,83 @@ function resetLFiltri(){
   const s=document.getElementById('lForn');if(s)s.value='';
   renderLista();
 }
+
+// Click su card nel Registro → apre dettaglio XML se disponibile
+function apriDettaglioRegistro(fId){
+  var f = fatture.find(function(x){return x.id==fId;});
+  if(!f) return;
+  var num = (f.numero||'').toString().trim();
+  if(!num){ openEdit(fId); return; }
+  
+  // Se le fatture SDI sono già in memoria
+  if(_gestFatture && _gestFatture.length){
+    for(var i=0; i<_gestFatture.length; i++){
+      if(((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim())===num){
+        gestApriDettaglio(i);
+        return;
+      }
+    }
+    // Numero non trovato in SDI — apri modifica
+    openEdit(fId);
+    return;
+  }
+  
+  // Scarica fatture SDI (una sola volta, poi restano in memoria)
+  toast('Caricamento...');
+  var anno = f.data ? f.data.slice(0,4) : new Date().getFullYear().toString();
+  fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data){ openEdit(fId); return; }
+      _gestFatture = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+      for(var i=0; i<_gestFatture.length; i++){
+        if(((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim())===num){
+          gestApriDettaglio(i);
+          return;
+        }
+      }
+      openEdit(fId);
+    })
+    .catch(function(){ openEdit(fId); });
+}
+
+// Scatta foto da registro e salva su Supabase
+function scattaFotoRegistro(fId){
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.onchange = function(){
+    if(!input.files||!input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement('canvas');
+        var maxW = 800, w = img.width, h = img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        var dataUrl = canvas.toDataURL('image/jpeg',0.7);
+        // Salva su Supabase
+        sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify({foto:dataUrl})})
+          .then(function(){
+            // Aggiorna locale
+            var f = fatture.find(function(x){return x.id==fId;});
+            if(f) f.foto = dataUrl;
+            save(fatture);
+            renderLista();
+            toast('Foto salvata!');
+          })
+          .catch(function(e){ toast('Errore foto: '+e.message); });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  };
+  input.click();
+}
+
 function renderLista(){
   aggiornaDL();
   const s=(gv('searchInp')||'').toLowerCase();
@@ -1465,7 +1653,9 @@ function renderLista(){
   const lMin=parseFloat((gv('lImpMin')||'').replace(',','.'))||0;
   const lMax=parseFloat((gv('lImpMax')||'').replace(',','.'))||Infinity;
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
-  const filt=fatture.filter(f=>{
+  let filt=fatture.filter(f=>{
+    // Nascondi assegni vuoti dal registro (si vedono nel tab Assegni)
+    if(f.pagamento==='assegno' && (!f.fornitore || f.importo===0) && f.note && f.note.indexOf('Assegno da compilare')>=0) return false;
     const okT=filtroL==='tutti'||f.pagamento===filtroL;
     const okS=!s||f.fornitore.toLowerCase().includes(s)||(f.numero||'').toLowerCase().includes(s)||(f.note||'').toLowerCase().includes(s);
     const d=f.data?new Date(f.data+'T12:00:00'):null;
@@ -1475,8 +1665,16 @@ function renderLista(){
     const imp=f.importo||0;
     return okT&&okS&&okDal&&okAl&&okF&&imp>=lMin&&imp<=lMax;
   });
+  // Dedup registro
+  var _seenR={};
+  filt=filt.filter(function(f){
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(_seenR[k]) return false;
+    _seenR[k]=true;
+    return true;
+  });
   const cnt=document.getElementById('listaCount');
-  if(cnt) cnt.textContent=filt.length+' fattura'+(filt.length!==1?'e':'');
+  if(cnt) cnt.textContent=filt.length+' fattur'+(filt.length!==1?'e':'a');
   const el=document.getElementById('listaEl');
   if(!filt.length){el.innerHTML='<div class="empty"><div class="ei">&#128203;</div><p>Nessuna fattura trovata</p></div>';return;}
   const oggi2=new Date(); oggi2.setHours(0,0,0,0);
@@ -1513,9 +1711,9 @@ function renderLista(){
     }
     // badge incompleta
     const incompletaBadge=(f.incompleta&&f.incompleta.length>0)?`<span style="display:inline-flex;align-items:center;gap:3px;background:#FFF0EF;color:var(--red);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:4px">⚠️ Incompleta</span>`:'';
-    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="apriF('${f.id}')">&#128247; Foto</button>`:'';
-    return `<div class="fi" id="fi-${f.id}" style="${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
-      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
+    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="event.stopPropagation();apriF('${f.id}')">&#128247; Foto</button>`:`<button class="fi-act-btn" onclick="event.stopPropagation();scattaFotoRegistro(${f.id})">&#128247; Foto</button>`;
+    return `<div class="fi" id="fi-${f.id}" onclick="apriDettaglioRegistro(${f.id})" style="cursor:pointer;${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
+      ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="event.stopPropagation();apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
       <div class="fi-body">
         <div class="fi-top"><div class="fi-nome">${ddtBadge}${esc(f.fornitore)}${incompletaBadge}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
         <div class="fi-meta">${df} · ${pag1}${extra}${rateInfo}${scadInfo}</div>
@@ -1524,11 +1722,11 @@ function renderLista(){
         ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note)}</div>`:''}
         ${parzInfo}
         <div class="fi-actions">
-          ${ddtOpen?`<button class="fi-act-btn primary" onclick="openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
+          ${ddtOpen?`<button class="fi-act-btn primary" onclick="event.stopPropagation();openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
           ${fotoBtn}
-          <button class="fi-act-btn" onclick="condividiRegistrazione(${f.id})">📤 Condividi</button>
-          <button class="fi-act-btn" onclick="openEdit(${f.id})">✏️ Modifica</button>
-          <button class="fi-act-btn danger" onclick="askDel(${f.id})">&#128465;</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();condividiRegistrazione(${f.id})">📤 Condividi</button>
+          <button class="fi-act-btn" onclick="event.stopPropagation();openEdit(${f.id})">✏️ Modifica</button>
+          <button class="fi-act-btn danger" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;
@@ -1603,9 +1801,10 @@ function setPer(tipo,btn){
   updRiep();
 }
 function getFiltered(){
+  var _src=fatture.filter(function(f){return !(f.pagamento==='assegno'&&(!f.fornitore||f.importo===0));});
   const now=new Date(); now.setHours(23,59,59,999);
   const forn=gv('eForn')||'', pag=gv('ePag')||'';
-  return fatture.filter(f=>{
+  return _src.filter(f=>{
     const d=f.data?new Date(f.data+'T12:00:00'):null;
     let okP=true;
     if(periodo==='settimana'&&d){const lun=new Date(now);lun.setDate(now.getDate()-((now.getDay()+6)%7));lun.setHours(0,0,0,0);okP=d>=lun;}
@@ -1627,7 +1826,7 @@ function updRiep(){
   document.getElementById('totB').textContent=fmt(sum('bonifico'));
   document.getElementById('totA').textContent=fmt(sum('assegno'));
   const n=rows.length;
-  document.getElementById('expCount').textContent=n+' fattura'+(n!==1?'e':'')+' selezionat'+(n!==1?'e':'a');
+  document.getElementById('expCount').textContent=n+' fattur'+(n!==1?'e':'a')+' selezionat'+(n!==1?'e':'a');
   // Aggiorna subtitle filtri
   const parts=[];
   if(periodo!=='tutti') parts.push({tutti:'Tutti',settimana:'Questa sett.',mese:'Questo mese',anno:'Quest\'anno',custom:'Personalizzato'}[periodo]||periodo);
@@ -1636,59 +1835,6 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
-  const ap=document.getElementById('anteprima');
-  if(!rows.length){ap.innerHTML='';return;}
-  ap.innerHTML='<p class="stitle-sm" style="margin-bottom:10px">Anteprima</p>'+
-    rows.slice(0,5).map(f=>{
-      const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}):'—';
-      const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
-      return `<div class="fi"><div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>
-        <div class="fi-body"><div class="fi-top"><div class="fi-nome">${esc(f.fornitore)}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
-        <div class="fi-meta">${df} &middot; ${f.pagamento}</div></div></div>`;
-    }).join('')+(rows.length>5?`<p style="text-align:center;font-size:12px;color:var(--ink3);padding:8px">...e altri ${rows.length-5}</p>`:'');
-}
-function renderRiepilogo(){aggiornaDL();updRiep();}
-
-// ── EXPORT (iOS-compatibile) ──
-function condividi(content, nome, type){
-  const blob=new Blob([content],{type});
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  // Web Share API (iOS 15+, migliore opzione)
-  if(isIOS&&navigator.canShare){
-    const file=new File([blob],nome,{type});
-    if(navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:nome})
-        .then(()=>toast('File condiviso!'))
-        .catch(e=>{if(e.name!=='AbortError') toast('Condivisione annullata');});
-      return;
-    }
-  }
-  // Desktop o Android
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=nome;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-const nomeF=ext=>'fatture_ceraldi_'+new Date().toISOString().split('T')[0]+'.'+ext;
-
-function esportaCSV(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo','Pagamento','N. Assegno','Note'];
-  const lines=rows.map(f=>[f.data||'',`"${(f.fornitore||'').replace(/"/g,'""')}"`,`"${(f.numero||'').replace(/"/g,'""')}"`,
-    (f.importo||0).toFixed(2).replace('.',','),f.pagamento||'',`"${(f.assegno||'').replace(/"/g,'""')}"`,`"${(f.note||'').replace(/"/g,'""')}"`]);
-  condividi('\ufeff'+[h.join(';'),...lines.map(r=>r.join(';'))].join('\n'), nomeF('csv'), 'text/csv;charset=utf-8');
-  toast('CSV pronto!');
-}
-function esportaExcel(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
-  const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
-  const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
@@ -2338,6 +2484,7 @@ function apriF(id){
   let isPinching=false;
 
   function applyT(){ img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
+}
   function limitPan(){
     const maxTx=Math.max(0,(img.offsetWidth*scale-window.innerWidth)/2);
     const maxTy=Math.max(0,(img.offsetHeight*scale-window.innerHeight)/2);
@@ -2497,8 +2644,16 @@ function renderScadenzario(){
     const db=b.scadenza?new Date(b.scadenza+'T12:00:00'):new Date('9999-12-31');
     return da-db;
   });
+  // Dedup: rimuovi fatture con stesso numero+fornitore
+  var _seen={};
+  lista=lista.filter(function(f){
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(_seen[k]) return false;
+    _seen[k]=true;
+    return true;
+  });
   const cnt=document.getElementById('scadCount');
-  if(cnt) cnt.textContent=lista.length+' fattura'+(lista.length!==1?'e':'');
+  if(cnt) cnt.textContent=lista.length+' fattur'+(lista.length!==1?'e':'a');
   const el=document.getElementById('scadEl');
   if(!lista.length){
     el.innerHTML='<div class="empty"><div class="ei">&#9989;</div><p>Nessuna fattura da mostrare</p></div>';
@@ -2527,7 +2682,8 @@ function renderScadenzario(){
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:'DM Serif Display',serif;font-size:18px">${fmt(f.importo)}</div>
-          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="openEdit(${f.id})">&#9998; Modifica</button>
+          <button style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink2)" onclick="event.stopPropagation();openEdit(${f.id})">&#9998; Modifica</button>
+          <button style="padding:6px 12px;border:1px solid var(--red);border-radius:8px;background:var(--red-light);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)" onclick="event.stopPropagation();askDel(${f.id})">&#128465;</button>
         </div>
       </div>
     </div>`;
@@ -2862,25 +3018,23 @@ function gestSetStatus(ok, txt){
 }
 
 async function gestScarica(){
-  const anno = (document.getElementById('gestAnno').value||'').trim();
-  const mese = document.getElementById('gestMese').value;
+  var anno = (document.getElementById('gestAnno').value||'').trim();
+  var mese = document.getElementById('gestMese').value;
   if(!anno){ toast('Inserisci anno'); return; }
-  const ep = 'https://impresasemplice.online';
   gestSetStatus(null,'Connessione...');
   document.getElementById('gestLoader').style.display='block';
   document.getElementById('gestRis').style.display='none';
   document.getElementById('gestEmpty').style.display='none';
-  document.getElementById('gestBtnTutto').style.display='none';
   try {
-    const params = new URLSearchParams({anno, limit:500});
-    if(mese) params.append('month_year', mese+'-'+anno);
-    const controller = new AbortController();
-    const tid = setTimeout(function(){controller.abort();}, 15000);
-    const res = await fetch(ep+'/api/invoices?'+params, {signal:controller.signal});
+    var params = new URLSearchParams({anno:anno, limit:'500'});
+    if(mese) params.append('mese', mese);
+    var controller = new AbortController();
+    var tid = setTimeout(function(){controller.abort();}, 20000);
+    var res = await fetch('https://impresasemplice.online/api/invoices?' + params.toString(), {signal: controller.signal});
     clearTimeout(tid);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    const lista = Array.isArray(data)?data:(data.items||data.invoices||[]);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var lista = Array.isArray(data) ? data : (data.items||data.invoices||data.results||[]);
     document.getElementById('gestLoader').style.display='none';
     if(!lista.length){
       gestSetStatus(true,'Nessuna fattura trovata');
@@ -2888,9 +3042,82 @@ async function gestScarica(){
       return;
     }
     _gestFatture = lista;
-    gestSetStatus(true, lista.length+' fatture trovate');
+
+    // ── AUTO-IMPORTA nel registro Supabase ──
+    var esistenti = new Set(fatture.map(function(f){return ((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();}));
+    var nuove = lista.filter(function(inv){
+      return !esistenti.has(((inv.invoice_number||inv.numero||'')+'|||'+(inv.supplier_name||inv.cedente_denominazione||'')).toUpperCase());
+    });
+
+    // Costruisci mappa metodo pagamento per fornitore (dall'ultima fattura nel registro)
+    var fornMetodo = {};
+    fatture.forEach(function(f){
+      if(f.fornitore && f.pagamento && !fornMetodo[f.fornitore.toUpperCase()]){
+        fornMetodo[f.fornitore.toUpperCase()] = f.pagamento;
+      }
+    });
+
+    var importate = 0;
+    for(var i=0; i<nuove.length; i++){
+      var inv = nuove[i];
+      var nomeFornitore = inv.supplier_name||inv.cedente_denominazione||'';
+      var nomeUpper = nomeFornitore.toUpperCase();
+
+      // Metodo pagamento: prima cerca nel registro (impostato dall'utente), poi dal XML
+      var pag;
+      if(fornMetodo[nomeUpper]){
+        pag = fornMetodo[nomeUpper]; // Usa il metodo che l'utente ha impostato
+      } else {
+        var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+        pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'contanti';
+      }
+
+      var pagato = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+      var record = {
+        id: Date.now() + i,
+        tipo: inv.document_type==='TD24'?'ddt':'fattura',
+        fornitore: nomeFornitore,
+        numero: (inv.invoice_number||inv.numero||'').toString(),
+        data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
+        importo: parseFloat(inv.total_amount||0),
+        pagamento: pag,
+        bon_iban: inv.iban||'',
+        note: (inv.descrizione||'').slice(0,120)||'',
+        stato: pagato?'pagata':'da_pagare',
+        scadenza: (inv.due_date||'').toString().slice(0,10)||null,
+        parz_pagato: 0,
+        ts: Date.now() + i
+      };
+      // Salva su Supabase
+      try {
+        await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+        fatture.unshift(dbToApp(record));
+        importate++;
+        // Crea fornitore se non esiste
+        if(nomeFornitore && fornitori.indexOf(nomeFornitore) < 0){
+          fornitori.push(nomeFornitore);
+          try { await sbFetch('fornitori', {method:'POST', headers:{...SB_H,'Prefer':'resolution=ignore-duplicates,return=representation'}, body:JSON.stringify({nome:nomeFornitore})}); } catch(e){}
+        }
+      } catch(e){ console.warn('Import err:', inv.invoice_number, e); }
+    }
+
+    // Salva cache locale
+    if(importate > 0){
+      save(fatture);
+      renderLista();
+      aggiornaAlertBanner();
+      riconciliaAssegni();
+    }
+
+    gestSetStatus(true, lista.length+' nel gestionale, '+importate+' nuove importate');
     document.getElementById('rsub-gest').textContent = lista.length+' fatture';
     gestRenderLista(lista);
+
+    if(importate > 0){
+      toast(importate+' fatture importate nel registro!');
+    } else {
+      toast('Tutto aggiornato — nessuna nuova');
+    }
   } catch(e){
     document.getElementById('gestLoader').style.display='none';
     gestSetStatus(false,'Errore: '+e.message);
@@ -2899,102 +3126,432 @@ async function gestScarica(){
 }
 
 function gestRenderLista(lista){
-  const container = document.getElementById('gestItems');
-  const countEl   = document.getElementById('gestCount');
-  const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  const nuove     = lista.filter(function(inv){
-    return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
-  });
-
-  // Contatore in grande
-  var msg = nuove.length === 0
-    ? 'Tutte le fatture sono gia nel registro'
-    : nuove.length === 1
-      ? '1 nuova fattura da importare'
-      : nuove.length + ' nuove fatture da importare';
-
-  countEl.innerHTML =
-    '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">' + nuove.length + '</div>' +
-      '<div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">' + msg + '</div>' +
-      '<div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: ' + lista.length + '</div>' +
-    '</div>';
-
-  // Lista semplice: solo fornitore e numero, niente importi
+  var container = document.getElementById('gestItems');
+  var countEl   = document.getElementById('gestCount');
+  countEl.innerHTML = '<div style="text-align:center;padding:14px 0"><div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">'+lista.length+'</div><div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">Fatture nel gestionale</div></div>';
   container.innerHTML = '';
-  lista.slice(0, 30).forEach(function(inv, idx){
-    var fornitore = inv.supplier_name||inv.fornitore_denominazione||inv.cedente||'—';
-    var numero    = inv.invoice_number||inv.numero||inv.numero_fattura||'';
-    var data      = (inv.invoice_date||inv.data_documento||inv.data||'').slice(0,10);
-    var presente  = esistenti.has(numero.toString().trim());
-    var div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:5px;background:'+(presente?'var(--surface2)':'var(--blue-light, #e3f0fb)');
-    div.innerHTML =
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + gestEsc(fornitore) + '</div>' +
-        '<div style="font-size:11px;color:var(--ink3)">N° ' + gestEsc(numero) + ' &nbsp;' + data + '</div>' +
-      '</div>' +
-      (presente
-        ? '<span style="font-size:11px;color:var(--ink3);flex-shrink:0">&#10003; presente</span>'
-        : '<button class="btn btn-p" style="padding:4px 12px;font-size:11px;flex-shrink:0" data-gestidx="'+idx+'">Importa</button>'
-      );
-    container.appendChild(div);
+
+  lista.forEach(function(inv, idx){
+    var nome     = inv.supplier_name||inv.cedente_denominazione||'\u2014';
+    var numero   = inv.invoice_number||inv.numero||'';
+    var dataDoc  = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+    var totale   = parseFloat(inv.total_amount||0);
+    var tipoDoc  = inv.document_type||'';
+    var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+    var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0||pgRaw==='banca'?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'';
+    var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+    // Controlla se è nel registro Supabase (stato locale)
+    var regFatt = fatture.find(function(f){return f.numero&&f.numero.toString().trim()===(inv.invoice_number||inv.numero||'').toString().trim();});
+    if(regFatt){
+      if(regFatt.stato==='pagata') pagato=true;
+      else if(regFatt.stato==='da_pagare') pagato=false;
+    }
+    var sospesoTag = regFatt&&regFatt.stato==='sospesa'?'<span style="background:#FFF3E0;color:#E65100;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">&#9888; SOSPESA'+(regFatt.note?' — '+gestEsc(regFatt.note.slice(0,30)):'')+'</span>':'';
+    var accontoTag = regFatt&&regFatt.stato==='parziale'?'<span style="background:var(--orange-light);color:#b36a00;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">ACCONTO €'+parseFloat(regFatt.parzPagato||regFatt.parz_pagato||0).toFixed(2)+'</span>':'';
+    var inRegistro = !!regFatt;
+    // Override con stato salvato localmente
+    var accontoTag = '';
+    var ddtTag   = tipoDoc==='TD24'?' <span style="display:inline-block;background:var(--orange-light);color:#b36a00;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DDT</span>':'';
+    var statoTag = pagato
+      ?'<span style="background:var(--green-light);color:#1a7a3a;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">PAGATA</span>'
+      :'<span style="background:var(--red-light);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">DA PAGARE</span>';
+
+    // Anteprima articoli (1 riga)
+    var descr = inv.descrizione||'';
+    var preview = '';
+    if(inv.linee && inv.linee.length){
+      preview = inv.linee.length+' articoli: '+inv.linee.slice(0,2).map(function(l){return (l.descrizione||'').split('|')[0].trim().slice(0,30);}).join(', ');
+    } else if(descr){
+      preview = descr.slice(0,80);
+    }
+
+    var card = document.createElement('div');
+    card.style.cssText='background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer';
+    card.setAttribute('data-idx', idx);
+    card.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+gestEsc(nome)+ddtTag+'</div>'+
+          '<div style="font-size:12px;color:var(--ink3);margin-top:2px">N\u00b0 '+gestEsc(numero)+' \u2014 '+dataDoc+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="font-size:18px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+
+        accontoTag||(sospesoTag||accontoTag||statoTag)+
+        (pgLabel?'<span style="font-size:11px;color:var(--ink3)">\u2022 '+pgLabel+'</span>':'')+
+      '</div>'+
+      (inRegistro?'<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:4px">✓ Nel registro</div>':'')+
+      (preview?'<div style="font-size:11px;color:var(--ink3);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\ud83d\udce6 '+gestEsc(preview)+'</div>':'')+
+      '<div style="text-align:right;margin-top:4px;font-size:11px;color:var(--blue);font-weight:500">Dettaglio \u203a</div>';
+    container.appendChild(card);
   });
 
-  if(lista.length > 30){
-    var more = document.createElement('div');
-    more.style.cssText = 'text-align:center;font-size:12px;color:var(--ink3);padding:6px';
-    more.textContent = '... e altre ' + (lista.length-30) + ' fatture';
-    container.appendChild(more);
-  }
-
+  // Click su card apre dettaglio
   container.onclick = function(e){
-    var btn = e.target.closest('[data-gestidx]');
-    if(btn) gestImportaUna(parseInt(btn.dataset.gestidx));
+    var card = e.target.closest('[data-idx]');
+    if(card) gestApriDettaglio(parseInt(card.getAttribute('data-idx')));
   };
-
-  if(nuove.length > 0){
-    document.getElementById('gestBtnTutto').style.display='block';
-    document.getElementById('gestBtnTutto').textContent = 'Importa tutte le ' + nuove.length + ' nuove';
-  }
   document.getElementById('gestRis').style.display='block';
 }
 
-function gestImportaUna(idx){
-  const inv = _gestFatture[idx];
-  if(!inv) return;
-  const f = gestConverti(inv);
-  fatture.unshift(f);
-  saveFatture();
-  renderLista();
-  toast('Importata: '+f.fornitore);
-  gestRenderLista(_gestFatture);
-}
+function gestImportaUna(idx){ }
 
-function gestImportaTutto(){
-  const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
-  const nuove = _gestFatture.filter(function(inv){return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());});
-  nuove.forEach(function(inv){fatture.unshift(gestConverti(inv));});
-  saveFatture();
-  renderLista();
-  toast('Importate '+nuove.length+' fatture');
-  gestRenderLista(_gestFatture);
-}
+function gestImportaTutto(){ }
 
-function gestConverti(inv){
-  return {
-    id:        'gest_'+(inv.id||inv._id||Date.now()),
-    tipo:      'fattura',
-    fornitore: inv.supplier_name||inv.fornitore_denominazione||inv.cedente||'',
-    numero:    inv.invoice_number||inv.numero||inv.numero_fattura||'',
-    data:      (inv.invoice_date||inv.data_documento||inv.data||'').slice(0,10),
-    importo:   parseFloat(inv.total_amount||inv.importo_totale||inv.importo||0),
-    stato:     'da_pagare',
-    pagamento: 'bonifico',
-    note:      'Importata da gestionale SDI',
-    ts:        Date.now()
+function gestConverti(inv){ return inv; }
+
+
+// ── Gestione pagamenti: usa tabella "fatture" di Supabase ──
+// Quando l'utente segna un acconto/pagamento, cerca se la fattura
+// è già nel registro Supabase (per numero). Se sì aggiorna, se no inserisce.
+
+
+// ── Foto ricevuta pagamento ──
+function gestUploadFoto(input){
+  if(!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e){
+    // Comprimi immagine per Supabase (max 800px, JPEG 70%)
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      var maxW = 800;
+      var w = img.width, h = img.height;
+      if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      // Mostra anteprima
+      document.getElementById('gestFotoImg').src = dataUrl;
+      document.getElementById('gestFotoPreview').style.display = 'block';
+      // Salva nel contesto corrente
+      window._gestCurFoto = dataUrl;
+      toast('Foto pronta — premi Salva');
+    };
+    img.src = e.target.result;
   };
+  reader.readAsDataURL(file);
 }
+
+function gestApriFullFoto(){
+  var src = document.getElementById('gestFotoImg').src;
+  if(!src) return;
+  // Modal fullscreen
+  var mo = document.getElementById('fotoFullMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'fotoFullMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;align-items:center;justify-content:center;cursor:pointer';
+    mo.innerHTML = '<img id="fotoFullImg" style="max-width:96vw;max-height:92vh;object-fit:contain;border-radius:8px">';
+    mo.onclick = function(){ mo.style.display='none'; };
+    document.body.appendChild(mo);
+  }
+  document.getElementById('fotoFullImg').src = src;
+  mo.style.display = 'flex';
+}
+
+async function gestTrovaInRegistro(numero){
+  try {
+    var rows = await sbFetch('fatture?numero=eq.'+encodeURIComponent(numero.toString().trim())+'&select=*&limit=1');
+    return (rows && rows.length) ? rows[0] : null;
+  } catch(e){ return null; }
+}
+
+function gestApriDettaglio(idx){
+  var inv = _gestFatture[idx];
+  if(!inv) return;
+  var nome     = inv.supplier_name||inv.cedente_denominazione||'\u2014';
+  var piva     = inv.supplier_vat||'';
+  var cf       = inv.supplier_cf||'';
+  var numero   = inv.invoice_number||inv.numero||'';
+  var dataDoc  = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+  var totale   = parseFloat(inv.total_amount||0);
+  var impon    = parseFloat(inv.taxable_amount||0);
+  var ivaAmt   = parseFloat(inv.vat_amount||0);
+  var ivaRate  = inv.vat_rate||'';
+  var scad     = (inv.due_date||'').toString().slice(0,10);
+  var iban     = inv.iban||'';
+  var tipoDoc  = inv.document_type||'';
+  var descr    = inv.descrizione||'';
+  var pgRaw    = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+  var pgLabel  = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'Bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'Contanti':pgRaw.indexOf('misto')>=0?'Misto':pgRaw||'\u2014';
+  var pagato   = inv.stato_pagamento==='pagata'||inv.status==='paid'||inv.pagato===true;
+  var tipoLabel = tipoDoc==='TD24'?'DDT':tipoDoc==='TD01'?'Fattura':'Doc. '+tipoDoc;
+
+  // Articoli — dettaglio completo
+  var artHtml = '';
+  if(inv.linee && inv.linee.length){
+    artHtml='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">ARTICOLI ('+inv.linee.length+')</div>';
+    inv.linee.forEach(function(l,i){
+      var d=(l.descrizione||'').split('|')[0].trim();
+      var qty = l.quantita ? l.quantita : '';
+      var um = l.unita_misura || '';
+      var pu = l.prezzo_unitario ? parseFloat(l.prezzo_unitario) : null;
+      var pt = l.prezzo_totale ? parseFloat(l.prezzo_totale) : null;
+      var ali = (l.aliquota_iva!=null && l.aliquota_iva!=='') ? l.aliquota_iva : '';
+      // Dettagli riga
+      var info = [];
+      if(qty) info.push('Qt\u00e0 '+qty+(um?' '+um:''));
+      if(pu!==null) info.push('P.U. \u20ac'+pu.toFixed(3));
+      if(ali!=='') info.push('IVA '+ali+'%');
+      var ptFmt = pt!==null ? '\u20ac '+pt.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+      artHtml+='<div style="padding:10px 12px;background:'+(i%2===0?'var(--surface2)':'var(--surface)')+';border-radius:8px;margin-bottom:4px">'+
+        '<div style="font-size:13px;font-weight:600;line-height:1.4">'+gestEsc(d)+'</div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:12px">'+
+          '<span style="color:var(--ink3)">'+info.join(' \u2022 ')+'</span>'+
+          '<span style="font-weight:700;font-size:14px;color:var(--ink);flex-shrink:0;margin-left:8px">'+ptFmt+'</span>'+
+        '</div>'+
+      '</div>';
+    });
+    artHtml+='</div>';
+  } else if(inv.descrizione){
+    var dp = inv.descrizione.split(';').map(function(s){return s.trim();}).filter(Boolean);
+    artHtml='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">ARTICOLI</div>';
+    dp.forEach(function(s){
+      artHtml+='<div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:4px;font-size:13px;font-weight:500">'+gestEsc(s)+'</div>';
+    });
+    artHtml+='<div style="margin-top:10px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--sep)">';
+    artHtml+='<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink3)">Imponibile</span><span style="font-weight:600">\u20ac '+impon.toFixed(2)+'</span></div>';
+    artHtml+='<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px"><span style="color:var(--ink3)">IVA'+(ivaRate?' ('+ivaRate+'%)':'')+'</span><span style="font-weight:600">\u20ac '+ivaAmt.toFixed(2)+'</span></div>';
+    artHtml+='<div style="display:flex;justify-content:space-between;font-size:15px;margin-top:6px;padding-top:6px;border-top:1px solid var(--sep)"><span style="font-weight:700">Totale</span><span style="font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span></div>';
+    artHtml+='</div>';
+    artHtml+='<div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:6px">Prezzi singoli non ancora disponibili</div>';
+    artHtml+='</div>';
+  }
+
+  // Modal
+  var mo = document.getElementById('gestDetailMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'gestDetailMo';
+    mo.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:24px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    mo.innerHTML='<div id="gestDetailSheet" style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;max-height:none;overflow-y:visible;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0"></div>';
+    document.body.appendChild(mo);
+    mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
+  }
+
+  document.getElementById('gestDetailSheet').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--sep)">'+
+      '<h3 style="font-size:18px;font-weight:700">'+tipoLabel+' N\u00b0 '+gestEsc(numero)+'</h3>'+
+      '<button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:var(--surface2);border:none;border-radius:99px;width:32px;height:32px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3)">\u00d7</button>'+
+    '</div>'+
+    '<div style="padding:16px 20px 40px">'+
+      '<div style="font-size:20px;font-weight:800">'+gestEsc(nome)+'</div>'+
+      (piva?'<div style="font-size:12px;color:var(--ink3);margin-top:2px">P.IVA '+gestEsc(piva)+(cf&&cf!==piva?' \u2014 CF '+gestEsc(cf):'')+'</div>':'')+
+      '<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+dataDoc+' \u2022 '+pgLabel+'</div>'+
+      // Importi
+      '<div style="margin-top:16px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+          '<span style="font-size:13px;color:var(--ink3);font-weight:600">TOTALE FATTURA</span>'+
+          '<span style="font-size:28px;font-weight:800">\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span style="color:var(--ink3)">Imponibile</span><span style="font-weight:600">\u20ac '+impon.toFixed(2)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:13px"><span style="color:var(--ink3)">IVA'+(ivaRate?' ('+ivaRate+'%)':'')+'</span><span style="font-weight:600">\u20ac '+ivaAmt.toFixed(2)+'</span></div>'+
+      '</div>'+
+      // Info griglia
+      '<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">N\u00b0 Documento</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+gestEsc(numero)+'</div></div>'+
+        '<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Data</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+dataDoc+'</div></div>'+
+        (scad?'<div style="background:var(--surface);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">Scadenza</div><div style="font-size:14px;font-weight:600;margin-top:2px">'+scad+'</div></div>':'')+
+        (iban?'<div style="background:var(--surface);border-radius:8px;padding:10px;grid-column:span 2"><div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase">IBAN</div><div style="font-size:12px;font-weight:500;margin-top:2px;word-break:break-all">'+gestEsc(iban)+'</div></div>':'')+
+      '</div>'+
+      // SEZIONE PAGAMENTO — usa tabella fatture Supabase
+            // Foto ricevuta
+      '<div style="margin-top:16px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">&#128247; Foto ricevuta pagamento</div>'+
+        '<div id="gestFotoPreview" style="display:none;margin-bottom:10px;text-align:center"><img id="gestFotoImg" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid var(--sep);cursor:pointer" onclick="gestApriFullFoto()"></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--sep);border-radius:10px;background:var(--surface2);cursor:pointer;font-size:13px;font-weight:600;color:var(--blue)"><input type="file" accept="image/*" capture="environment" onchange="gestUploadFoto(this)" style="display:none">&#128247; Scatta foto</label>'+
+          '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--sep);border-radius:10px;background:var(--surface2);cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3)"><input type="file" accept="image/*" onchange="gestUploadFoto(this)" style="display:none">&#128193; Galleria</label>'+
+        '</div>'+
+      '</div>'+
+      '<div style="margin-top:18px;background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)" id="gestPagBox">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">\ud83d\udcb0 Pagamento</div>'+
+        '<div id="gestPagLoading" style="text-align:center;color:var(--ink3);font-size:13px;padding:8px">Caricamento...</div>'+
+        '<div id="gestPagUI" style="display:none">'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Metodo pagamento</div>'+
+          '<div style="display:flex;gap:6px;margin-bottom:14px">'+
+            '<button id="gpm_contanti" onclick="gestSetMetodo(\'contanti\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#128181; Contanti</button>'+
+            '<button id="gpm_bonifico" onclick="gestSetMetodo(\'bonifico\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#127974; Bonifico</button>'+
+            '<button id="gpm_assegno" onclick="gestSetMetodo(\'assegno\')" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">&#128221; Assegno</button>'+
+          '</div>'+
+          '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:6px">Stato</div>'+
+          '<div style="display:flex;gap:6px;margin-bottom:12px">'+
+
+            '<button id="gps_da_pagare" onclick="gestSetSt(\'da_pagare\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Da pagare</button>'+
+            '<button id="gps_parziale" onclick="gestSetSt(\'parziale\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Acconto</button>'+
+            '<button id="gps_sospesa" onclick="gestSetSt(\'sospesa\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Sospesa</button>'+
+            '<button id="gps_pagata" onclick="gestSetSt(\'pagata\')" style="flex:1;padding:8px 4px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink3)">Pagata</button>'+
+          '</div>'+
+          '<div id="gestAccDiv" style="display:none">'+
+            '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo gi\u00e0 pagato (\u20ac)</div>'+
+            '<input type="text" id="gestAccInp" placeholder="0,00" inputmode="decimal" autocomplete="off" oninput="gestCalcResto()" style="width:100%;padding:12px;border:1.5px solid var(--sep);border-radius:10px;font-size:16px;font-family:inherit;background:var(--surface2);box-sizing:border-box;margin-bottom:8px">'+
+            '<div style="background:var(--sep);border-radius:99px;height:8px;overflow:hidden;margin-bottom:4px"><div id="gestAccBar" style="height:100%;border-radius:99px;background:var(--orange);width:0%;transition:width .3s"></div></div>'+
+            '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)"><span>Pagato: <b id="gestAccPag">\u20ac 0</b></span><span>Resta: <b id="gestAccRest">\u20ac 0</b></span></div>'+
+          '</div>'+
+          '<div style="margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:4px">Note</div>'+
+            '<input type="text" id="gestPagNote" placeholder="Annotazioni..." autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:14px;font-family:inherit;background:var(--surface2);box-sizing:border-box">'+
+          '</div>'+
+          '<button class="btn btn-p" style="width:100%;padding:13px;font-size:15px;margin-top:14px" onclick="gestSalvaPagamento()">\ud83d\udcbe Salva</button>'+
+        '</div>'+
+      '</div>'+
+      artHtml+
+    '</div>';
+
+  mo.style.display='flex';
+  document.getElementById('gestDetailSheet').style.animation='slideUp .3s cubic-bezier(.32,.72,0,1)';
+
+  // Salva contesto corrente
+  window._gestCur = {inv:inv, numero:numero, totale:totale, idx:idx, sbId:null};
+  window._gestCurFoto = '';
+  window._gestCurStato = 'da_pagare';
+
+  // Cerca nel registro Supabase se la fattura c'è già
+  gestTrovaInRegistro(numero).then(function(existing){
+    document.getElementById('gestPagLoading').style.display='none';
+    document.getElementById('gestPagUI').style.display='block';
+    if(existing){
+      window._gestCur.sbId = existing.id;
+      gestSetSt(existing.stato||'da_pagare');
+      // Carica foto se esiste
+      if(existing.foto){
+        window._gestCurFoto = existing.foto;
+        var fotoImg = document.getElementById('gestFotoImg');
+        var fotoPreview = document.getElementById('gestFotoPreview');
+        if(fotoImg){ fotoImg.src = existing.foto; }
+        if(fotoPreview){ fotoPreview.style.display = 'block'; }
+      }
+      if(existing.pagamento) gestSetMetodo(existing.pagamento);
+      if(existing.parz_pagato) document.getElementById('gestAccInp').value = parseFloat(existing.parz_pagato).toFixed(2).replace('.',',');
+      if(existing.note) document.getElementById('gestPagNote').value = existing.note;
+      gestCalcResto();
+    } else {
+      gestSetSt(pagato?'pagata':'da_pagare');
+      // Preseleziona metodo dall'API
+      var autoMetodo = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':pgRaw.indexOf('assegno')>=0?'assegno':'';
+      if(autoMetodo) gestSetMetodo(autoMetodo);
+    }
+  });
+}
+
+
+var _gestCurMetodo = '';
+function gestSetMetodo(m){
+  _gestCurMetodo = m;
+  ['contanti','bonifico','assegno'].forEach(function(s){
+    var b = document.getElementById('gpm_'+s);
+    if(!b) return;
+    var active = s===m;
+    b.style.borderColor = active?'var(--blue)':'var(--sep)';
+    b.style.background = active?'var(--blue-light)':'var(--surface)';
+    b.style.color = active?'var(--blue)':'var(--ink3)';
+  });
+}
+
+function gestSetSt(st){
+  window._gestCurStato = st;
+  ['da_pagare','parziale','sospesa','pagata'].forEach(function(s){
+    var b = document.getElementById('gps_'+s);
+    if(!b) return;
+    var active = s===st;
+    b.style.borderColor = active?'var(--blue)':'var(--sep)';
+    b.style.background = active?(s==='pagata'?'var(--green-light)':s==='parziale'?'var(--orange-light)':s==='sospesa'?'#FFF3E0':'var(--red-light)'):'var(--surface)';
+    b.style.color = active?(s==='pagata'?'#1a7a3a':s==='parziale'?'#b36a00':s==='sospesa'?'#E65100':'var(--red)'):'var(--ink3)';
+  });
+  var ad = document.getElementById('gestAccDiv');
+  if(ad) ad.style.display = (st==='parziale'||st==='sospesa')?'block':'none';
+}
+
+function gestCalcResto(){
+  if(!window._gestCur) return;
+  var val = parseFloat((document.getElementById('gestAccInp').value||'0').replace(',','.'))||0;
+  var tot = window._gestCur.totale||0;
+  var pct = tot>0?Math.min(100,Math.round(val/tot*100)):0;
+  var bar = document.getElementById('gestAccBar');
+  if(bar) bar.style.width = pct+'%';
+  var p = document.getElementById('gestAccPag');
+  var r = document.getElementById('gestAccRest');
+  if(p) p.textContent = '\u20ac '+val.toFixed(2);
+  if(r) r.textContent = '\u20ac '+Math.max(0,tot-val).toFixed(2);
+}
+
+async function gestSalvaPagamento(){
+  if(!window._gestCur) return;
+  var inv = window._gestCur.inv;
+  var st = window._gestCurStato;
+  var accVal = parseFloat((document.getElementById('gestAccInp').value||'0').replace(',','.'))||0;
+  var note = (document.getElementById('gestPagNote').value||'').trim();
+  var totale = window._gestCur.totale;
+
+  // Prepara pagamento parziale
+  var parzPagato = (st==='parziale'||st==='sospesa')?accVal:(st==='pagata'?totale:0);
+
+  // Metodo pagamento
+  var pgRaw = (inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+  var pag = pgRaw.indexOf('bonif')>=0||pgRaw.indexOf('bank')>=0||pgRaw.indexOf('sepa')>=0?'bonifico':pgRaw.indexOf('contan')>=0||pgRaw==='cassa'?'contanti':'bonifico';
+
+  if(window._gestCur.sbId){
+    // Aggiorna record esistente su Supabase
+    try {
+      await sbFetch('fatture?id=eq.'+window._gestCur.sbId, {
+        method:'PATCH',
+        body:JSON.stringify({stato:st, parz_pagato:parzPagato, note:note, foto:window._gestCurFoto||undefined})
+      });
+      toast('Pagamento aggiornato!');
+    } catch(e){ toast('Errore: '+e.message); return; }
+  } else {
+    // Inserisci nuova fattura nel registro Supabase
+    var record = {
+      id: Date.now(),
+      tipo: inv.document_type==='TD24'?'ddt':'fattura',
+      fornitore: inv.supplier_name||inv.cedente_denominazione||'',
+      numero: inv.invoice_number||inv.numero||'',
+      data: (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10)||null,
+      importo: totale,
+      pagamento: _gestCurMetodo||pag,
+      bon_iban: inv.iban||'',
+        foto: window._gestCurFoto||'',
+      note: note||(inv.descrizione||'').slice(0,120)||'Da gestionale SDI',
+      stato: st,
+      scadenza: (inv.due_date||'').toString().slice(0,10)||null,
+      parz_pagato: parzPagato,
+      ts: Date.now()
+    };
+    try {
+      await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+      window._gestCur.sbId = record.id;
+      // Aggiorna anche l'array locale
+      fatture.unshift(dbToApp(record));
+      save(fatture);
+      toast('Fattura salvata nel registro!');
+    } catch(e){ toast('Errore: '+e.message); return; }
+  }
+  // Se l'utente ha cambiato metodo pagamento, aggiorna anche
+  // le altre fatture dello stesso fornitore nel registro
+  if(_gestCurMetodo && window._gestCur && window._gestCur.inv){
+    var fornUpd = (window._gestCur.inv.supplier_name||window._gestCur.inv.cedente_denominazione||'').toUpperCase();
+    if(fornUpd){
+      fatture.forEach(function(f){
+        if(f.fornitore && f.fornitore.toUpperCase()===fornUpd && f.pagamento!==_gestCurMetodo){
+          f.pagamento = _gestCurMetodo;
+          // Aggiorna su Supabase in background
+          sbFetch('fatture?id=eq.'+f.id, {method:'PATCH', body:JSON.stringify({pagamento:_gestCurMetodo})}).catch(function(){});
+        }
+      });
+      save(fatture);
+    }
+  }
+
+  // Aggiorna lista
+  if(_gestFatture) gestRenderLista(_gestFatture);
+  renderLista();
+  document.getElementById('gestDetailMo').style.display='none';
+}
+
 
 function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -3003,7 +3560,608 @@ function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
   if(el && !el.value) el.value = new Date().getFullYear();
 })();
 
+// Auto-carica fatture all'avvio
+setTimeout(function(){
+  var anno = new Date().getFullYear();
+  fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      if(!data) return;
+      var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+      if(!lista.length) return;
+      _gestFatture = lista;
+      // UN SOLO banner — rimuovi eventuali duplicati
+      var old = document.getElementById('gestBanner');
+      if(old) old.remove();
+      var old2 = document.getElementById('gestBanner2');
+      if(old2) old2.remove();
+      // Conta nuove
+      var esis = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+      var nuove = lista.filter(function(inv){return !esis.has((inv.invoice_number||inv.numero||'').toString().trim());});
+      var banner = document.createElement('div');
+      banner.id = 'gestBanner';
+      banner.style.cssText = 'background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;border-radius:13px;padding:14px 16px;margin:8px 16px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,122,255,.3);position:relative;z-index:200;-webkit-tap-highlight-color:rgba(255,255,255,.2)';
+      if(nuove.length > 0){
+        banner.innerHTML = '<div style="font-size:24px">&#128232;</div><div style="flex:1"><div style="font-size:15px;font-weight:700">'+nuove.length+' nuove fatture SDI</div><div style="font-size:12px;opacity:.8">Tocca per importare nel registro</div></div><div style="font-size:18px">&#8250;</div>';
+      } else {
+        banner.innerHTML = '<div style="font-size:24px">&#9989;</div><div style="flex:1"><div style="font-size:15px;font-weight:700">'+lista.length+' fatture SDI</div><div style="font-size:12px;opacity:.8">Registro aggiornato</div></div><div style="font-size:18px">&#8250;</div>';
+      }
+      banner.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        goTab('riep',null);
+        setTimeout(function(){
+          var rc = document.getElementById('rbody-gest');
+          if(rc && !rc.classList.contains('open')) toggleRCard('gest');
+          document.getElementById('gestAnno').value = anno;
+          gestScarica();
+        }, 300);
+      });
+      // Inserisci dopo header
+      var views = document.querySelectorAll('.view');
+      if(views.length) views[0].insertBefore(banner, views[0].firstChild);
+    })
+    .catch(function(){});
+
+  // Controlla fatture sospese
+  sbFetch('fatture?stato=eq.sospesa&select=fornitore,numero,note,importo,parz_pagato')
+    .then(function(sospese){
+      if(!sospese || !sospese.length) return;
+      var alertDiv = document.createElement('div');
+      alertDiv.style.cssText = 'background:linear-gradient(135deg,#FF9800,#F57C00);color:#fff;border-radius:13px;padding:14px 16px;margin:0 16px 10px;box-shadow:0 4px 12px rgba(255,152,0,.3)';
+      var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:20px">&#9888;&#65039;</span><div style="font-size:14px;font-weight:700">'+sospese.length+' fattur'+(sospese.length===1?'a sospesa':'e sospese')+'</div></div>';
+      sospese.slice(0,3).forEach(function(f){
+        html += '<div style="background:rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;margin-bottom:3px;font-size:12px"><b>'+((f.fornitore||'')+' N.'+( f.numero||''))+'</b>'+(f.note?' — <i>'+f.note+'</i>':'')+'</div>';
+      });
+      alertDiv.innerHTML = html;
+      var b = document.getElementById('gestBanner');
+      if(b) b.insertAdjacentElement('afterend', alertDiv);
+    }).catch(function(){});
+}, 2500);
+
+
+// Scarica fatture con un click dalla tab bar
+async function gestSyncClick(){
+  toast('Scaricamento fatture...');
+  try {
+    var anno = new Date().getFullYear();
+    var res = await fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var data = await res.json();
+    var lista = Array.isArray(data)?data:(data.items||data.invoices||data.results||[]);
+    if(!lista.length){ toast('Nessuna fattura'); return; }
+    _gestFatture = lista;
+    // Importa nuove
+    var esis = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
+    var fornMet = {};
+    fatture.forEach(function(f){ if(f.fornitore&&f.pagamento&&!fornMet[f.fornitore.toUpperCase()]) fornMet[f.fornitore.toUpperCase()]=f.pagamento; });
+    var count = 0;
+    var nuove = lista.filter(function(inv){return !esis.has((inv.invoice_number||inv.numero||'').toString().trim());});
+    for(var i=0; i<nuove.length; i++){
+      var inv = nuove[i];
+      var nomeF = inv.supplier_name||inv.cedente_denominazione||'';
+      var pag = fornMet[nomeF.toUpperCase()]||(function(){
+        var p=(inv.payment_method||inv.metodo_pagamento_effettivo||'').toLowerCase();
+        return p.indexOf('bonif')>=0||p.indexOf('bank')>=0||p.indexOf('sepa')>=0?'bonifico':p.indexOf('contan')>=0||p==='cassa'?'contanti':'contanti';
+      })();
+      var pagato = inv.stato_pagamento==='pagata'||inv.pagato===true;
+      var rec = {id:Date.now()+i, tipo:inv.document_type==='TD24'?'ddt':'fattura', fornitore:nomeF, numero:(inv.invoice_number||'').toString(), data:(inv.invoice_date||'').toString().slice(0,10)||null, importo:parseFloat(inv.total_amount||0), pagamento:pag, bon_iban:inv.iban||'', note:(inv.descrizione||'').slice(0,120), stato:pagato?'pagata':'da_pagare', scadenza:(inv.due_date||'').toString().slice(0,10)||null, parz_pagato:0, ts:Date.now()+i};
+      try { await sbFetch('fatture',{method:'POST',body:JSON.stringify(rec)}); fatture.unshift(dbToApp(rec)); count++; } catch(e){}
+    }
+    if(count>0){ save(fatture); renderLista(); aggiornaAlertBanner(); riconciliaAssegni(); }
+    toast(count>0 ? count+' nuove fatture importate!' : 'Tutto aggiornato ('+lista.length+' fatture)');
+    // Vai al registro
+    goTab('lista',null);
+  } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
+}
+
+// ── REGISTRO ASSEGNI ──
+// Usa la tabella fatture di Supabase con pagamento='assegno'
+// Il campo 'assegno' contiene il numero assegno
+// Il campo 'ass_int' contiene il beneficiario
+
+
+function formatAssegno(el){
+  var v = el.value.replace(/[^0-9-]/g, '');
+  var digits = v.replace(/-/g, '');
+  if(digits.length > 12) digits = digits.slice(0, 12);
+  if(digits.length > 10){
+    v = digits.slice(0, 10) + '-' + digits.slice(10);
+  } else { v = digits; }
+  el.value = v;
+}
+
+async function generaAssegni(){
+  var primo = (document.getElementById('assPrimo').value||'').trim();
+  if(!primo || primo.indexOf('-') < 0){ toast('Inserisci numero assegno (es. 1234567890-01)'); return; }
+  
+  var parts = primo.split('-');
+  var prefixStr = parts[0];
+  var suffix = parts[1];
+  var prefixNum = parseInt(prefixStr);
+  var padLen = prefixStr.length;
+  if(isNaN(prefixNum)){ toast('Formato non valido'); return; }
+
+  toast('Generazione assegni...');
+  var count = 0;
+  for(var i = 0; i < 10; i++){
+    var numAss = String(prefixNum + i).padStart(padLen, '0') + '-' + String(parseInt(suffix) + i).padStart(suffix.length, '0');
+    // Verifica che non esista già
+    try {
+      var existing = await sbFetch('fatture?assegno=eq.'+encodeURIComponent(numAss)+'&select=id&limit=1');
+      if(existing && existing.length > 0) continue; // già esiste
+    } catch(e){}
+    
+    var record = {
+      id: Date.now() + i,
+      tipo: 'fattura',
+      fornitore: '',
+      numero: '',
+      data: new Date().toISOString().slice(0,10),
+      importo: 0,
+      pagamento: 'assegno',
+      assegno: numAss,
+      ass_int: '',
+      ass_banca: '',
+      note: 'Assegno da compilare',
+      stato: 'da_pagare',
+      parz_pagato: 0,
+      ts: Date.now() + i
+    };
+    try {
+      await sbFetch('fatture', {method:'POST', body:JSON.stringify(record)});
+      fatture.unshift(dbToApp(record));
+      count++;
+    } catch(e){ console.warn('Err assegno:', e); }
+  }
+  if(count > 0){
+    save(fatture);
+    toast(count + ' assegni generati e salvati!');
+  } else {
+    toast('Assegni già esistenti');
+  }
+  document.getElementById('assPrimo').value = '';
+  caricaAssegniSalvati();
+}
+
+async function caricaAssegniSalvati(){
+  var el = document.getElementById('assegniLista');
+  var elSalvati = document.getElementById('assegniSalvati');
+  if(!el) return;
+  
+  try {
+    var rows = await sbFetch('fatture?pagamento=eq.assegno&select=*&order=assegno.asc&limit=100');
+    if(!rows || !rows.length){
+      el.innerHTML = '<div class="empty"><div class="ei">&#128221;</div><p>Nessun assegno. Genera un blocchetto!</p></div>';
+      if(elSalvati) elSalvati.innerHTML = '';
+      return;
+    }
+    
+    // Dividi in: da compilare (importo=0 o fornitore vuoto) e compilati
+    var daCompilare = rows.filter(function(r){ return !r.fornitore || r.importo === 0; });
+    var compilati = rows.filter(function(r){ return r.fornitore && r.importo > 0; });
+    
+    // Menu fornitori
+    var fornOptions = '<option value="">— Seleziona fornitore —</option>';
+    fornitori.forEach(function(f){
+      fornOptions += '<option value="'+esc(f)+'">'+esc(f)+'</option>';
+    });
+    
+    var html = '';
+    
+    if(daCompilare.length > 0){
+      html += '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">DA COMPILARE ('+daCompilare.length+')</div>';
+      daCompilare.forEach(function(r, idx){
+        html += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)">';
+        html += '<div style="font-size:16px;font-weight:800;letter-spacing:1px;font-family:monospace;margin-bottom:10px">&#128221; '+esc(r.assegno||'')+'</div>';
+        html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Beneficiario</div>';
+        html += '<select id="assB_'+r.id+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--surface);-webkit-appearance:none">'+fornOptions+'</select></div>';
+        html += '<div style="display:flex;gap:8px;margin-bottom:10px">';
+        html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">Importo &#8364;</div>';
+        html += '<input type="text" id="assI_'+r.id+'" placeholder="0,00" inputmode="decimal" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box"></div>';
+        html += '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px">N&#176; Fattura</div>';
+        html += '<input type="text" id="assF_'+r.id+'" placeholder="001/2026" inputmode="text" autocomplete="off" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;box-sizing:border-box"></div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">';
+      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assInc_'+r.id+'" style="width:18px;height:18px;accent-color:var(--green)"> Incassato</label>';
+      html += '<label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" id="assDis_'+r.id+'" style="width:18px;height:18px;accent-color:var(--red)"> Distrutto</label>';
+      html += '<button onclick="event.stopPropagation();apriDataIncasso('+r.id+')" style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1.5px solid var(--sep);border-radius:8px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer" id="assDataBtn_'+r.id+'">&#128197; Data</button>';
+      html += '<input type="hidden" id="assData_'+r.id+'" value="">';
+      html += '</div>';
+      html += '<button class="btn btn-p" style="padding:10px;font-size:13px" onclick="compilaAssegno('+r.id+')">&#128190; Salva assegno</button>';
+        html += '</div>';
+      });
+    }
+    
+    el.innerHTML = html;
+    
+    // Compilati
+    if(compilati.length > 0 && elSalvati){
+      var htmlS = '<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">ASSEGNI COMPILATI ('+compilati.length+')</div>';
+      compilati.forEach(function(r){
+        var nota = r.note||'';
+        var isIncassato = nota.indexOf('[INCASSATO]') >= 0;
+        var isDistrutto = nota.indexOf('[DISTRUTTO]') >= 0;
+        var dataMatch = nota.match(/\[DATA:([^\]]+)\]/);
+        var dataIncasso = dataMatch ? dataMatch[1] : '';
+        var bgColor = isDistrutto ? 'var(--red-light)' : isIncassato ? '#E8F5E9' : 'var(--green-light)';
+        var statusBadge = isDistrutto ? '<span style="background:var(--red);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">DISTRUTTO</span>' 
+          : isIncassato ? '<span style="background:var(--green);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">INCASSATO</span>' : '';
+        var dataBadge = dataIncasso ? '<span style="font-size:10px;color:var(--ink3)">&#128197; '+dataIncasso+'</span>' : '';
+        
+        htmlS += '<div style="background:'+bgColor+';border-radius:var(--radius);padding:12px 14px;margin-bottom:6px">';
+        htmlS += '<div style="display:flex;justify-content:space-between;align-items:center">';
+        htmlS += '<div><div style="font-size:13px;font-weight:700">'+esc(r.fornitore||'')+'</div>';
+        htmlS += '<div style="font-size:11px;color:var(--ink3)">Ass. '+esc(r.assegno||'?')+' &#183; Fatt. '+esc(r.numero||'\u2014')+'</div></div>';
+        htmlS += '<div style="font-size:15px;font-weight:700">&#8364; '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div>';
+        htmlS += '</div>';
+        htmlS += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'+statusBadge+dataBadge;
+        if(!isIncassato && !isDistrutto){
+          htmlS += '<button onclick="segnaIncassato('+r.id+')" style="padding:4px 10px;border:1px solid var(--green);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:#1a7a3a;cursor:pointer;font-family:inherit">&#10003; Incassato</button>';
+          htmlS += '<button onclick="segnaDistrutto('+r.id+')" style="padding:4px 10px;border:1px solid var(--red);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit">&#10005; Distrutto</button>';
+          htmlS += '<button onclick="apriDataIncasso('+r.id+')" style="padding:4px 10px;border:1px solid var(--sep);border-radius:6px;background:var(--surface);font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit">&#128197; Data</button>';
+        }
+        htmlS += '</div>';
+        htmlS += '</div>';
+      });
+      elSalvati.innerHTML = htmlS;
+    }
+    
+  } catch(e){
+    el.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
+  }
+}
+
+
+// ── Gestione stato assegni: Incassato, Distrutto, Data incasso ──
+function segnaIncassato(id){
+  aggiornaStatoAssegno(id, '[INCASSATO]');
+}
+
+function segnaDistrutto(id){
+  aggiornaStatoAssegno(id, '[DISTRUTTO]');
+}
+
+async function aggiornaStatoAssegno(id, tag){
+  try {
+    // Leggi nota attuale
+    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
+    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
+    // Rimuovi vecchi tag
+    nota = nota.replace('[INCASSATO]','').replace('[DISTRUTTO]','').trim();
+    nota = tag + ' ' + nota;
+    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim()})});
+    // Aggiorna locale
+    var f = fatture.find(function(x){return x.id==id;});
+    if(f) f.note = nota.trim();
+    save(fatture);
+    toast(tag === '[INCASSATO]' ? 'Assegno incassato!' : 'Assegno distrutto!');
+    caricaAssegniSalvati();
+  } catch(e){ toast('Errore: '+e.message); }
+}
+
+function apriDataIncasso(id){
+  // Crea mini modal con input data
+  var mo = document.getElementById('dataIncassoMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'dataIncassoMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px';
+    mo.innerHTML = 
+      '<div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center">'+
+        '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Data incasso</div>'+
+        '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px">Quando si incasserà questo assegno?</div>'+
+        '<input type="date" id="dataIncassoInput" style="width:100%;padding:14px;border:1.5px solid var(--sep);border-radius:12px;font-size:18px;font-family:inherit;text-align:center;box-sizing:border-box;margin-bottom:12px">'+
+        '<div style="display:flex;gap:8px">'+
+          '<button onclick="document.getElementById(\'dataIncassoMo\').style.display=\'none\'" style="flex:1;padding:12px;border:1.5px solid var(--sep);border-radius:12px;background:var(--surface);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Annulla</button>'+
+          '<button onclick="salvaDataIncasso()" style="flex:2;padding:12px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Salva</button>'+
+        '</div>'+
+      '</div>';
+    mo.addEventListener('click', function(e){if(e.target===mo) mo.style.display='none';});
+    document.body.appendChild(mo);
+  }
+  window._dataIncassoId = id;
+  document.getElementById('dataIncassoInput').value = '';
+  mo.style.display = 'flex';
+}
+
+async function salvaDataIncasso(){
+  var id = window._dataIncassoId;
+  var data = document.getElementById('dataIncassoInput').value;
+  if(!data){ toast('Seleziona una data'); return; }
+  
+  try {
+    var rows = await sbFetch('fatture?id=eq.'+id+'&select=note');
+    var nota = (rows && rows[0]) ? (rows[0].note||'') : '';
+    // Rimuovi vecchia data
+    nota = nota.replace(/\[DATA:[^\]]+\]/g, '').trim();
+    nota = '[DATA:'+data+'] ' + nota;
+    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({note: nota.trim(), scadenza: data})});
+    var f = fatture.find(function(x){return x.id==id;});
+    if(f){ f.note = nota.trim(); f.scadenza = data; }
+    save(fatture);
+    document.getElementById('dataIncassoMo').style.display = 'none';
+    // Se è un assegno da compilare, aggiorna il bottone
+    var btn = document.getElementById('assDataBtn_'+id);
+    if(btn) btn.innerHTML = '&#128197; ' + data;
+    var hidden = document.getElementById('assData_'+id);
+    if(hidden) hidden.value = data;
+    toast('Data incasso salvata: '+data);
+    caricaAssegniSalvati();
+  } catch(e){ toast('Errore: '+e.message); }
+}
+
+
+// ── RICONCILIAZIONE ASSEGNI ↔ FATTURE ──
+// Cerca match tra assegni compilati e fatture nel registro
+// Match su: numero fattura + fornitore (+ importo come conferma)
+async function riconciliaAssegni(){
+  try {
+    // Carica tutti gli assegni compilati
+    var assegni = await sbFetch('fatture?pagamento=eq.assegno&select=*&limit=200');
+    if(!assegni || !assegni.length) return;
+    
+    var compilati = assegni.filter(function(a){ return a.fornitore && a.importo > 0 && a.numero; });
+    if(!compilati.length) return;
+    
+    var aggiornati = 0;
+    for(var i = 0; i < compilati.length; i++){
+      var ass = compilati[i];
+      var numFatt = (ass.numero||'').toString().trim().toUpperCase();
+      var fornAss = (ass.fornitore||'').toString().trim().toUpperCase();
+      if(!numFatt) continue;
+      
+      // Cerca la fattura nel registro (non assegno) con stesso numero
+      var fatturaMatch = fatture.find(function(f){
+        if(f.pagamento === 'assegno' && f.assegno) return false; // è già un assegno
+        var numF = (f.numero||'').toString().trim().toUpperCase();
+        var fornF = (f.fornitore||'').toString().trim().toUpperCase();
+        return numF === numFatt && fornF.indexOf(fornAss.slice(0,10)) >= 0;
+      });
+      
+      if(fatturaMatch && fatturaMatch.pagamento !== 'assegno'){
+        // MATCH! Aggiorna la fattura con il pagamento assegno
+        fatturaMatch.pagamento = 'assegno';
+        fatturaMatch.assegno = ass.assegno;
+        fatturaMatch.assInt = ass.ass_int || ass.fornitore;
+        fatturaMatch.stato = 'pagata';
+        
+        try {
+          await sbFetch('fatture?id=eq.'+fatturaMatch.id, {method:'PATCH', body:JSON.stringify({
+            pagamento: 'assegno',
+            assegno: ass.assegno,
+            ass_int: ass.ass_int || ass.fornitore,
+            stato: 'pagata'
+          })});
+          aggiornati++;
+        } catch(e){ console.warn('Riconcilia err:', e); }
+      }
+    }
+    
+    if(aggiornati > 0){
+      save(fatture);
+      console.log('Riconciliazione: '+aggiornati+' fatture associate ad assegni');
+    }
+  } catch(e){ console.warn('Riconciliazione assegni:', e); }
+}
+
+async function compilaAssegno(id){
+  var benEl = document.getElementById('assB_'+id);
+  var impEl = document.getElementById('assI_'+id);
+  var fatEl = document.getElementById('assF_'+id);
+  
+  var beneficiario = benEl ? benEl.value : '';
+  var importo = impEl ? parseFloat((impEl.value||'0').replace(',','.'))||0 : 0;
+  var numFattura = fatEl ? fatEl.value.trim() : '';
+  
+  if(!beneficiario){ toast('Seleziona il beneficiario'); return; }
+  if(!importo){ toast('Inserisci l\'importo'); return; }
+  
+  try {
+    // Aggiorna l'assegno su Supabase
+    await sbFetch('fatture?id=eq.'+id, {method:'PATCH', body:JSON.stringify({
+      fornitore: beneficiario,
+      importo: importo,
+      numero: numFattura,
+      ass_int: beneficiario,
+      stato: 'pagata',
+      scadenza: (document.getElementById('assData_'+id)||{}).value||null,
+      note: (function(){
+        var n = 'Assegno compilato';
+        var incCb = document.getElementById('assInc_'+id);
+        var disCb = document.getElementById('assDis_'+id);
+        var dataVal = document.getElementById('assData_'+id);
+        if(incCb && incCb.checked) n = '[INCASSATO] ' + n;
+        if(disCb && disCb.checked) n = '[DISTRUTTO] ' + n;
+        if(dataVal && dataVal.value) n = '[DATA:'+dataVal.value+'] ' + n;
+        return n;
+      })()
+    })});
+    
+    // Aggiorna locale
+    var f = fatture.find(function(x){return x.id==id;});
+    if(f){
+      f.fornitore = beneficiario;
+      f.importo = importo;
+      f.numero = numFattura;
+      f.assInt = beneficiario;
+      f.stato = 'pagata';
+    }
+    save(fatture);
+    
+    // Associa assegno alla fattura nel registro (match robusto)
+    if(numFattura){
+      var numUp = numFattura.trim().toUpperCase();
+      var fornUp = beneficiario.trim().toUpperCase();
+      var assNum = '';
+      var fLocal = fatture.find(function(x){return x.id==id;});
+      if(fLocal) assNum = fLocal.assegno || '';
+      
+      // Cerca match: stesso numero fattura E fornitore simile
+      var fReg = fatture.find(function(x){
+        if(x.id === id) return false;
+        var xNum = (x.numero||'').toString().trim().toUpperCase();
+        var xForn = (x.fornitore||'').toString().trim().toUpperCase();
+        return xNum === numUp && (xForn.indexOf(fornUp.slice(0,10))>=0 || fornUp.indexOf(xForn.slice(0,10))>=0);
+      });
+      
+      // Se non trova per fornitore, cerca solo per numero
+      if(!fReg){
+        fReg = fatture.find(function(x){
+          if(x.id === id) return false;
+          return (x.numero||'').toString().trim().toUpperCase() === numUp;
+        });
+      }
+      
+      if(fReg){
+        fReg.stato = 'pagata';
+        fReg.pagamento = 'assegno';
+        fReg.assegno = assNum;
+        fReg.assInt = beneficiario;
+        try {
+          await sbFetch('fatture?id=eq.'+fReg.id, {method:'PATCH', body:JSON.stringify({
+            stato:'pagata', pagamento:'assegno', assegno:assNum, ass_int:beneficiario
+          })});
+          toast('Fattura N.'+numFattura+' associata all\'assegno!');
+        } catch(e){}
+      }
+    }
+    
+    toast('Assegno salvato!');
+    await riconciliaAssegni();
+    caricaAssegniSalvati();
+  } catch(e){
+    toast('Errore: '+e.message);
+  }
+}
+
+// ── CORRISPETTIVI ──
+async function caricaCorrispettivi(){
+  var anno = (document.getElementById('corrAnno').value||'').trim();
+  if(!anno){ toast('Inserisci anno'); return; }
+  
+  var totDiv = document.getElementById('corrTotali');
+  var listaDiv = document.getElementById('corrLista');
+  totDiv.innerHTML = '<div style="text-align:center;color:var(--ink3);padding:16px">Caricamento...</div>';
+  listaDiv.innerHTML = '';
+  
+  try {
+    var res = await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var data = await res.json();
+    var lista = Array.isArray(data) ? data : (data.items||data.corrispettivi||[]);
+    
+    if(!lista.length){
+      totDiv.innerHTML = '<div class="empty"><div class="ei">&#128176;</div><p>Nessun corrispettivo trovato</p></div>';
+      return;
+    }
+    
+    // Ordina per data decrescente
+    lista.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+    
+    // Calcola totali
+    var totTot=0, totCont=0, totElet=0, totImp=0, totIva=0;
+    lista.forEach(function(c){
+      totTot  += parseFloat(c.totale||0);
+      totCont += parseFloat(c.pagato_contanti||0);
+      totElet += parseFloat(c.pagato_elettronico||0);
+      totImp  += parseFloat(c.totale_imponibile||0);
+      totIva  += parseFloat(c.totale_iva||0);
+    });
+    
+    var fmtE = function(n){ return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    
+    // Card totali
+    totDiv.innerHTML = 
+      '<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:10px">'+
+        '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px">TOTALE CORRISPETTIVI</div>'+
+        '<div style="font-size:28px;font-weight:800;margin-top:4px">'+fmtE(totTot)+'</div>'+
+        '<div style="font-size:12px;opacity:.8;margin-top:4px">'+lista.length+' chiusure giornaliere</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+        '<div style="background:var(--green-light);border-radius:var(--radius);padding:14px">'+
+          '<div style="font-size:10px;font-weight:600;color:#1a7a3a;text-transform:uppercase">CONTANTI</div>'+
+          '<div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fmtE(totCont)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase">ELETTRONICO</div>'+
+          '<div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fmtE(totElet)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IMPONIBILE</div>'+
+          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totImp)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">IVA</div>'+
+          '<div style="font-size:18px;font-weight:700;margin-top:4px">'+fmtE(totIva)+'</div>'+
+        '</div>'+
+      '</div>';
+    
+    // Lista giornaliera
+    var html = '';
+    lista.forEach(function(c){
+      var data = c.data||'';
+      var dataFmt = data ? new Date(data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : '—';
+      var tot = parseFloat(c.totale||0);
+      var cont = parseFloat(c.pagato_contanti||0);
+      var elet = parseFloat(c.pagato_elettronico||0);
+      var imp = parseFloat(c.totale_imponibile||0);
+      var iva = parseFloat(c.totale_iva||0);
+      var nDoc = c.numero_documenti||0;
+      
+      // Riepilogo IVA
+      var ivaHtml = '';
+      if(c.riepilogo_iva && c.riepilogo_iva.length){
+        ivaHtml = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:12px">';
+        ivaHtml += '<div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px;text-transform:uppercase">Dettaglio IVA</div>';
+        c.riepilogo_iva.forEach(function(r){
+          var ali = r.aliquota_iva||'0';
+          var imposta = parseFloat(r.imposta||0);
+          var ammontare = parseFloat(r.ammontare||0);
+          ivaHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04)">';
+          ivaHtml += '<span>IVA '+ali+'%</span>';
+          ivaHtml += '<span>Imp. '+fmtE(ammontare)+' / IVA '+fmtE(imposta)+'</span>';
+          ivaHtml += '</div>';
+        });
+        ivaHtml += '</div>';
+      }
+      
+      html += '<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer" onclick="this.querySelector(\'.corr-detail\').style.display=this.querySelector(\'.corr-detail\').style.display===\'none\'?\'block\':\'none\'">';
+      // Header
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html += '<div><div style="font-size:15px;font-weight:700">'+dataFmt+'</div>';
+      html += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+nDoc+' scontrini \u2022 Doc. N\u00b0 '+(c.numero_documento||'')+'</div></div>';
+      html += '<div style="font-size:18px;font-weight:800">'+fmtE(tot)+'</div>';
+      html += '</div>';
+      // Mini riepilogo sempre visibile
+      html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:12px">';
+      html += '<span style="color:#1a7a3a;font-weight:600">\ud83d\udcb5 '+fmtE(cont)+'</span>';
+      html += '<span style="color:var(--blue);font-weight:600">\ud83d\udcb3 '+fmtE(elet)+'</span>';
+      html += '</div>';
+      // Dettaglio espandibile
+      html += '<div class="corr-detail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">';
+      html += '<div><span style="color:var(--ink3)">Imponibile</span><br><b>'+fmtE(imp)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">IVA</span><br><b>'+fmtE(iva)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">Contanti</span><br><b style="color:#1a7a3a">'+fmtE(cont)+'</b></div>';
+      html += '<div><span style="color:var(--ink3)">Elettronico</span><br><b style="color:var(--blue)">'+fmtE(elet)+'</b></div>';
+      html += '</div>';
+      html += ivaHtml;
+      html += '<div style="text-align:center;font-size:11px;color:var(--ink3);margin-top:6px">Matricola RT: '+(c.matricola_rt||'')+'</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    
+    listaDiv.innerHTML = html;
+    toast(lista.length+' corrispettivi caricati');
+    
+  } catch(e){
+    totDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
+  }
+}
+
 init();
+setTimeout(function(){dedupFatture(); riconciliaAssegni();},3000);
 </script>
 </body>
 </html>

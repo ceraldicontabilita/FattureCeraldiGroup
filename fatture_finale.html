@@ -1508,6 +1508,7 @@ function renderLista(){
   const lMax=parseFloat((gv('lImpMax')||'').replace(',','.'))||Infinity;
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
   const filt=fatture.filter(f=>{
+    if(f.note==='Assegno da compilare'||f.note==='Assegno compilato') return false;
     const okT=filtroL==='tutti'||f.pagamento===filtroL;
     const okS=!s||f.fornitore.toLowerCase().includes(s)||(f.numero||'').toLowerCase().includes(s)||(f.note||'').toLowerCase().includes(s);
     const d=f.data?new Date(f.data+'T12:00:00'):null;

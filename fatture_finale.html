@@ -227,6 +227,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 .mo.on{display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important}
 .mo .modal{max-height:80vh;overflow-y:auto}
+
+.fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
 </style>
 
 <body>
@@ -3226,6 +3228,26 @@ function gestApriDettaglio(idx){
     +'</div>';
   mo.style.display = 'flex';
 }
+
+
+
+// == DELEGATED CLICK su card fattura ==
+document.addEventListener('DOMContentLoaded', function(){
+  var listaEl = document.getElementById('listaEl');
+  if(listaEl){
+    listaEl.addEventListener('click', function(e){
+      // Cerca la card .fi più vicina
+      var card = e.target.closest('.fi');
+      if(!card) return;
+      // Se il click è su un bottone interno, non fare niente (stopPropagation già gestito)
+      if(e.target.closest('.fi-act-btn') || e.target.closest('button') || e.target.tagName==='BUTTON') return;
+      if(e.target.closest('.fi-thumb') || e.target.tagName==='IMG') return;
+      // Estrai l'id dalla card
+      var cardId = card.id.replace('fi-','');
+      if(cardId) apriDettaglioRegistro(parseInt(cardId));
+    });
+  }
+});
 
 
 init();

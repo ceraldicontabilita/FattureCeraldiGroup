@@ -275,9 +275,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 <!-- BANNER SCADUTE -->
 <div style="padding:0 16px">
-<div class="alert-banner" id="alertBanner" onclick="goTab('scadenzario',document.querySelectorAll('.tab-item')[2])">
-  <span class="alert-banner-ico">&#9888;</span>
-  <div id="alertBannerTxt">Hai fatture scadute non pagate</div>
+
   <span style="font-size:18px;color:var(--red)">&#8250;</span>
 </div>
 </div>
@@ -727,7 +725,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <div id="anteprima"></div>
+  
 </div>
 
 <!-- EDIT MODAL -->
@@ -1678,59 +1676,6 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
-  const ap=document.getElementById('anteprima');
-  if(!rows.length){ap.innerHTML='';return;}
-  ap.innerHTML='<p class="stitle-sm" style="margin-bottom:10px">Anteprima</p>'+
-    rows.slice(0,5).map(f=>{
-      const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}):'—';
-      const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
-      return `<div class="fi"><div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>
-        <div class="fi-body"><div class="fi-top"><div class="fi-nome">${esc(f.fornitore)}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
-        <div class="fi-meta">${df} &middot; ${f.pagamento}</div></div></div>`;
-    }).join('')+(rows.length>5?`<p style="text-align:center;font-size:12px;color:var(--ink3);padding:8px">...e altri ${rows.length-5}</p>`:'');
-}
-function renderRiepilogo(){aggiornaDL();updRiep();}
-
-// ── EXPORT (iOS-compatibile) ──
-function condividi(content, nome, type){
-  const blob=new Blob([content],{type});
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  // Web Share API (iOS 15+, migliore opzione)
-  if(isIOS&&navigator.canShare){
-    const file=new File([blob],nome,{type});
-    if(navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:nome})
-        .then(()=>toast('File condiviso!'))
-        .catch(e=>{if(e.name!=='AbortError') toast('Condivisione annullata');});
-      return;
-    }
-  }
-  // Desktop o Android
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=nome;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-const nomeF=ext=>'fatture_ceraldi_'+new Date().toISOString().split('T')[0]+'.'+ext;
-
-function esportaCSV(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo','Pagamento','N. Assegno','Note'];
-  const lines=rows.map(f=>[f.data||'',`"${(f.fornitore||'').replace(/"/g,'""')}"`,`"${(f.numero||'').replace(/"/g,'""')}"`,
-    (f.importo||0).toFixed(2).replace('.',','),f.pagamento||'',`"${(f.assegno||'').replace(/"/g,'""')}"`,`"${(f.note||'').replace(/"/g,'""')}"`]);
-  condividi('\ufeff'+[h.join(';'),...lines.map(r=>r.join(';'))].join('\n'), nomeF('csv'), 'text/csv;charset=utf-8');
-  toast('CSV pronto!');
-}
-function esportaExcel(){
-  const rows=getFiltered();
-  if(!rows.length){toast('Nessuna fattura');return;}
-  const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
-  const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
-  const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
@@ -2474,33 +2419,19 @@ function condividiRegistrazione(id){
 
 // ── ALERT BANNER SCADUTE + BADGE TAB ──
 function aggiornaAlertBanner(){
-  const oggi2=new Date(); oggi2.setHours(0,0,0,0);
-  const scadute=fatture.filter(f=>{
-    const st=f.stato||'pagata';
-    if(st==='pagata') return false;
-    if(!f.scadenza) return false;
-    return new Date(f.scadenza+'T12:00:00')<oggi2;
+  var oggi=new Date();oggi.setHours(0,0,0,0);
+  var seen={};
+  var scadute=fatture.filter(function(f){
+    if(f.stato==='pagata')return false;
+    if(!f.scadenza)return false;
+    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
+    if(seen[k])return false;seen[k]=true;
+    return new Date(f.scadenza+'T12:00:00')<oggi;
   });
-  const incomplete=fatture.filter(f=>f.incompleta&&f.incompleta.length>0);
-  const banner=document.getElementById('alertBanner');
-  const txt=document.getElementById('alertBannerTxt');
-  if(!banner) return;
-  if(scadute.length>0){
-    banner.classList.add('on');
-    txt.textContent=scadute.length+' fattura'+(scadute.length>1?'e':'')+(scadute.length>1?' scadute':' scaduta')+' non pagata'+(scadute.length>1?'e':'');
-  } else {
-    banner.classList.remove('on');
-  }
-  // Badge rosso sul tab Scadenze: mostra scadute + incomplete
-  const totBadge=scadute.length+incomplete.length;
-  const badge=document.getElementById('scadBadge');
+  var badge=document.getElementById('scadBadge');
   if(badge){
-    if(totBadge>0){
-      badge.textContent=totBadge>99?'99+':totBadge;
-      badge.style.display='inline-flex';
-    } else {
-      badge.style.display='none';
-    }
+    if(scadute.length>0){badge.style.display='flex';badge.textContent=scadute.length;}
+    else{badge.style.display='none';}
   }
 }
 
@@ -2868,14 +2799,10 @@ function confermaCameraFoto(){
 async function init(){
   sv('mData',oggi());
   // Mostra spinner di caricamento
-  document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">⏳</span><div>Connessione al database...</div>';
-  document.getElementById('alertBanner').classList.add('on');
 
   const ok = await loadAll();
 
   // Nascondi spinner
-  document.getElementById('alertBanner').classList.remove('on');
-  document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">&#9888;</span><div id="alertBannerTxt">Hai fatture scadute non pagate</div><span style="font-size:18px;color:var(--accent)">&#8250;</span>';
 
   if(!ok) toast('⚠️ Offline — dati dalla cache locale');
 

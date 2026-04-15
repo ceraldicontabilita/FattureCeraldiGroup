@@ -1529,7 +1529,7 @@ function renderLista(){
     }
     // badge incompleta
     const incompletaBadge=(f.incompleta&&f.incompleta.length>0)?`<span style="display:inline-flex;align-items:center;gap:3px;background:#FFF0EF;color:var(--red);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:4px">⚠️ Incompleta</span>`:'';
-    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="event.stopPropagation();apriF('${f.id}')">&#128247; Foto</button>`:'';
+    const fotoBtn=f.foto?`<button class="fi-act-btn" onclick="event.stopPropagation();apriF('${f.id}')">&#128247; Foto</button>`:`<button class="fi-act-btn" onclick="event.stopPropagation();scattaFotoRegistro(${f.id})">&#128247;</button>`;
     return `<div class="fi" id="fi-${f.id}" onclick="apriDettaglioRegistro(${f.id})" style="cursor:pointer;${(f.incompleta&&f.incompleta.length>0)?'border-left:3px solid var(--red)':''}">
       ${f.foto?`<img class="fi-thumb" src="${f.foto}" onclick="event.stopPropagation();apriF('${f.id}')" alt="">`:`<div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>`}
       <div class="fi-body">

@@ -17,7 +17,7 @@
   --shadow:0 2px 8px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:84px;-webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100vw}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:84px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .ios-header{background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep);padding:52px 20px 12px;position:sticky;top:0;z-index:100}
 .ios-header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
 .ios-header p{font-size:13px;color:var(--ink3);margin-top:1px}
@@ -26,7 +26,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .tab-item .tab-ico{font-size:22px;line-height:1;color:var(--ink3)}
 .tab-item .tab-lbl{font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:.1px}
 .tab-item.active .tab-ico,.tab-item.active .tab-lbl{color:var(--blue)}
-.view{display:none;padding:16px;padding-bottom:100px;overflow-x:hidden;box-sizing:border-box;width:100%}
+.view{display:none;padding:16px;padding-bottom:100px}
 .view.active{display:block;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .sec-title{font-size:13px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin:20px 4px 8px}
@@ -867,7 +867,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <!-- TAB BAR BOTTOM -->
-<div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px;overflow-x:hidden;box-sizing:border-box;width:100%"><p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:15px;letter-spacing:1px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);box-sizing:border-box;min-width:0"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
+<div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px;overflow-x:hidden"><p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:15px;letter-spacing:1px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);box-sizing:border-box;min-width:0"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
 <div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">

@@ -224,6 +224,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-ok{background:var(--blue);color:#fff}
 
 .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}.tab-item{min-width:52px;flex-shrink:0}
+
+.mo.on{display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important}
+.mo .modal{max-height:80vh;overflow-y:auto}
 </style>
 
 <body>
@@ -790,7 +793,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<div class="mo" id="mo">
+<div class="mo" id="mo" onclick="if(event.target===this)closeMo()">
   <div class="modal">
     <h3 id="moTitle"></h3><p id="moMsg"></p>
     <div class="mbtns">
@@ -3161,6 +3164,67 @@ function scattaFotoRegistro(fId){
       };img.src=e.target.result;
     };reader.readAsDataURL(input.files[0]);
   };input.click();
+}
+
+
+
+// == DETTAGLIO FATTURA XML ==
+function gestApriDettaglio(idx){
+  var inv = _gestFatture[idx];
+  if(!inv){toast('Fattura non trovata');return;}
+  var num = inv.invoice_number||inv.numero||'';
+  var forn = inv.supplier_name||inv.cedente_denominazione||'';
+  var tot = parseFloat(inv.total_amount||0);
+  var imp = parseFloat(inv.taxable_amount||inv.totale_imponibile||0);
+  var iva = parseFloat(inv.vat_amount||inv.totale_iva||0);
+  var ivaR = inv.vat_rate||'';
+  var data = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+  var desc = inv.descrizione||'';
+  var piva = inv.cedente_piva||inv.fornitore_piva||'';
+  var cf = inv.cedente_cf||'';
+  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+
+  // Costruisci HTML articoli
+  var artHtml = '';
+  if(inv.linee && inv.linee.length){
+    artHtml = '<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:6px">ARTICOLI ('+inv.linee.length+')</div>';
+    inv.linee.forEach(function(l){
+      var pz = parseFloat(l.prezzo_unitario||0);
+      var qt = parseFloat(l.quantita||1);
+      var ltot = pz*qt;
+      artHtml += '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:12px;display:flex;justify-content:space-between"><span style="flex:1">'+esc(l.descrizione||'')+'</span><span style="white-space:nowrap;font-weight:600;margin-left:8px">'+fe(ltot)+'</span></div>';
+    });
+  } else if(desc){
+    var dp = desc.split(';').map(function(s){return s.trim();}).filter(Boolean);
+    artHtml = '<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:6px">ARTICOLI</div>';
+    dp.forEach(function(s){
+      artHtml += '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:12px">'+esc(s)+'</div>';
+    });
+  }
+
+  // Modal
+  var mo = document.getElementById('gestDetailMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'gestDetailMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:20px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    mo.addEventListener('click',function(e){if(e.target===mo){mo.style.display='none';}});
+    document.body.appendChild(mo);
+  }
+
+  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:100%;max-width:500px;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,.25);margin:auto 0">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">Fattura N\u00b0 '+esc(num)+'</div><button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">\u2715</button></div>'
+    +'<div style="font-size:20px;font-weight:800;margin-bottom:4px">'+esc(forn)+'</div>'
+    +'<div style="font-size:13px;color:var(--ink3)">P.IVA '+esc(piva)+(cf?' \u2014 CF '+esc(cf):'')+'</div>'
+    +'<div style="font-size:13px;color:var(--ink3);margin-bottom:16px">'+data+'</div>'
+    +'<div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:600;color:var(--ink3)">TOTALE</span><span style="font-size:28px;font-weight:800">\u20ac '+fe(tot)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px"><span style="color:var(--ink3)">Imponibile</span><span>\u20ac '+fe(imp)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:2px"><span style="color:var(--ink3)">IVA'+(ivaR?' ('+ivaR+'%)':'')+'</span><span>\u20ac '+fe(iva)+'</span></div>'
+    +'</div>'
+    +artHtml
+    +'</div>';
+  mo.style.display = 'flex';
 }
 
 

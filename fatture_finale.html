@@ -1563,7 +1563,7 @@ function renderLista(){
         <div class="fi-meta">${df} · ${pag1}${extra}${rateInfo}${scadInfo}</div>
         ${f.numero?`<div class="fi-num">N° ${esc(f.numero)} ${statoBadge}</div>`:`<div class="fi-num">${statoBadge}</div>`}
         ${(f.incompleta&&f.incompleta.length>0)?`<div style="font-size:11px;color:var(--red);margin-top:3px">Mancanti: ${f.incompleta.join(', ')}</div>`:''}
-        ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note.slice(0,50)+(f.note.length>50?'...':''))}</div>`:''}
+        ${f.note&&f.note.length<60?`<div class="fi-num" style="font-style:italic">${esc(f.note.slice(0,50)+(f.note.length>50?'...':''))}</div>`:''}
         ${parzInfo}
         <div class="fi-actions">
           ${ddtOpen?`<button class="fi-act-btn primary" onclick="event.stopPropagation();openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}
@@ -3142,31 +3142,35 @@ async function calcolaIVA(){
 
 function apriDettaglioRegistro(fId){
   var f = fatture.find(function(x){return x.id==fId;});
-  if(!f){openEdit(fId);return;}
+  if(!f) return;
   var num = (f.numero||'').toString().trim();
-  if(!num){openEdit(fId);return;}
-  if(_gestFatture && _gestFatture.length){
+  
+  // Se le fatture XML sono in memoria, cerca subito
+  if(_gestFatture && _gestFatture.length && num){
     for(var i=0;i<_gestFatture.length;i++){
       if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
         gestApriDettaglio(i);return;
       }
     }
-    openEdit(fId);return;
   }
-  toast('Caricamento...');
+  
+  // Scarica le fatture XML e cerca
+  toast('Caricamento dettaglio...');
   var anno=f.data?f.data.slice(0,4):new Date().getFullYear().toString();
   fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
     .then(function(r){return r.ok?r.json():null;})
     .then(function(data){
-      if(!data){openEdit(fId);return;}
+      if(!data){toast('Impossibile caricare');return;}
       _gestFatture=Array.isArray(data)?data:(data.items||[]);
-      for(var i=0;i<_gestFatture.length;i++){
-        if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
-          gestApriDettaglio(i);return;
+      if(num){
+        for(var i=0;i<_gestFatture.length;i++){
+          if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
+            gestApriDettaglio(i);return;
+          }
         }
       }
-      openEdit(fId);
-    }).catch(function(){openEdit(fId);});
+      toast('Dettaglio non disponibile per questa fattura');
+    }).catch(function(){toast('Errore connessione');});
 }
 
 function scattaFotoRegistro(fId){

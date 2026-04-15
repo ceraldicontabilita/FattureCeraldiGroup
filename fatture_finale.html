@@ -223,7 +223,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
 
-.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}.tab-item{min-width:52px;flex-shrink:0}
+.tab-bar{overflow-x:visible}.tab-item{flex:1;min-width:0}
 
 .mo.on{display:flex}
 .mo .modal{max-height:82vh;overflow-y:auto;border-radius:16px}
@@ -2878,8 +2878,8 @@ async function init(){
   const ok = await loadAll();
 
   // Nascondi spinner
-  document.getElementById('alertBanner').classList.remove('on');
   document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">&#9888;</span><div id="alertBannerTxt">Hai fatture scadute non pagate</div>';
+  document.getElementById('alertBanner').classList.remove('on');
 
   if(!ok) toast('⚠️ Offline — dati dalla cache locale');
 

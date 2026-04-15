@@ -223,33 +223,32 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
 
+.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}.tab-item{min-width:52px;flex-shrink:0}
 
-/* == CUSTOM CSS == */
-.tab-bar {
+.mo.on{display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important}
+.mo .modal{max-height:80vh;overflow-y:auto}
+
+.fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
+
+#gestDetailMo {
+  display: none;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  background: rgba(255,255,255,.97);
-  border-top: 1px solid rgba(0,0,0,.1);
-  padding-bottom: env(safe-area-inset-bottom, 6px);
-}
-.tab-item { min-width: 50px; flex-shrink: 0; }
-body { padding-bottom: 72px; }
-.fi { cursor: pointer; -webkit-tap-highlight-color: rgba(0,122,255,.1); }
-#gestDetailMo > div {
-  max-height: 85vh;
-  max-width: 440px;
-  width: calc(100% - 32px);
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 300;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(4px);
+  padding: 16px !important;
   overflow-y: auto;
-  margin: auto;
-  border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.3);
+  -webkit-overflow-scrolling: touch;
 }
-.mo.on { display: flex; align-items: center; justify-content: center; padding: 20px; }
+#gestDetailMo > div {
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  margin: auto !important;
+  border-radius: 20px !important;
+}
 </style>
 
 <body>
@@ -276,13 +275,15 @@ body { padding-bottom: 72px; }
 
 <!-- BANNER SCADUTE -->
 <div style="padding:0 16px">
-
+<div class="alert-banner" id="alertBanner" onclick="goTab('scadenzario',document.querySelectorAll('.tab-item')[2])">
+  <span class="alert-banner-ico">&#9888;</span>
+  <div id="alertBannerTxt">Hai fatture scadute non pagate</div>
   <span style="font-size:18px;color:var(--red)">&#8250;</span>
 </div>
 </div>
 
 <!-- SCAN -->
-<div id="view-scan" class="view">
+<div id="view-scan" class="view active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -495,7 +496,7 @@ body { padding-bottom: 72px; }
 </div>
 
 <!-- LISTA -->
-<div id="view-lista" class="view active">
+<div id="view-lista" class="view">
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
   </div>
@@ -726,46 +727,8 @@ body { padding-bottom: 72px; }
     </div>
   </div>
 
-  
+  <div id="anteprima"></div>
 </div>
-
-<!-- ASSEGNI -->
-<div id="view-assegni" class="view" style="padding:16px">
-  <p class="stitle">Registro Assegni</p>
-  <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
-    <div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div>
-    <input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="width:100%;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);box-sizing:border-box;margin-bottom:8px">
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">Entrambi i numeri aumentano</div>
-    <button class="btn btn-p" onclick="generaAssegni()" style="width:100%">Genera 10 assegni</button>
-  </div>
-  <div id="assegniLista"></div>
-  <div id="assegniSalvati" style="margin-top:16px"></div>
-</div>
-
-<!-- CORRISPETTIVI -->
-<div id="view-corrispettivi" class="view" style="padding:16px">
-  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p>
-  <div style="display:flex;gap:8px;margin-bottom:12px">
-    <input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
-    <button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button>
-  </div>
-  <div id="corrTotali" style="margin-bottom:14px"></div>
-  <div id="corrLista"></div>
-</div>
-
-<!-- IVA -->
-<div id="view-iva" class="view" style="padding:16px">
-  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p>
-  <p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
-    <button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button>
-  </div>
-  <div id="ivaTotali"></div>
-  <div id="ivaMesi"></div>
-</div>
-
-
 
 <!-- EDIT MODAL -->
 <div class="edit-mo" id="editMo">
@@ -904,9 +867,9 @@ body { padding-bottom: 72px; }
 </div>
 
 <!-- TAB BAR BOTTOM -->
-
-
-
+<div class="view" id="view-assegni" style="padding:16px"><p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm)"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
+<div class="view" id="view-corrispettivi" style="padding:16px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
+<div class="view" id="view-iva" style="padding:16px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
@@ -1715,6 +1678,59 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
+  const ap=document.getElementById('anteprima');
+  if(!rows.length){ap.innerHTML='';return;}
+  ap.innerHTML='<p class="stitle-sm" style="margin-bottom:10px">Anteprima</p>'+
+    rows.slice(0,5).map(f=>{
+      const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short'}):'—';
+      const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
+      return `<div class="fi"><div class="fi-ic ${ic}">${icons[f.pagamento]||'&#128196;'}</div>
+        <div class="fi-body"><div class="fi-top"><div class="fi-nome">${esc(f.fornitore)}</div><div class="fi-imp">${fmt(f.importo)}</div></div>
+        <div class="fi-meta">${df} &middot; ${f.pagamento}</div></div></div>`;
+    }).join('')+(rows.length>5?`<p style="text-align:center;font-size:12px;color:var(--ink3);padding:8px">...e altri ${rows.length-5}</p>`:'');
+}
+function renderRiepilogo(){aggiornaDL();updRiep();}
+
+// ── EXPORT (iOS-compatibile) ──
+function condividi(content, nome, type){
+  const blob=new Blob([content],{type});
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  // Web Share API (iOS 15+, migliore opzione)
+  if(isIOS&&navigator.canShare){
+    const file=new File([blob],nome,{type});
+    if(navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:nome})
+        .then(()=>toast('File condiviso!'))
+        .catch(e=>{if(e.name!=='AbortError') toast('Condivisione annullata');});
+      return;
+    }
+  }
+  // Desktop o Android
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=nome;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+const nomeF=ext=>'fatture_ceraldi_'+new Date().toISOString().split('T')[0]+'.'+ext;
+
+function esportaCSV(){
+  const rows=getFiltered();
+  if(!rows.length){toast('Nessuna fattura');return;}
+  const h=['Data','Fornitore','N. Fattura','Importo','Pagamento','N. Assegno','Note'];
+  const lines=rows.map(f=>[f.data||'',`"${(f.fornitore||'').replace(/"/g,'""')}"`,`"${(f.numero||'').replace(/"/g,'""')}"`,
+    (f.importo||0).toFixed(2).replace('.',','),f.pagamento||'',`"${(f.assegno||'').replace(/"/g,'""')}"`,`"${(f.note||'').replace(/"/g,'""')}"`]);
+  condividi('\ufeff'+[h.join(';'),...lines.map(r=>r.join(';'))].join('\n'), nomeF('csv'), 'text/csv;charset=utf-8');
+  toast('CSV pronto!');
+}
+function esportaExcel(){
+  const rows=getFiltered();
+  if(!rows.length){toast('Nessuna fattura');return;}
+  const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
+  const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
+  const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
@@ -2458,19 +2474,33 @@ function condividiRegistrazione(id){
 
 // ── ALERT BANNER SCADUTE + BADGE TAB ──
 function aggiornaAlertBanner(){
-  var oggi=new Date();oggi.setHours(0,0,0,0);
-  var seen={};
-  var scadute=fatture.filter(function(f){
-    if(f.stato==='pagata')return false;
-    if(!f.scadenza)return false;
-    var k=((f.numero||'')+'|||'+(f.fornitore||'')).toUpperCase();
-    if(seen[k])return false;seen[k]=true;
-    return new Date(f.scadenza+'T12:00:00')<oggi;
+  const oggi2=new Date(); oggi2.setHours(0,0,0,0);
+  const scadute=fatture.filter(f=>{
+    const st=f.stato||'pagata';
+    if(st==='pagata') return false;
+    if(!f.scadenza) return false;
+    return new Date(f.scadenza+'T12:00:00')<oggi2;
   });
-  var badge=document.getElementById('scadBadge');
+  const incomplete=fatture.filter(f=>f.incompleta&&f.incompleta.length>0);
+  const banner=document.getElementById('alertBanner');
+  const txt=document.getElementById('alertBannerTxt');
+  if(!banner) return;
+  if(scadute.length>0){
+    banner.classList.add('on');
+    txt.textContent=scadute.length+' fattura'+(scadute.length>1?'e':'')+(scadute.length>1?' scadute':' scaduta')+' non pagata'+(scadute.length>1?'e':'');
+  } else {
+    banner.classList.remove('on');
+  }
+  // Badge rosso sul tab Scadenze: mostra scadute + incomplete
+  const totBadge=scadute.length+incomplete.length;
+  const badge=document.getElementById('scadBadge');
   if(badge){
-    if(scadute.length>0){badge.style.display='flex';badge.textContent=scadute.length;}
-    else{badge.style.display='none';}
+    if(totBadge>0){
+      badge.textContent=totBadge>99?'99+':totBadge;
+      badge.style.display='inline-flex';
+    } else {
+      badge.style.display='none';
+    }
   }
 }
 
@@ -2838,10 +2868,14 @@ function confermaCameraFoto(){
 async function init(){
   sv('mData',oggi());
   // Mostra spinner di caricamento
+  document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">⏳</span><div>Connessione al database...</div>';
+  document.getElementById('alertBanner').classList.add('on');
 
   const ok = await loadAll();
 
   // Nascondi spinner
+  document.getElementById('alertBanner').classList.remove('on');
+  document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">&#9888;</span><div id="alertBannerTxt">Hai fatture scadute non pagate</div><span style="font-size:18px;color:var(--accent)">&#8250;</span>';
 
   if(!ok) toast('⚠️ Offline — dati dalla cache locale');
 
@@ -3201,12 +3235,12 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
     mo.addEventListener('click',function(e){if(e.target===mo){mo.style.display='none';}});
     document.body.appendChild(mo);
   }
 
-  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:calc(100% - 32px);max-width:440px;max-height:82vh;overflow-y:auto;padding:24px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3);margin:auto">'
+  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,.25)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">Fattura N\u00b0 '+esc(num)+'</div><button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">\u2715</button></div>'
     +'<div style="font-size:20px;font-weight:800;margin-bottom:4px">'+esc(forn)+'</div>'
     +'<div style="font-size:13px;color:var(--ink3)">P.IVA '+esc(piva)+(cf?' \u2014 CF '+esc(cf):'')+'</div>'

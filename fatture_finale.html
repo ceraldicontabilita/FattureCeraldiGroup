@@ -916,6 +916,21 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div id="corrLista"></div>
 </div>
 
+
+<!-- VIEW IVA -->
+<div class="view" id="view-iva" style="padding:16px">
+  <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p>
+  <p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <div style="flex:1">
+      <input type="number" id="ivaAnno" value="2026" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface)">
+    </div>
+    <button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button>
+  </div>
+  <div id="ivaTotali"></div>
+  <div id="ivaMesi"></div>
+</div>
+
 <nav class="tab-bar">
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
@@ -931,6 +946,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
   <button class="tab-item" onclick="goTab('corrispettivi',this)"><span class="tab-ico">&#128176;</span><span class="tab-lbl">Corrisp.</span></button>
+  <button class="tab-item" onclick="goTab('iva',this)">
+    <span class="tab-ico">&#128200;</span>
+    <span class="tab-lbl">IVA</span>
+  </button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
     <span class="tab-lbl">Riepilogo</span>
@@ -1171,6 +1190,7 @@ function goTab(tab,btn){
   if(tab==='riepilogo'){ updRiep(); renderScadenzario(); renderFornChart(); checkBackup(); }
   if(tab==='scadenzario') renderScadenzario();
   if(tab==='assegni') caricaAssegniSalvati();
+  if(tab==='iva') calcolaIVA();
   if(tab==='corrispettivi') caricaCorrispettivi();
 }
 
@@ -4159,6 +4179,100 @@ async function caricaCorrispettivi(){
     totDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">Errore: '+e.message+'</div>';
   }
 }
+
+// ── LIQUIDAZIONE IVA ──
+async function calcolaIVA(){
+  var anno=(document.getElementById('ivaAnno').value||'').trim();
+  if(!anno){toast('Inserisci anno');return;}
+  var totDiv=document.getElementById('ivaTotali');
+  var mesiDiv=document.getElementById('ivaMesi');
+  totDiv.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';
+  mesiDiv.innerHTML='';
+  try{
+    var r1=await fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500');
+    var r2=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+    if(!r1.ok||!r2.ok) throw new Error('Errore API');
+    var fatt=await r1.json(); var corr=await r2.json();
+    fatt=Array.isArray(fatt)?fatt:(fatt.items||[]);
+    corr=Array.isArray(corr)?corr:(corr.items||[]);
+    var fe=function(n){return(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    var nm=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    var mesi={};
+    for(var m=1;m<=12;m++) mesi[m]={cr:0,db:0,ia:0,iv:0};
+    // IVA CREDITO (fatture passive) — art.1 DPR 100/98
+    fatt.forEach(function(f){
+      var df=(f.invoice_date||f.data_effettiva||'').toString().slice(0,10);
+      var dr=(f.imported_at||'').toString().slice(0,10);
+      if(!df||df.slice(0,4)!==anno) return;
+      if(f.inclusa_in_corrispettivo) return;
+      var mf=parseInt(df.slice(5,7));
+      var mc=mf;
+      if(dr){
+        var mr=parseInt(dr.slice(5,7));var gr=parseInt(dr.slice(8,10));var ar=dr.slice(0,4);
+        if(ar===anno&&mr===mf+1&&gr<=15) mc=mf;
+        else if(ar===anno&&mr>mf+1) mc=mr;
+        else if(mf===12&&ar===String(parseInt(anno)+1)&&mr===1&&gr<=15) mc=mf;
+      }
+      if(mc<1||mc>12) return;
+      var iva=parseFloat(f.vat_amount||f.totale_iva||0);
+      var imp=parseFloat(f.taxable_amount||f.totale_imponibile||0);
+      if(f.document_type==='TD04'){mesi[mc].cr-=iva;return;}
+      mesi[mc].cr+=iva; mesi[mc].ia+=imp;
+    });
+    // IVA DEBITO (corrispettivi)
+    corr.forEach(function(c){
+      var d=(c.data||'').slice(0,10);var m=parseInt((d||'').slice(5,7));
+      if(!m||m<1||m>12) return;
+      mesi[m].db+=parseFloat(c.totale_iva||0);
+      mesi[m].iv+=parseFloat(c.totale_imponibile||0);
+    });
+    var tc=0,td=0,rip=0,mh='',ma=0;
+    for(var m=1;m<=12;m++){
+      var d=mesi[m]; if(d.cr===0&&d.db===0) continue; ma++;
+      tc+=d.cr; td+=d.db;
+      var saldo=d.db-d.cr-rip;
+      var dv=saldo>0?saldo:0;
+      var cres=saldo<0?Math.abs(saldo):0;
+      var ms=m<12?m+1:1;var as2=m<12?parseInt(anno):parseInt(anno)+1;
+      var scad=as2+'-'+String(ms).padStart(2,'0')+'-16';
+      var sf=new Date(scad+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
+      var sc=new Date(scad+'T12:00:00')<new Date()&&dv>0;
+      var bc=dv>0?(sc?'var(--red)':'var(--orange)'):'var(--green)';
+      mh+='<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid '+bc+';cursor:pointer" onclick="var x=this.querySelector(\'.ivd\');x.style.display=x.style.display===\'none\'?\'block\':\'none\'">';
+      mh+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      mh+='<div><div style="font-size:15px;font-weight:700">'+nm[m]+'</div>';
+      mh+='<div style="font-size:11px;color:var(--ink3)">F24 entro '+sf+(sc?' — <b style="color:var(--red)">SCADUTO</b>':'')+'</div></div>';
+      if(dv>0) mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fe(dv)+'</div><div style="font-size:10px;color:var(--red)">DA VERSARE</div></div>';
+      else mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fe(cres)+'</div><div style="font-size:10px;color:#1a7a3a">CREDITO</div></div>';
+      mh+='</div>';
+      mh+='<div style="display:flex;gap:12px;margin-top:6px;font-size:12px">';
+      mh+='<span style="color:var(--blue)">Credito \u20ac'+fe(d.cr)+'</span>';
+      mh+='<span style="color:var(--red)">Debito \u20ac'+fe(d.db)+'</span>';
+      if(rip>0) mh+='<span style="color:var(--ink3)">Riporto \u20ac'+fe(rip)+'</span>';
+      mh+='</div>';
+      mh+='<div class="ivd" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">';
+      mh+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
+      mh+='<div style="background:var(--blue-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--blue);font-weight:600">IVA CREDITO</div><div style="font-size:16px;font-weight:700;color:var(--blue)">\u20ac '+fe(d.cr)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fe(d.ia)+'</div></div>';
+      mh+='<div style="background:var(--red-light);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--red);font-weight:600">IVA DEBITO</div><div style="font-size:16px;font-weight:700;color:var(--red)">\u20ac '+fe(d.db)+'</div><div style="font-size:10px;color:var(--ink3)">Imp. \u20ac'+fe(d.iv)+'</div></div>';
+      mh+='</div>';
+      mh+='<div style="font-size:11px;color:var(--ink3);margin-top:6px;font-style:italic">Include fatture ricevute entro il 15 del mese successivo (art.1 DPR 100/98)</div>';
+      mh+='</div></div>';
+      rip=cres;
+    }
+    var sa=td-tc;var ic=sa<0;
+    totDiv.innerHTML=
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+      '<div style="background:var(--blue-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:4px">\u20ac '+fe(tc)+'</div><div style="font-size:11px;color:var(--ink3)">'+fatt.length+' fatture</div></div>'+
+      '<div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red)">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red);margin-top:4px">\u20ac '+fe(td)+'</div><div style="font-size:11px;color:var(--ink3)">'+corr.length+' corrispettivi</div></div></div>'+
+      '<div style="background:'+(ic?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px">'+
+      '<div style="font-size:11px;opacity:.7">SALDO IVA '+anno+'</div>'+
+      '<div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(Math.abs(sa))+'</div>'+
+      '<div style="font-size:13px;opacity:.9">'+(ic?'A CREDITO':'A DEBITO \u2014 F24')+'</div></div>';
+    mesiDiv.innerHTML=mh||'<div style="text-align:center;padding:20px">Nessun dato</div>';
+    toast('IVA '+anno+': '+ma+' mesi');
+  }catch(e){totDiv.innerHTML='<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';}
+}
+
 
 init();
 setTimeout(function(){dedupFatture(); riconciliaAssegni();},3000);

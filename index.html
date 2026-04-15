@@ -229,6 +229,26 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .mo .modal{max-height:80vh;overflow-y:auto}
 
 .fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
+
+#gestDetailMo {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 300;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(4px);
+  padding: 16px !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#gestDetailMo > div {
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  margin: auto !important;
+  border-radius: 20px !important;
+}
 </style>
 
 <body>
@@ -1543,7 +1563,7 @@ function renderLista(){
         <div class="fi-meta">${df} · ${pag1}${extra}${rateInfo}${scadInfo}</div>
         ${f.numero?`<div class="fi-num">N° ${esc(f.numero)} ${statoBadge}</div>`:`<div class="fi-num">${statoBadge}</div>`}
         ${(f.incompleta&&f.incompleta.length>0)?`<div style="font-size:11px;color:var(--red);margin-top:3px">Mancanti: ${f.incompleta.join(', ')}</div>`:''}
-        ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note)}</div>`:''}
+        ${f.note?`<div class="fi-num" style="font-style:italic">${esc(f.note.slice(0,50)+(f.note.length>50?'...':''))}</div>`:''}
         ${parzInfo}
         <div class="fi-actions">
           ${ddtOpen?`<button class="fi-act-btn primary" onclick="event.stopPropagation();openEditDdt(${f.id})">+ Aggancia fattura</button>`:''}

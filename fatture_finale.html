@@ -21,14 +21,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .ios-header{background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep);padding:52px 20px 12px;position:sticky;top:0;z-index:100}
 .ios-header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
 .ios-header p{font-size:13px;color:var(--ink3);margin-top:1px}
-.tab-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);display:flex !important;padding:8px 0 20px;z-index:500}
-.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;border:none;background:none;cursor:pointer;transition:color .15s}
 .tab-item .tab-ico{font-size:22px;line-height:1;color:var(--ink3)}
 .tab-item .tab-lbl{font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:.1px}
 .tab-item.active .tab-ico,.tab-item.active .tab-lbl{color:var(--blue)}
 .view{display:none;padding:16px;padding-bottom:100px}
 .view.active{display:block;animation:fadeIn .2s ease;overflow-x:hidden}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}}
 .sec-title{font-size:13px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin:20px 4px 8px}
 .sec-title:first-child{margin-top:4px}
 .upload-area{border:2px dashed var(--sep);border-radius:var(--radius);padding:40px 20px;text-align:center;background:var(--surface);position:relative;overflow:hidden;transition:all .2s}
@@ -71,7 +69,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .btn-s:active{background:var(--surface3)}
 .btn-d{background:var(--red-light);color:var(--red)}
 .mt8{margin-top:8px}
-.fi{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;animation:fadeIn .25s ease;overflow:hidden}
 .fi-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .ic-c{background:var(--green-light)}.ic-b{background:var(--blue-light)}.ic-a{background:var(--orange-light)}
 .fi-body{flex:1;min-width:0}
@@ -80,7 +77,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .fi-imp{font-size:17px;font-weight:700;flex-shrink:0}
 .fi-meta{margin-top:3px;font-size:13px;color:var(--ink3)}
 .fi-num{font-size:12px;color:var(--ink3);margin-top:2px}
-.fi-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:nowrap}
+.fi-actions{display:flex;gap:5px;margin-top:8px}
 .fi-act-btn{flex:1;min-width:0;padding:7px 4px;border:none;border-radius:var(--radius-xs);background:var(--surface2);font-family:'Inter',-apple-system,sans-serif;font-size:12px;font-weight:500;color:var(--blue);cursor:pointer;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .fi-act-btn:active{background:var(--surface3)}
 .fi-act-btn.danger{color:var(--red)}
@@ -180,7 +177,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(0,0,0,.82);color:#fff;padding:11px 22px;border-radius:99px;font-size:14px;font-weight:500;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px}
-.mo.on{display:flex}
 .modal{background:var(--surface);border-radius:16px;padding:24px 20px 32px;width:calc(100% - 40px);max-width:460px;animation:fadeIn .25s ease}
 .modal h3{font-size:18px;font-weight:700;margin-bottom:6px;text-align:center}
 .modal p{color:var(--ink3);font-size:14px;margin-bottom:22px;text-align:center;line-height:1.5}
@@ -198,8 +194,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .empty{text-align:center;padding:60px 20px;color:var(--ink3)}
 .empty .ei{font-size:48px;margin-bottom:12px;opacity:.4}
 .empty p{font-size:15px}
-
-/* ── CAMERA SCANNER ── */
 .cam-modal{display:none;position:fixed;inset:0;background:#000;z-index:500;flex-direction:column}
 .cam-modal.on{display:flex}
 .cam-video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
@@ -214,7 +208,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-shutter-inner{width:54px;height:54px;border-radius:99px;background:#fff}
 .cam-hint{color:rgba(255,255,255,.7);font-size:12px;text-align:center}
 .cam-flip{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:99px;width:44px;height:44px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;right:32px;bottom:60px;z-index:10;backdrop-filter:blur(4px)}
-/* Preview conferma */
 .cam-confirm{display:none;position:fixed;inset:0;background:#000;z-index:600;flex-direction:column;align-items:center;justify-content:center}
 .cam-confirm.on{display:flex}
 .cam-confirm-img{width:100%;max-height:70vh;object-fit:contain}
@@ -222,14 +215,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-confirm-btns button{flex:1;padding:15px;border:none;border-radius:var(--radius-sm);font-family:'Inter',-apple-system,sans-serif;font-size:16px;font-weight:600;cursor:pointer}
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
-
 .tab-bar{overflow:hidden}.tab-item{flex:1;min-width:0;overflow:hidden}
-
 .mo.on{display:flex}
 .mo .modal{max-height:82vh;overflow-y:auto;border-radius:16px}
-
 .fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
-
 #gestDetailMo {
   display: none;
   position: fixed;
@@ -259,7 +248,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <button onclick="apriImpostazioni()" style="position:absolute;top:50%;right:16px;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;padding:4px;line-height:1">&#9881;&#65039;</button>
 </div>
 
-<!-- MODAL IMPOSTAZIONI API KEY -->
 <div id="modalApiKey" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-end;justify-content:center">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:500px">
     <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;text-align:center">&#128273; API Key Anthropic</h3>
@@ -274,35 +262,33 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<!-- BANNER SCADUTE -->
 <div style="padding:0 16px">
-<div class="alert-banner" id="alertBanner" style="display:none!important" onclick="goTab('scadenzario',document.querySelectorAll('.tab-item')[2])">
+<div class="alert-banner" id="alertBanner" style="display:none!important" style="display:none!important" onclick="goTab('scadenzario',document.querySelectorAll('.tab-item')[2])">
   <span class="alert-banner-ico">&#9888;</span>
   <div id="alertBannerTxt">Hai fatture scadute non pagate</div>
 </div>
 </div>
 
-<!-- SCAN -->
 <div id="view-scan" class="view active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:12px">
-    <!-- Fotocamera live -->
+    
     <div class="upload-area" style="flex:1;padding:24px 8px;position:relative;cursor:pointer" onclick="apriCamera()">
       <span class="upload-icon" style="font-size:32px">&#127909;</span>
       <h3 style="font-size:13px">Fotocamera</h3>
       <p style="font-size:11px">Con guida</p>
     </div>
-    <!-- Galleria -->
+    
     <div class="upload-area" style="flex:1;padding:24px 8px;position:relative">
       <input type="file" id="fileInput" accept="image/*" onchange="onFileSelected(this)">
       <span class="upload-icon" style="font-size:32px">&#128247;</span>
       <h3 style="font-size:13px">Galleria</h3>
       <p style="font-size:11px">JPG, PNG</p>
     </div>
-    <!-- PDF / XML -->
+    
     <div class="upload-area" style="flex:1;padding:24px 8px;position:relative">
       <input type="file" id="fileInputDoc" accept=".pdf,.xml,application/pdf,text/xml,application/xml" onchange="onDocumentoSelected(this)">
       <span class="upload-icon" style="font-size:32px">&#128196;</span>
@@ -310,7 +296,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <p style="font-size:11px">PDF, XML</p>
     </div>
   </div>
-  <!-- Badge file selezionato -->
+  
   <div id="fileBadge" style="display:none;background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;align-items:center;gap:8px">
     <span style="font-size:18px" id="fileBadgeIco">&#128196;</span>
     <span id="fileBadgeName" style="font-size:13px;font-weight:600;color:var(--blue);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
@@ -399,7 +385,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <button class="btn btn-s mt8" onclick="resetFoto()">&#8617; Ricomincia</button>
   </div>
 
-  <!-- PULSANTE INSERIMENTO MANUALE -->
+  
   <div style="margin-top:16px">
     <button class="btn btn-s" onclick="toggleManuale()" style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--blue);background:var(--surface);box-shadow:var(--shadow)">
       <span style="font-size:18px">&#9998;</span> Inserimento manuale
@@ -495,7 +481,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<!-- LISTA -->
 <div id="view-lista" class="view">
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
@@ -537,7 +522,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div id="listaEl"></div>
 </div>
 
-<!-- SCADENZARIO -->
 <div id="view-scadenzario" class="view">
   <div class="chip-row" style="margin-bottom:12px">
     <button class="chip active" id="scf-tutti" onclick="setScadFiltro('tutti',this)">Tutte</button>
@@ -550,7 +534,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div id="scadEl"></div>
 </div>
 
-<!-- RIEPILOGO -->
 <div id="view-riepilogo" class="view">
   <div class="tot-grid">
     <div class="tot-card full"><div class="tl">Totale</div><div class="tv" id="totAll">&#8364; 0,00</div></div>
@@ -559,7 +542,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div class="tot-card tc-a"><div class="tl">&#128221; Assegno</div><div class="tv" id="totA">&#8364; 0,00</div></div>
   </div>
 
-  <!-- 1. FILTRI -->
+  
   <div class="rcard" id="rc-filtri">
     <div class="rcard-hd" onclick="toggleRCard('filtri')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#128270;</span>
@@ -591,7 +574,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <!-- 2. ESPORTA -->
+  
   <div class="rcard" id="rc-esporta">
     <div class="rcard-hd" onclick="toggleRCard('esporta')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#128228;</span>
@@ -607,7 +590,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <!-- 3. PER FORNITORE -->
+  
   <div class="rcard" id="rc-fornitori">
     <div class="rcard-hd" onclick="toggleRCard('fornitori')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#127968;</span>
@@ -617,7 +600,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div class="rcard-body" id="rbody-fornitori"><div id="fornChart"></div></div>
   </div>
 
-  <!-- 4. BACKUP -->
+  
   <div class="rcard" id="rc-backup">
     <div class="rcard-hd" onclick="toggleRCard('backup')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#128190;</span>
@@ -639,7 +622,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <!-- 5. MEMORIA IA -->
+  
   <div class="rcard" id="rc-aimen">
     <div class="rcard-hd" onclick="toggleRCard('aimen')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#129504;</span>
@@ -652,7 +635,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <!-- 5b. DIZIONARIO FORNITORI -->
+  
   <div class="rcard" id="rc-dizforn">
     <div class="rcard-hd" onclick="toggleRCard('dizforn')">
       <div class="rcard-hd-left"><span class="rcard-ico">📖</span>
@@ -672,8 +655,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     </div>
   </div>
 
-  <!-- 6. ZONA PERICOLO -->
-  <!-- IMPORTA DA GESTIONALE -->
+  
+  
   <div class="rcard" id="rc-gest">
     <div class="rcard-hd" onclick="toggleRCard('gest')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#127963;</span>
@@ -728,7 +711,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<!-- EDIT MODAL -->
 <div class="edit-mo" id="editMo">
   <div class="edit-sheet">
     <div class="edit-sheet-hd">
@@ -823,7 +805,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<!-- FOTO MODAL -->
 <div class="foto-mo" id="fotoMo">
   <div style="position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:10">
     <button id="fotoMoCondividi" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px)">📤 Condividi</button>
@@ -837,7 +818,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <datalist id="fornList"></datalist>
 <div class="toast" id="toast"></div>
 
-<!-- CAMERA SCANNER MODAL -->
 <div class="cam-modal" id="camModal">
   <video id="camVideo" class="cam-video" playsinline autoplay muted></video>
   <canvas id="camCanvas" class="cam-canvas"></canvas>
@@ -855,7 +835,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <button class="cam-flip" onclick="cambiaCamera()" title="Cambia fotocamera">&#8635;</button>
 </div>
 
-<!-- CAMERA CONFIRM -->
 <div class="cam-confirm" id="camConfirm">
   <img id="camConfirmImg" class="cam-confirm-img" alt="">
   <div class="cam-confirm-btns">
@@ -864,8 +843,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
-<!-- TAB BAR BOTTOM -->
-<div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px;overflow-x:hidden"><p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:15px;letter-spacing:1px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);box-sizing:border-box;min-width:0"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
+<div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px"><p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm)"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
 <div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">
@@ -1720,7 +1698,7 @@ function esportaExcel(){
   const h=['Data','Fornitore','N. Fattura','Importo (EUR)','Pagamento','N. Assegno','Note'];
   const hRow='<tr style="background:#18150F;color:white;font-weight:bold">'+h.map(x=>'<td>'+x+'</td>').join('')+'</tr>';
   const dRows=rows.map((f,i)=>`<tr style="background:${i%2===0?'#f9f9f9':'#fff'}"><td>${esc(f.data||'')}</td><td>${esc(f.fornitore||'')}</td><td>${esc(f.numero||'')}</td><td style="text-align:right">${(f.importo||0).toFixed(2).replace('.',',')}</td><td>${esc(f.pagamento||'')}</td><td>${esc(f.assegno||'')}</td><td>${esc(f.note||'')}</td></tr>`).join('');
-  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fatture</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table border="1" style="border-collapse:collapse;font-family:Arial;font-size:12px">${hRow}${dRows}</table></body></html>`;
   condividi(html, nomeF('xls'), 'application/vnd.ms-excel;charset=utf-8');
   toast('Excel pronto!');
 }
@@ -1817,23 +1795,6 @@ function scaricaApp(){
   toast('App pronta!');
 }
 
-// ── BACKUP ALERT SETTIMANALE ──
-function checkBackup(){
-  const last=parseInt(localStorage.getItem(BK)||'0');
-  const sub=document.getElementById('rsub-backup');
-  if(last>0&&sub){
-    const d=new Date(last);
-    sub.textContent='Ultimo: '+d.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
-  }
-  if(Date.now()-last>7*24*60*60*1000&&fatture.length>0){
-    setTimeout(()=>{
-      openMo('Backup settimanale','Sono passati piu di 7 giorni dall ultimo backup. Scarica una copia dei tuoi dati.',()=>{scaricaBackup();closeMo();});
-      document.getElementById('moOk').textContent='Scarica backup';
-    },1200);
-  }
-}
-
-// ── DELETE ──
 function askDel(id){
   delId=id;
   const f=fatture.find(x=>x.id===id);
@@ -1852,7 +1813,6 @@ function showDelAll(){
     sbFetch('fatture?ts=gt.0',{method:'DELETE'}).catch(()=>{});
     closeMo(); updRiep(); aggiornaAlertBanner(); toast('Tutto eliminato');
   });
-  // Aggiungi campo conferma al modal dopo l'apertura
   setTimeout(()=>{
     const msg=document.getElementById('moMsg');
     if(msg&&!document.getElementById('moConfirmInput')){
@@ -1863,8 +1823,6 @@ function showDelAll(){
     }
   },50);
 }
-
-// ── MODAL ──
 function openMo(title,msg,onOk){
   document.getElementById('moTitle').textContent=title;
   document.getElementById('moMsg').textContent=msg;
@@ -1877,8 +1835,6 @@ function closeMo(){
   const inp=document.getElementById('moConfirmInput');
   if(inp) inp.remove();
 }
-
-// ── HELPERS ──
 function oggi(){return new Date().toISOString().split('T')[0];}
 function fmt(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1890,47 +1846,35 @@ function toast(msg){
   t.textContent=msg; t.classList.add('on');
   clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('on'),2800);
 }
-
-// ── TIPO DOCUMENTO ──
 let rTipo='fattura', mTipo='fattura', eTipo='fattura';
-
 function setTipo(px,tipo){
   if(px==='r') rTipo=tipo;
   else if(px==='m') mTipo=tipo;
   else eTipo=tipo;
-
   const isFatt=tipo==='fattura';
-  // toggle buttons
   const fBtn=document.getElementById(px+'TipoFatt');
   const dBtn=document.getElementById(px+'TipoDdt');
   if(fBtn){fBtn.className='tipo-opt'+(isFatt?' active-fatt':'');}
   if(dBtn){dBtn.className='tipo-opt'+(!isFatt?' active-ddt':'');}
-  // mostra campo fattura collegata
   const ff=document.getElementById(px+'FattField')||document.getElementById(px==='e'?'eFattField':px+'FattField');
   if(ff) ff.style.display=isFatt?'none':'block';
 }
-
-// ── RATE DI PAGAMENTO ──
 let rRate=[], mRate=[], eRate=[];
-
 function addRata(px){
   const arr=px==='r'?rRate:px==='m'?mRate:eRate;
   const idx=arr.length;
   arr.push({pagamento:'',importo:'',data:'',assegno:'',assInt:'',bonIban:''});
   renderRate(px);
-  // scroll alla nuova rata
   setTimeout(()=>{
     const list=document.getElementById(px+'RateList');
     if(list&&list.lastChild) list.lastChild.scrollIntoView({behavior:'smooth',block:'nearest'});
   },100);
 }
-
 function removeRata(px,idx){
   const arr=px==='r'?rRate:px==='m'?mRate:eRate;
   arr.splice(idx,1);
   renderRate(px);
 }
-
 function renderRate(px){
   const arr=px==='r'?rRate:px==='m'?mRate:eRate;
   const list=document.getElementById(px+'RateList');
@@ -1961,17 +1905,13 @@ function renderRate(px){
           oninput="updRata('${px}',${i},'assInt',this.value)"></div>`:''}
     </div>`).join('');
 }
-
 function updRata(px,idx,field,val){
   const arr=px==='r'?rRate:px==='m'?mRate:eRate;
   if(arr[idx]) arr[idx][field]=val;
   if(field==='pagamento') renderRate(px);
 }
-
-// ── EDIT FATTURA ──
 let editId=null;
 let ePag='';
-
 function openEdit(id){
   const f=fatture.find(x=>x.id===id);
   if(!f) return;
@@ -1980,7 +1920,6 @@ function openEdit(id){
   ePag=f.pagamento||'';
   eRate=JSON.parse(JSON.stringify(f.rate||[]));
   eStato=f.stato||'pagata';
-
   setTipo('e',eTipo);
   sv('eForn2',f.fornitore||'');
   sv('eNum2',f.numero||'');
@@ -1997,21 +1936,16 @@ function openEdit(id){
   setStato('e',eStato);
   sv('eParzPagato',f.parzPagato?String(f.parzPagato).replace('.',','):'');
   setTimeout(()=>aggiornaParz('e'),50);
-
   if(eTipo==='ddt'){
     const st=document.getElementById('eDdtStatus');
     if(st) st.textContent=f.fattNum?'Fattura collegata: '+f.fattNum:'In attesa di fattura';
   }
-
   setPag('e',ePag);
   renderRate('e');
-
   document.getElementById('editMo').classList.add('on');
 }
-
 function openEditDdt(id){
   openEdit(id);
-  // scroll al campo fattura
   setTimeout(()=>{
     const ff=document.getElementById('eFattField');
     if(ff) ff.scrollIntoView({behavior:'smooth',block:'center'});
@@ -2019,26 +1953,21 @@ function openEditDdt(id){
     if(fn) fn.focus();
   },300);
 }
-
 function closeEdit(){
   document.getElementById('editMo').classList.remove('on');
   editId=null; eRate=[];
 }
-
 function salvaEdit(){
   if(!editId) return;
   const forn=gv('eForn2').trim();
   const idx=fatture.findIndex(x=>x.id===editId);
   if(idx<0) return;
-
-  // Calcola se ancora incompleta dopo la modifica
   const mancantiEdit=[];
   if(!forn) mancantiEdit.push('Fornitore');
   if(!gv('eNum2').trim()) mancantiEdit.push('N° Documento');
   if(!gv('eData2')) mancantiEdit.push('Data');
   if(!(parseFloat((gv('eImp2')||'0').replace(',','.'))||0)) mancantiEdit.push('Importo');
   if(!ePag) mancantiEdit.push('Pagamento');
-
   const parzPagato=eStato==='parziale'?parseFloat((gv('eParzPagato')||'0').replace(',','.'))||0:0;
   fatture[idx]={
     ...fatture[idx],
@@ -2057,7 +1986,6 @@ function salvaEdit(){
   closeEdit(); renderLista();
   toast(mancantiEdit.length>0?'⚠️ Salvata con dati incompleti':'Modifiche salvate!');
 }
-
 function resetMemoriaAI(){
   openMo('Cancella memoria IA','Tutte le correzioni apprese verranno eliminate.',()=>{
     cacheSet(KAI,{});
@@ -2068,7 +1996,6 @@ function resetMemoriaAI(){
     aggiornaMenuAI();
   });
 }
-
 function aggiornaMenuAI(){
   const correzioni=cacheGet(KAI,{});
   const tutti=Object.values(correzioni).reduce((s,a)=>s+a.length,0);
@@ -2090,11 +2017,8 @@ function aggiornaMenuAI(){
     }).join('');
   }
 }
-
-// ── FOTO ALLEGATA ──
 let _fotoCorrente = '';
 let _mFotoCorrente = '';
-
 function onFileSelected(input){
   if(!input.files||!input.files[0]) return;
   const reader=new FileReader();
@@ -2108,27 +2032,23 @@ function onFileSelected(input){
   reader.onerror=()=>toast('Errore lettura file');
   reader.readAsDataURL(input.files[0]);
 }
-
 function onDocumentoSelected(input){
   if(!input.files||!input.files[0]) return;
   const file=input.files[0];
   const nome=file.name;
   const ext=nome.split('.').pop().toLowerCase();
-  // Mostra badge file
   const fb=document.getElementById('fileBadge');
   const fn=document.getElementById('fileBadgeName');
   const fi=document.getElementById('fileBadgeIco');
   if(fb){fb.style.display='flex';}
   if(fn) fn.textContent=nome;
   if(fi) fi.textContent=ext==='pdf'?'📄':'📋';
-  // Nascondi preview immagine
   const img=document.getElementById('prevImg'); img.style.display='none'; img.src='';
   _fotoCorrente=''; // PDF/XML non hanno foto allegata
   if(ext==='pdf') analizzaPDF(file);
   else if(ext==='xml') analizzaXML(file);
   else toast('Formato non supportato — usa PDF o XML');
 }
-
 async function analizzaPDF(file){
   const lb=document.getElementById('lbar'), lt=document.getElementById('ltxt'), rb=document.getElementById('rBox');
   const _akPdf=localStorage.getItem('fatture_apikey')||'';
@@ -2140,25 +2060,16 @@ async function analizzaPDF(file){
     const base64=e.target.result.split(',')[1];
     const apprendimento=buildPromptApprendimento();
     const prompt=`Analizza questo PDF di un documento commerciale italiano.
-
 STEP 1 — LEGGI il documento per intero prima di estrarre qualsiasi dato.
-
 STEP 2 — IDENTIFICA IL TIPO:
 - FATTURA: "Fattura", "Fattura n.", "Fattura Immediata", "Fattura Differita", "Nota di Addebito", "Parcella", "Ricevuta Fiscale", oppure presenza di IVA e totale da pagare.
 - DDT: "DDT", "D.D.T.", "Documento di Trasporto", "Bolla", "Nota di Consegna", "Lettera di Vettura", oppure "Causale Trasporto", "Vettore", "Colli" senza importo IVA.
-
 STEP 3 — ESTRAI con ragionamento:
-
 "fornitore": Chi ha EMESSO il documento? È il venditore, MAI il destinatario. Caffetteria Ceraldi è sempre il destinatario. Strategia: (a) cerca S.r.l., Srl, S.p.A., SpA, S.n.c., SNC, S.a.s., SAS, S.c.r.l., Coop — il testo PRIMA è la ragione sociale; (b) altrimenti cerca "Ragione Sociale", "Ditta", "Denominazione", "Cedente", "Prestatore", "Fornitore", "Emittente"; (c) altrimenti usa il blocco testo più prominente in alto lato emittente.
-
 "numero_fattura": Qual è il codice identificativo univoco? Cerca: "Numero", "N.", "N°", "Nr.", "Numero Fattura", "N. Fattura", "Fattura N.", "Fatt. N.", "Numero Documento", "N. Documento", "Doc. N.", "Rif.", "Progressivo". Copia esattamente il valore (es. 001/2024, FT-001).
-
 "data": Quando è stato emesso? Cerca: "Data", "Data Fattura", "Data Documento", "Data Emissione", "Emessa il", "Del", "In data". Formato output YYYY-MM-DD.
-
 "importo": Qual è il totale finale da pagare? È SEMPRE il numero più alto. L'imponibile è SEMPRE più basso perché non include IVA. Ignora "Imponibile", "Base Imponibile" — prendi "Totale", "Totale Fattura", "Totale da Pagare", "Netto a Pagare". Per DDT l'importo può essere 0.
-
 "pagamento": Cerca "Modalità Pagamento", "Pagamento", "Pagato con". Valori: contanti|bonifico|assegno. Se assente lascia vuoto.
-
 STEP 4 — Rispondi SOLO con JSON valido, nessun testo prima o dopo:
 {"tipo_documento":"fattura","fornitore":"","numero_fattura":"","data":"YYYY-MM-DD","importo":0,"pagamento":"","numero_assegno":"","intestatario_assegno":"","banca_assegno":""}
 `+apprendimento;
@@ -2185,7 +2096,6 @@ STEP 4 — Rispondi SOLO con JSON valido, nessun testo prima o dopo:
   };
   reader.readAsDataURL(file);
 }
-
 async function analizzaXML(file){
   const lb=document.getElementById('lbar'), lt=document.getElementById('ltxt'), rb=document.getElementById('rBox');
   const _akXml=localStorage.getItem('fatture_apikey')||'';
@@ -2195,12 +2105,10 @@ async function analizzaXML(file){
   const reader=new FileReader();
   reader.onload=async e=>{
     const xmlTesto=e.target.result;
-    // Prova prima parsing diretto XML fattura elettronica italiana
     try{
       const parser=new DOMParser();
       const doc=parser.parseFromString(xmlTesto,'text/xml');
       const get=tag=>{const el=doc.querySelector(tag)||doc.getElementsByTagName(tag)[0];return el?el.textContent.trim():'';}
-      // Campi standard FatturaPA
       const fornitore=get('Denominazione')||get('Nome')+' '+get('Cognome');
       const numero=get('Numero');
       const dataRaw=get('Data'); // formato YYYY-MM-DD già
@@ -2223,7 +2131,6 @@ async function analizzaXML(file){
         return;
       }
     }catch(_){}
-    // Fallback: manda l'XML all'IA come testo
     const apprendimento=buildPromptApprendimento();
     const prompt='Analizza questo XML di fattura elettronica italiana (FatturaPA). Rispondi SOLO con JSON: {"fornitore":"","numero_fattura":"","data":"YYYY-MM-DD","importo":0,"pagamento":"contanti|bonifico|assegno o vuoto","numero_assegno":"","intestatario_assegno":"","banca_assegno":""}\n\n'+xmlTesto.slice(0,8000)+apprendimento;
     try{
@@ -2246,16 +2153,12 @@ async function analizzaXML(file){
   };
   reader.readAsText(file);
 }
-
-// Funzione comune che compila i campi dopo qualsiasi tipo di analisi
 function compilaCampi(p){
   _aiLastScan={
     fornitore:p.fornitore||'', numero:p.numero_fattura||'',
     data:p.data||'', importo:p.importo>0?String(p.importo).replace('.',','):'',
     pagamento:p.pagamento||''
   };
-
-  // Applica dizionario fornitori
   let fornitore=p.fornitore||'';
   const dizionario=cacheGet('ceraldi_dizForn',{});
   const chiaveTrovata=Object.keys(dizionario).find(k=>
@@ -2263,29 +2166,24 @@ function compilaCampi(p){
     fornitore.toLowerCase().includes(k.toLowerCase())
   );
   if(chiaveTrovata) fornitore=dizionario[chiaveTrovata];
-
   sv('rForn',fornitore);
   sv('rNum',p.numero_fattura||'');
   sv('rData',p.data||oggi());
   sv('rImp',p.importo>0?String(p.importo).replace('.',','):'');
   sv('rAss',p.numero_assegno||''); sv('rAssInt',p.intestatario_assegno||''); sv('rAssBanca',p.banca_assegno||'');
   sv('rNote','');
-
-  // Feedback visivo: bordo arancione sui campi lasciati vuoti dall'AI
   [{id:'rForn',val:fornitore},{id:'rNum',val:p.numero_fattura||''},{id:'rData',val:p.data||''},{id:'rImp',val:p.importo>0?'ok':''}]
   .forEach(({id,val})=>{
     const el=document.getElementById(id); if(!el) return;
     if(!val){ el.style.borderColor='#FF9500'; el.style.background='#FFF4E0'; }
     else { el.style.borderColor=''; el.style.background=''; }
   });
-
   if(p.tipo_documento==='ddt') setTipo('r','ddt');
   else setTipo('r','fattura');
   if(p.pagamento) setPag('r',p.pagamento);
   const nCorr=Object.values(cacheGet(KAI,{})).reduce((s,a)=>s+a.length,0);
   if(nCorr>0){const b=document.getElementById('aiBadge');if(b)b.style.display='inline-flex';}
 }
-
 function onManualeFotoSelected(input){
   if(!input.files||!input.files[0]) return;
   const reader=new FileReader();
@@ -2302,43 +2200,6 @@ function onManualeFotoSelected(input){
   reader.readAsDataURL(input.files[0]);
 }
 
-// Alta risoluzione per AI: max 3200px, JPEG 95%, con sharpening
-function ridimensionaFoto(dataUrl, cb){
-  const img=new Image();
-  img.onload=()=>{
-    const MAX=3200;
-    const ratio=Math.min(MAX/img.width, MAX/img.height, 1);
-    const c=document.createElement('canvas');
-    c.width=Math.round(img.width*ratio);
-    c.height=Math.round(img.height*ratio);
-    const ctx=c.getContext('2d');
-    ctx.imageSmoothingEnabled=true;
-    ctx.imageSmoothingQuality='high';
-    ctx.drawImage(img,0,0,c.width,c.height);
-    // Sharpening con unsharp mask leggero
-    const imageData=ctx.getImageData(0,0,c.width,c.height);
-    const d=imageData.data, w=c.width, h=c.height;
-    const out=new Uint8ClampedArray(d);
-    const k=[-0.15,-0.15,-0.15,-0.15,2.2,-0.15,-0.15,-0.15,-0.15]; // kernel sharpen più intenso
-    for(let y=1;y<h-1;y++){
-      for(let x=1;x<w-1;x++){
-        for(let ch=0;ch<3;ch++){
-          let v=0;
-          for(let ky=-1;ky<=1;ky++)
-            for(let kx=-1;kx<=1;kx++)
-              v+=d[((y+ky)*w+(x+kx))*4+ch]*k[(ky+1)*3+(kx+1)];
-          out[(y*w+x)*4+ch]=Math.min(255,Math.max(0,v));
-        }
-        out[(y*w+x)*4+3]=d[(y*w+x)*4+3];
-      }
-    }
-    ctx.putImageData(new ImageData(out,w,h),0,0);
-    cb(c.toDataURL('image/jpeg',0.95));
-  };
-  img.src=dataUrl;
-}
-
-// Versione compressa per salvataggio Supabase: max 1200px, JPEG 75% (~150-200KB)
 function comprFoto(dataUrl, cb){
   const img=new Image();
   img.onload=()=>{
@@ -2352,9 +2213,7 @@ function comprFoto(dataUrl, cb){
   };
   img.src=dataUrl;
 }
-
 let _fotoMoFatturaId = null;
-
 function apriF(id){
   const f=fatture.find(x=>x.id==id);
   if(!f||!f.foto) return;
@@ -2362,12 +2221,10 @@ function apriF(id){
   const mo=document.getElementById('fotoMo');
   const img=document.getElementById('fotoMoImg');
   img.src=f.foto;
-
   let scale=1, tx=0, ty=0;
   let startDist=0, startScale=1;
   let startX=0, startY=0, startTx=0, startTy=0;
   let isPinching=false;
-
   function applyT(){ img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
   function limitPan(){
     const maxTx=Math.max(0,(img.offsetWidth*scale-window.innerWidth)/2);
@@ -2375,7 +2232,6 @@ function apriF(id){
     tx=Math.min(maxTx,Math.max(-maxTx,tx));
     ty=Math.min(maxTy,Math.max(-maxTy,ty));
   }
-
   img.ontouchstart=e=>{
     if(e.touches.length===2){
       isPinching=true;
@@ -2403,14 +2259,11 @@ function apriF(id){
     if(e.touches.length<2) isPinching=false;
     if(scale<1.05){ scale=1; tx=0; ty=0; applyT(); }
   };
-
   mo.onclick=e=>{ if(e.target===mo||e.target.id==='fotoMoWrapper') closeFotoMo(); };
   document.getElementById('fotoMoCondividi').onclick=e=>{ e.stopPropagation(); condividiRegistrazione(id); };
-
   img.style.transform='translate(0,0) scale(1)';
   mo.classList.add('on');
 }
-
 function closeFotoMo(){
   document.getElementById('fotoMo').classList.remove('on');
   const img=document.getElementById('fotoMoImg');
@@ -2418,8 +2271,6 @@ function closeFotoMo(){
   img.ontouchstart=null; img.ontouchmove=null; img.ontouchend=null;
   _fotoMoFatturaId=null;
 }
-
-// ── CONDIVISIONE REGISTRAZIONE ──
 function condividiRegistrazione(id){
   const f=fatture.find(x=>x.id==id);
   if(!f) return;
@@ -2439,7 +2290,6 @@ function condividiRegistrazione(id){
   if(f.assegno) testo+=`\n*N° Assegno:* ${f.assegno}`;
   if(f.note) testo+=`\n*Note:* ${f.note}`;
   testo+=`\n\n_Inviato da Caffetteria Ceraldi — Gestione Fatture_`;
-
   const doShare=(files)=>{
     if(navigator.canShare&&files&&navigator.canShare({files,text:testo})){
       navigator.share({files,text:testo,title:tipo+' '+f.fornitore}).catch(()=>{});
@@ -2449,9 +2299,7 @@ function condividiRegistrazione(id){
       navigator.clipboard.writeText(testo).then(()=>toast('📋 Copiato negli appunti')).catch(()=>toast('Condivisione non disponibile'));
     }
   };
-
   if(f.foto){
-    // Converti base64 in File per allegare la foto
     fetch(f.foto).then(r=>r.blob()).then(blob=>{
       const nome='fattura_'+(f.fornitore||'doc').replace(/[^a-zA-Z0-9]/g,'_')+'_'+(f.numero||f.id)+'.jpg';
       doShare([new File([blob],nome,{type:'image/jpeg'})]);
@@ -2460,8 +2308,6 @@ function condividiRegistrazione(id){
     doShare(null);
   }
 }
-
-// ── ALERT BANNER SCADUTE + BADGE TAB ──
 function aggiornaAlertBanner(){
   const oggi2=new Date(); oggi2.setHours(0,0,0,0);
   const scadute=fatture.filter(f=>{
@@ -2480,7 +2326,6 @@ function aggiornaAlertBanner(){
   } else {
     banner.classList.remove('on');
   }
-  // Badge rosso sul tab Scadenze: mostra scadute + incomplete
   const totBadge=scadute.length+incomplete.length;
   const badge=document.getElementById('scadBadge');
   if(badge){
@@ -2492,8 +2337,6 @@ function aggiornaAlertBanner(){
     }
   }
 }
-
-// ── SCADENZARIO ──
 let scadFiltro='tutti';
 function setScadFiltro(tipo,btn){
   scadFiltro=tipo;
@@ -2522,7 +2365,6 @@ function renderScadenzario(){
     }
     return true;
   });
-  // Ordina: scadute prima, poi per data scadenza
   lista.sort((a,b)=>{
     const da=a.scadenza?new Date(a.scadenza+'T12:00:00'):new Date('9999-12-31');
     const db=b.scadenza?new Date(b.scadenza+'T12:00:00'):new Date('9999-12-31');
@@ -2564,8 +2406,6 @@ function renderScadenzario(){
     </div>`;
   }).join('');
 }
-
-// ── GRAFICO FORNITORI ──
 function renderFornChart(){
   const rows=getFiltered();
   const map={};
@@ -2584,12 +2424,9 @@ function renderFornChart(){
       <div class="forn-bar-val">${fmt(tot)}</div>
     </div>`).join('');
 }
-
-// ── COLLEGAMENTO DDT AUTOMATICO ──
 function cercaDdtAperti(fornitore){
   return fatture.filter(f=>f.tipo==='ddt'&&!f.fattNum&&f.fornitore===fornitore);
 }
-// Viene chiamata dopo salva se la fattura appena salvata è di tipo fattura
 function proponiCollegamentoDdt(fatturaId){
   const f=fatture.find(x=>x.id===fatturaId);
   if(!f||f.tipo!=='fattura') return;
@@ -2608,9 +2445,6 @@ function proponiCollegamentoDdt(fatturaId){
     }
   );
 }
-
-
-// ── FOTOCAMERA CON GUIDA ──
 let _camStream = null;
 let _camFacingMode = 'environment';
 let _camAnimFrame = null;
@@ -2622,13 +2456,11 @@ let _camDocInFrame = false;
 let _camFallbackTimer = null;
 let _camLastStatusUpdate = 0;
 let _camLastFocusDisplay = 0;
-
 async function apriCamera(){
   const modal = document.getElementById('camModal');
   modal.classList.add('on');
   await avviaStream();
 }
-
 async function avviaStream(){
   if(_camStream){ _camStream.getTracks().forEach(t=>t.stop()); }
   try{
@@ -2642,7 +2474,6 @@ async function avviaStream(){
     _camAutoShot = false;
     _camFocusHistory = [];
     _camDocInFrame = false;
-    // Fallback: se dopo 8s non scatta automaticamente, scatta comunque
     _camFallbackTimer = setTimeout(()=>{
       if(!_camAutoShot){ toast('📸 Scatto automatico...'); scatta(); }
     }, 12000);
@@ -2653,7 +2484,6 @@ async function avviaStream(){
     else toast('Fotocamera non disponibile');
   }
 }
-
 function chiudiCamera(){
   if(_camStream){ _camStream.getTracks().forEach(t=>t.stop()); _camStream=null; }
   if(_camAnimFrame){ cancelAnimationFrame(_camAnimFrame); _camAnimFrame=null; }
@@ -2662,38 +2492,28 @@ function chiudiCamera(){
   document.getElementById('camConfirm').classList.remove('on');
   _camAutoShot=false;
 }
-
 function cambiaCamera(){
   _camFacingMode = _camFacingMode==='environment'?'user':'environment';
   avviaStream();
 }
-
-// Loop principale — disegna overlay e valuta qualità
 function camLoop(){
   const video = document.getElementById('camVideo');
   const canvas = document.getElementById('camCanvas');
   if(!video||!canvas||!_camStream){ return; }
   const vw=video.videoWidth, vh=video.videoHeight;
   if(!vw||!vh){ _camAnimFrame=requestAnimationFrame(camLoop); return; }
-
   canvas.width=window.innerWidth;
   canvas.height=window.innerHeight;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // Rettangolo guida — proporzione A4 verticale
   const margin=0.06;
   const guideW=canvas.width*(1-margin*2);
   const guideH=guideW*1.414; // rapporto A4 verticale
   const guideX=(canvas.width-guideW)/2;
   const guideY=(canvas.height-guideH)/2;
-
-  // Oscura il fuori rettangolo
   ctx.fillStyle='rgba(0,0,0,0.45)';
   ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.clearRect(guideX,guideY,guideW,guideH);
-
-  // Calcola nitidezza su campione centrale
   const sampleCanvas=document.createElement('canvas');
   const sW=Math.floor(vw*0.5), sH=Math.floor(vh*0.5);
   sampleCanvas.width=sW; sampleCanvas.height=sH;
@@ -2706,22 +2526,15 @@ function camLoop(){
   const avgFocus=_camFocusHistory.reduce((a,b)=>a+b,0)/_camFocusHistory.length;
   const stabile=_camFocusHistory.length>=6&&
     Math.max(..._camFocusHistory)-Math.min(..._camFocusHistory)<avgFocus*0.4;
-
   const FOCUS_OK=8;
   const ok=avgFocus>FOCUS_OK && stabile;
   _camDocInFrame=true; // assumiamo che il documento sia inquadrato
-
-  // Colore bordo guida
   const borderColor=ok?'#34C759':avgFocus>FOCUS_OK*0.5?'#FF9500':'#FF3B30';
   const borderW=ok?3:2;
-
-  // Bordo rettangolo guida
   ctx.strokeStyle=borderColor;
   ctx.lineWidth=borderW;
   ctx.setLineDash([]);
   ctx.strokeRect(guideX,guideY,guideW,guideH);
-
-  // Angoli stile CamScanner
   const corner=28, thick=4;
   ctx.strokeStyle=borderColor;
   ctx.lineWidth=thick;
@@ -2734,8 +2547,6 @@ function camLoop(){
   ].forEach(([x1,y1,x2,y2,x3,y3])=>{
     ctx.beginPath(); ctx.moveTo(x2,y1); ctx.lineTo(x1,y1); ctx.lineTo(x3,y3); ctx.stroke();
   });
-
-  // Aggiorna stato UI — il valore numerico si aggiorna ogni secondo per essere leggibile
   const statusEl=document.getElementById('camStatus');
   if(statusEl){
     const now=Date.now();
@@ -2748,18 +2559,13 @@ function camLoop(){
     else if(avgFocus>FOCUS_OK*0.5){ statusEl.textContent=`Quasi... tieni fermo (${displayFocus})`; statusEl.style.background='rgba(255,149,0,.7)'; }
     else{ statusEl.textContent=`Inquadra il documento (${displayFocus})`; statusEl.style.background='rgba(0,0,0,.4)'; }
   }
-
-  // Auto-scatto se a fuoco e stabile — una volta sola, nessun reset
   if(ok && !_camAutoShot){
     _camAutoShot=true;
     clearTimeout(_camFallbackTimer);
     setTimeout(()=>{ scatta(); }, 2500);
   }
-
   _camAnimFrame=requestAnimationFrame(camLoop);
 }
-
-// Calcola varianza del Laplaciano (misura nitidezza)
 function calcolaFocus(imageData){
   const d=imageData.data, w=imageData.width, h=imageData.height;
   let sum=0, count=0;
@@ -2778,61 +2584,46 @@ function calcolaFocus(imageData){
   }
   return count>0?sum/count:0;
 }
-
 function scattaManuale(){
   _camAutoShot=true;
   scatta();
 }
-
 function scatta(){
   if(_camAnimFrame){ cancelAnimationFrame(_camAnimFrame); _camAnimFrame=null; }
   const video=document.getElementById('camVideo');
   const vw=video.videoWidth, vh=video.videoHeight;
   const screenW=window.innerWidth, screenH=window.innerHeight;
-
-  // Calcola come il video è effettivamente renderizzato con object-fit:cover
-  // Il video viene scalato per coprire lo schermo mantenendo le proporzioni
   const videoRatio=vw/vh;
   const screenRatio=screenW/screenH;
   let renderedW, renderedH, offsetX=0, offsetY=0;
   if(videoRatio>screenRatio){
-    // Video più largo: altezza = schermo, larghezza fuori schermo
     renderedH=screenH;
     renderedW=screenH*videoRatio;
     offsetX=(renderedW-screenW)/2;
   } else {
-    // Video più alto: larghezza = schermo, altezza fuori schermo
     renderedW=screenW;
     renderedH=screenW/videoRatio;
     offsetY=(renderedH-screenH)/2;
   }
-
-  // Rettangolo guida in coordinate schermo
   const margin=0.06;
   const guideW_screen=screenW*(1-margin*2);
   const guideH_screen=guideW_screen*1.414;
   const guideX_screen=(screenW-guideW_screen)/2;
   const guideY_screen=(screenH-guideH_screen)/2;
-
-  // Converti da coordinate schermo a coordinate video reali
   const scaleX=vw/renderedW;
   const scaleY=vh/renderedH;
   const cropX=Math.round((guideX_screen+offsetX)*scaleX);
   const cropY=Math.round((guideY_screen+offsetY)*scaleY);
   const cropW=Math.round(guideW_screen*scaleX);
   const cropH=Math.round(guideH_screen*scaleY);
-
-  // Canvas ritagliato
   const c=document.createElement('canvas');
   c.width=cropW; c.height=cropH;
   c.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
   _camCapturedDataUrl=c.toDataURL('image/jpeg', 0.97);
-
   document.getElementById('camConfirmImg').src=_camCapturedDataUrl;
   document.getElementById('camModal').classList.remove('on');
   document.getElementById('camConfirm').classList.add('on');
 }
-
 function riprendiCamera(){
   _camCapturedDataUrl=null;
   document.getElementById('camConfirm').classList.remove('on');
@@ -2841,7 +2632,6 @@ function riprendiCamera(){
   _camFocusHistory=[];
   requestAnimationFrame(camLoop);
 }
-
 function confermaCameraFoto(){
   document.getElementById('camConfirm').classList.remove('on');
   if(_camStream){ _camStream.getTracks().forEach(t=>t.stop()); _camStream=null; }
@@ -2852,36 +2642,23 @@ function confermaCameraFoto(){
   analizza(_camCapturedDataUrl); // originale alta qualità per AI
   _camCapturedDataUrl=null;
 }
-
-// ── INIT ASINCRONO ──
 async function init(){
   sv('mData',oggi());
-  // Mostra spinner di caricamento
   document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">⏳</span><div>Connessione al database...</div>';
   document.getElementById('alertBanner').classList.add('on');
-
   const ok = await loadAll();
-
-  // Nascondi spinner
   document.getElementById('alertBanner').innerHTML='<span class="alert-banner-ico">&#9888;</span><div id="alertBannerTxt">Hai fatture scadute non pagate</div>';
   document.getElementById('alertBanner').classList.remove('on');
-
   if(!ok) toast('⚠️ Offline — dati dalla cache locale');
-
   aggiornaDL();
   renderLista();
   aggiornaAlertBanner();
-
-  // Badge IA
   const corr = await loadCorrezioni();
   const nCorr = Object.values(corr).reduce((s,a)=>s+a.length,0);
   if(nCorr>0){const b=document.getElementById('aiBadge');if(b)b.style.display='inline-flex';}
 }
-
-// ── IMPORTA DA GESTIONALE ──────────────────────────────────────────────────
 let _gestFatture = [];
 function gestFmt(n){ return '€ '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
 function gestSetStatus(ok, txt){
   const dot=document.getElementById('gestDot');
   const msg=document.getElementById('gestTxt');
@@ -2891,7 +2668,6 @@ function gestSetStatus(ok, txt){
   box.style.background = ok===null?'#fff8e1':ok?'#e8f8f2':'#fdecea';
   msg.textContent = txt;
 }
-
 async function gestScarica(){
   const anno = (document.getElementById('gestAnno').value||'').trim();
   const mese = document.getElementById('gestMese').value;
@@ -2928,7 +2704,6 @@ async function gestScarica(){
     toast('Errore: '+e.message.slice(0,50));
   }
 }
-
 function gestRenderLista(lista){
   const container = document.getElementById('gestItems');
   const countEl   = document.getElementById('gestCount');
@@ -2936,22 +2711,17 @@ function gestRenderLista(lista){
   const nuove     = lista.filter(function(inv){
     return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());
   });
-
-  // Contatore in grande
   var msg = nuove.length === 0
     ? 'Tutte le fatture sono gia nel registro'
     : nuove.length === 1
       ? '1 nuova fattura da importare'
       : nuove.length + ' nuove fatture da importare';
-
   countEl.innerHTML =
     '<div style="text-align:center;padding:14px 0">' +
       '<div style="font-size:48px;font-weight:800;color:var(--blue);line-height:1">' + nuove.length + '</div>' +
       '<div style="font-size:14px;font-weight:600;color:var(--ink2);margin-top:4px">' + msg + '</div>' +
       '<div style="font-size:12px;color:var(--ink3);margin-top:2px">Totale nel gestionale: ' + lista.length + '</div>' +
     '</div>';
-
-  // Lista semplice: solo fornitore e numero, niente importi
   container.innerHTML = '';
   lista.slice(0, 30).forEach(function(inv, idx){
     var fornitore = inv.supplier_name||inv.fornitore_denominazione||inv.cedente||'—';
@@ -2971,26 +2741,22 @@ function gestRenderLista(lista){
       );
     container.appendChild(div);
   });
-
   if(lista.length > 30){
     var more = document.createElement('div');
     more.style.cssText = 'text-align:center;font-size:12px;color:var(--ink3);padding:6px';
     more.textContent = '... e altre ' + (lista.length-30) + ' fatture';
     container.appendChild(more);
   }
-
   container.onclick = function(e){
     var btn = e.target.closest('[data-gestidx]');
     if(btn) gestImportaUna(parseInt(btn.dataset.gestidx));
   };
-
   if(nuove.length > 0){
     document.getElementById('gestBtnTutto').style.display='block';
     document.getElementById('gestBtnTutto').textContent = 'Importa tutte le ' + nuove.length + ' nuove';
   }
   document.getElementById('gestRis').style.display='block';
 }
-
 function gestImportaUna(idx){
   const inv = _gestFatture[idx];
   if(!inv) return;
@@ -3001,7 +2767,6 @@ function gestImportaUna(idx){
   toast('Importata: '+f.fornitore);
   gestRenderLista(_gestFatture);
 }
-
 function gestImportaTutto(){
   const esistenti = new Set(fatture.map(function(f){return (f.numero||'').toString().trim();}));
   const nuove = _gestFatture.filter(function(inv){return !esistenti.has((inv.invoice_number||inv.numero||'').toString().trim());});
@@ -3011,7 +2776,6 @@ function gestImportaTutto(){
   toast('Importate '+nuove.length+' fatture');
   gestRenderLista(_gestFatture);
 }
-
 function gestConverti(inv){
   return {
     id:        'gest_'+(inv.id||inv._id||Date.now()),
@@ -3026,18 +2790,12 @@ function gestConverti(inv){
     ts:        Date.now()
   };
 }
-
 function gestEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
 (function gestInit(){
   const el = document.getElementById('gestAnno');
   if(el && !el.value) el.value = new Date().getFullYear();
 })();
-
-
-// == ASSEGNI ==
 function formatAssegno(el){var v=el.value.replace(/[^0-9\-]/g,'');var d=v.replace(/-/g,'');if(d.length>12)d=d.slice(0,12);el.value=d.length>10?d.slice(0,10)+'-'+d.slice(10):d;}
-
 async function generaAssegni(){
   var primo=(document.getElementById('assPrimo').value||'').trim();
   if(!primo||primo.indexOf('-')<0){toast('Inserisci numero');return;}
@@ -3053,7 +2811,6 @@ async function generaAssegni(){
   if(count>0){save(fatture);toast(count+' assegni generati!');}else{toast('Gia esistenti');}
   document.getElementById('assPrimo').value='';caricaAssegniSalvati();
 }
-
 async function caricaAssegniSalvati(){
   var el=document.getElementById('assegniLista');var elS=document.getElementById('assegniSalvati');if(!el)return;
   try{
@@ -3067,11 +2824,10 @@ async function caricaAssegniSalvati(){
     dc.forEach(function(r){h+='<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)"><div style="font-size:16px;font-weight:800;font-family:monospace;margin-bottom:10px">'+esc(r.assegno||'')+'</div><select id="assB_'+r.id+'" style="width:100%;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;margin-bottom:8px;background:var(--surface)">'+fo+'</select><div style="display:flex;gap:8px;margin-bottom:8px"><input type="text" id="assI_'+r.id+'" placeholder="Importo" inputmode="decimal" style="flex:1;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box"><input type="text" id="assF_'+r.id+'" placeholder="N.Fattura" style="flex:1;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box"></div><button class="btn btn-p" style="padding:8px;font-size:13px;width:100%" onclick="compilaAssegno('+r.id+')">Salva</button></div>';});}
     el.innerHTML=h;
     if(co.length&&elS){var hs='<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">COMPILATI ('+co.length+')</div>';
-    co.forEach(function(r){hs+='<div style="background:var(--green-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;min-width:0"><div style="flex:1;min-width:0;overflow:hidden"><b>'+esc(r.fornitore||'')+'</b><br><span style="font-size:11px;color:var(--ink3)">Ass.'+esc(r.assegno||'')+'</span></div><div style="font-size:15px;font-weight:700;flex-shrink:0">\u20ac '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2})+'</div></div>';});
+    co.forEach(function(r){hs+='<div style="background:var(--green-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between"><div><b>'+esc(r.fornitore||'')+'</b><br><span style="font-size:11px;color:var(--ink3)">Ass.'+esc(r.assegno||'')+'</span></div><div style="font-size:15px;font-weight:700">\u20ac '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2})+'</div></div>';});
     elS.innerHTML=hs;}
   }catch(e){el.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
 }
-
 async function compilaAssegno(id){
   var b=document.getElementById('assB_'+id),im=document.getElementById('assI_'+id),fa=document.getElementById('assF_'+id);
   var ben=b?b.value:'',imp=im?parseFloat((im.value||'0').replace(',','.'))||0:0,nf=fa?fa.value.trim():'';
@@ -3079,8 +2835,6 @@ async function compilaAssegno(id){
   try{await sbFetch('fatture?id=eq.'+id,{method:'PATCH',body:JSON.stringify({fornitore:ben,importo:imp,numero:nf,stato:'pagata',note:'Assegno compilato'})});
   var f=fatture.find(function(x){return x.id==id;});if(f){f.fornitore=ben;f.importo=imp;f.numero=nf;f.stato='pagata';}save(fatture);toast('Salvato!');caricaAssegniSalvati();}catch(e){toast('Errore: '+e.message);}
 }
-
-// == CORRISPETTIVI ==
 async function caricaCorrispettivi(){
   var anno=(document.getElementById('corrAnno').value||'').trim();if(!anno){toast('Anno');return;}
   var td=document.getElementById('corrTotali'),ld=document.getElementById('corrLista');
@@ -3097,8 +2851,6 @@ async function caricaCorrispettivi(){
     h+='<div style="background:var(--surface);border-radius:var(--radius);padding:12px 16px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer" onclick="var d=this.querySelector(\'.cd\');if(d)d.style.display=d.style.display===\'none\'?\'block\':\'none\'"><div style="display:flex;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">'+df+'</div><div style="font-size:11px;color:var(--ink3)">'+(c.numero_documenti||0)+' scontrini</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700">'+fe(parseFloat(c.totale||0))+'</div><div style="font-size:11px;color:var(--ink3)">C:'+fe(parseFloat(c.pagato_contanti||0))+' E:'+fe(parseFloat(c.pagato_elettronico||0))+'</div></div></div><div class="cd" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--sep);font-size:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div>Imponibile: <b>'+fe(imp)+'</b></div><div>IVA: <b>'+fe(ivac)+'</b></div></div>'+ivaD+'</div></div>';});
   ld.innerHTML=h;toast(li.length+' corrispettivi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
 }
-
-// == IVA ==
 async function calcolaIVA(){
   var anno=(document.getElementById('ivaAnno').value||'').trim();if(!anno){toast('Anno');return;}
   var td=document.getElementById('ivaTotali'),md=document.getElementById('ivaMesi');
@@ -3124,17 +2876,10 @@ async function calcolaIVA(){
   td.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#E3F2FD;border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue)">\u20ac '+fe(tc)+'</div></div><div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red)">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red)">\u20ac '+fe(tdb)+'</div></div></div><div style="background:'+(ic?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px"><div style="font-size:11px;opacity:.7">SALDO '+anno+'</div><div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(Math.abs(sa))+'</div><div style="font-size:13px;opacity:.9">'+(ic?'A CREDITO':'A DEBITO')+'</div></div>';
   md.innerHTML=mh||'<div style="text-align:center;padding:20px">Nessun dato</div>';toast('IVA: '+ma+' mesi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
 }
-
-
-
-// == CLICK CARD REGISTRO ==
-
 function apriDettaglioRegistro(fId){
   var f = fatture.find(function(x){return x.id==fId;});
   if(!f) return;
   var num = (f.numero||'').toString().trim();
-  
-  // Se le fatture XML sono in memoria, cerca subito
   if(_gestFatture && _gestFatture.length && num){
     for(var i=0;i<_gestFatture.length;i++){
       if((_gestFatture[i].invoice_number||_gestFatture[i].numero||'').toString().trim()===num){
@@ -3142,8 +2887,6 @@ function apriDettaglioRegistro(fId){
       }
     }
   }
-  
-  // Scarica le fatture XML e cerca
   toast('Caricamento dettaglio...');
   var anno=f.data?f.data.slice(0,4):new Date().getFullYear().toString();
   fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500')
@@ -3161,7 +2904,6 @@ function apriDettaglioRegistro(fId){
       toast('Dettaglio non disponibile per questa fattura');
     }).catch(function(){toast('Errore connessione');});
 }
-
 function scattaFotoRegistro(fId){
   var input=document.createElement('input');
   input.type='file';input.accept='image/*';input.capture='environment';
@@ -3182,10 +2924,6 @@ function scattaFotoRegistro(fId){
     };reader.readAsDataURL(input.files[0]);
   };input.click();
 }
-
-
-
-// == DETTAGLIO FATTURA XML ==
 function gestApriDettaglio(idx){
   var inv = _gestFatture[idx];
   if(!inv){toast('Fattura non trovata');return;}
@@ -3200,8 +2938,6 @@ function gestApriDettaglio(idx){
   var piva = inv.cedente_piva||inv.fornitore_piva||'';
   var cf = inv.cedente_cf||'';
   var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-
-  // Costruisci HTML articoli
   var artHtml = '';
   if(inv.linee && inv.linee.length){
     artHtml = '<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:6px">ARTICOLI ('+inv.linee.length+')</div>';
@@ -3218,8 +2954,6 @@ function gestApriDettaglio(idx){
       artHtml += '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:12px">'+esc(s)+'</div>';
     });
   }
-
-  // Modal
   var mo = document.getElementById('gestDetailMo');
   if(!mo){
     mo = document.createElement('div');
@@ -3228,7 +2962,6 @@ function gestApriDettaglio(idx){
     mo.addEventListener('click',function(e){if(e.target===mo){mo.style.display='none';}});
     document.body.appendChild(mo);
   }
-
   mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,.25)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">Fattura N\u00b0 '+esc(num)+'</div><button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">\u2715</button></div>'
     +'<div style="font-size:20px;font-weight:800;margin-bottom:4px">'+esc(forn)+'</div>'
@@ -3243,30 +2976,19 @@ function gestApriDettaglio(idx){
     +'</div>';
   mo.style.display = 'flex';
 }
-
-
-
-// == DELEGATED CLICK su card fattura ==
 document.addEventListener('DOMContentLoaded', function(){
   var listaEl = document.getElementById('listaEl');
   if(listaEl){
     listaEl.addEventListener('click', function(e){
-      // Cerca la card .fi più vicina
       var card = e.target.closest('.fi');
       if(!card) return;
-      // Se il click è su un bottone interno, non fare niente (stopPropagation già gestito)
       if(e.target.closest('.fi-act-btn') || e.target.closest('button') || e.target.tagName==='BUTTON') return;
       if(e.target.closest('.fi-thumb') || e.target.tagName==='IMG') return;
-      // Estrai l'id dalla card
       var cardId = card.id.replace('fi-','');
       if(cardId) apriDettaglioRegistro(parseInt(cardId));
     });
   }
 });
-
-
-init();
-
-</script>
+init();</script>
 </body>
 </html>

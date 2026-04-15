@@ -3235,12 +3235,12 @@ function gestApriDettaglio(idx){
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
     mo.addEventListener('click',function(e){if(e.target===mo){mo.style.display='none';}});
     document.body.appendChild(mo);
   }
 
-  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,.25)">'
+  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:calc(100% - 32px);max-width:440px;max-height:82vh;overflow-y:auto;padding:24px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3);margin:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">Fattura N\u00b0 '+esc(num)+'</div><button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">\u2715</button></div>'
     +'<div style="font-size:20px;font-weight:800;margin-bottom:4px">'+esc(forn)+'</div>'
     +'<div style="font-size:13px;color:var(--ink3)">P.IVA '+esc(piva)+(cf?' \u2014 CF '+esc(cf):'')+'</div>'

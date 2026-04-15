@@ -215,7 +215,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .cam-confirm-btns button{flex:1;padding:15px;border:none;border-radius:var(--radius-sm);font-family:'Inter',-apple-system,sans-serif;font-size:16px;font-weight:600;cursor:pointer}
 .cam-btn-retry{background:rgba(255,255,255,.15);color:#fff}
 .cam-btn-ok{background:var(--blue);color:#fff}
-.tab-bar{position:fixed!important;bottom:0;left:0;right:0;background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);display:flex!important;flex-wrap:nowrap;padding:8px 0 20px;z-index:500}.tab-item{flex:1;min-width:0}
+.tab-bar{position:fixed!important;bottom:0;left:0;right:0;background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);display:flex!important;flex-wrap:nowrap;padding:8px 0 env(safe-area-inset-bottom,24px);z-index:500}.tab-item{flex:1;min-width:0}
 .mo.on{display:flex}
 .mo .modal{max-height:82vh;overflow-y:auto;border-radius:16px}
 .fi{-webkit-tap-highlight-color:rgba(0,122,255,.15);cursor:pointer}
@@ -243,8 +243,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 <body>
 <div class="ios-header" style="position:relative">
-  <h1>&#128196; Fatture</h1>
-  <p>Caffetteria Ceraldi</p>
+  <h1>Gestione Fatture</h1>
+  <p>Ceraldi Group S.R.L</p>
   <button onclick="apriImpostazioni()" style="position:absolute;top:50%;right:16px;transform:translateY(-50%);background:none;border:none;font-size:22px;cursor:pointer;padding:4px;line-height:1">&#9881;&#65039;</button>
 </div>
 
@@ -847,11 +847,15 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px"><p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">
+  <button class="tab-item" onclick="goTab('scan',this)">
+    <span class="tab-ico">🏠</span>
+    <span class="tab-lbl">Home</span>
+  </button>
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
     <span class="tab-lbl">Assegni</span>
   </button>
-  <button class="tab-item active" onclick="goTab('lista',this)">
+  <button class="tab-item" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
   </button>
@@ -1073,6 +1077,7 @@ function goTab(tab,btn){
   document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
   var ve=document.getElementById('view-'+tab); if(ve) ve.classList.add('active');
   if(btn) btn.classList.add('active');
+  if(tab==='scan'){} // home
   if(tab==='lista') renderLista();
   if(tab==='riepilogo') renderRiepilogo();
   if(tab==='scadenzario') renderScadenzario();

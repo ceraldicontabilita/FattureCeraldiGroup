@@ -27,7 +27,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .tab-item .tab-lbl{font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:.1px}
 .tab-item.active .tab-ico,.tab-item.active .tab-lbl{color:var(--blue)}
 .view{display:none;padding:16px;padding-bottom:100px}
-.view.active{display:block;animation:fadeIn .2s ease}
+.view.active{display:block;animation:fadeIn .2s ease;overflow-x:hidden}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .sec-title{font-size:13px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin:20px 4px 8px}
 .sec-title:first-child{margin-top:4px}
@@ -71,7 +71,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .btn-s:active{background:var(--surface3)}
 .btn-d{background:var(--red-light);color:var(--red)}
 .mt8{margin-top:8px}
-.fi{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;animation:fadeIn .25s ease}
+.fi{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;animation:fadeIn .25s ease;overflow:hidden}
 .fi-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .ic-c{background:var(--green-light)}.ic-b{background:var(--blue-light)}.ic-a{background:var(--orange-light)}
 .fi-body{flex:1;min-width:0}
@@ -80,8 +80,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .fi-imp{font-size:17px;font-weight:700;flex-shrink:0}
 .fi-meta{margin-top:3px;font-size:13px;color:var(--ink3)}
 .fi-num{font-size:12px;color:var(--ink3);margin-top:2px}
-.fi-actions{display:flex;gap:6px;margin-top:10px}
-.fi-act-btn{flex:1;padding:8px;border:none;border-radius:var(--radius-xs);background:var(--surface2);font-family:'Inter',-apple-system,sans-serif;font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;text-align:center}
+.fi-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:nowrap}
+.fi-act-btn{flex:1;min-width:0;padding:7px 4px;border:none;border-radius:var(--radius-xs);background:var(--surface2);font-family:'Inter',-apple-system,sans-serif;font-size:12px;font-weight:500;color:var(--blue);cursor:pointer;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .fi-act-btn:active{background:var(--surface3)}
 .fi-act-btn.danger{color:var(--red)}
 .fi-act-btn.primary{background:var(--blue-light);color:var(--blue)}
@@ -1526,7 +1526,7 @@ function renderLista(){
     const df=f.data?new Date(f.data).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}):'—';
     const pag1={contanti:'Contanti',bonifico:'Bonifico',assegno:'Assegno'}[f.pagamento]||f.pagamento||'—';
     const nRate=(f.rate||[]).length;
-    const extra=f.pagamento==='assegno'&&f.assegno?` · Ass. ${esc(f.assegno)}`:
+    const extra=f.pagamento==='assegno'&&f.assegno?` · <span style="word-break:break-all">Ass. ${esc(f.assegno)}</span>`:
                 f.pagamento==='bonifico'&&f.bonIban?` · IBAN ${esc(f.bonIban.slice(0,10))}…`:'';
     const ic={'contanti':'ic-c','bonifico':'ic-b','assegno':'ic-a'}[f.pagamento]||'';
     const isDdt=f.tipo==='ddt';

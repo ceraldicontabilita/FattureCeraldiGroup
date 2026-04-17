@@ -3219,13 +3219,8 @@ async function salvaCorrManuale(){
   };
   if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   try{
-    // Upsert: se esiste già una riga con quella data, aggiorna
-    const existing=await sbFetch('corrispettivi?data=eq.'+data+'&select=id&limit=1');
-    if(existing&&existing.length){
-      await sbFetch('corrispettivi?data=eq.'+data,{method:'PATCH',body:JSON.stringify(rec)});
-    } else {
-      await sbFetch('corrispettivi',{method:'POST',body:JSON.stringify(rec)});
-    }
+    // INSERT: ogni salvataggio è un record indipendente (più inserimenti stesso giorno = somma nel totale)
+    await sbFetch('corrispettivi',{method:'POST',body:JSON.stringify(rec)});
     toast('✅ Salvato nel database: €'+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
     document.getElementById('corrManData').value=new Date().toISOString().slice(0,10);
     document.getElementById('corrManContanti').value='';

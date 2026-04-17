@@ -4057,6 +4057,244 @@ async function eliminaMovimentoCassa(id){
   } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
 }
 
+
+// ══ NETTING NOTE CREDITO PASSIVE ══
+// Trova candidati fattura originaria per una nota credito TD04
+function matchFatturaOriginaria(nc){
+  if(!nc || nc.document_type!=='TD04') return [];
+  if(typeof fatture==='undefined' || !fatture) return [];
+  var candidati = [];
+  
+  // 1) Se c'è un riferimento esplicito nei dati XML (API esterna): priorità assoluta
+  // Campi possibili: ref_fattura, riferimento_documento, dati_fatture_collegate
+  var refNum = nc.ref_fattura || nc.riferimento_documento || '';
+  if(nc.dati_fatture_collegate){
+    try{
+      var dfc = typeof nc.dati_fatture_collegate==='string' ? JSON.parse(nc.dati_fatture_collegate) : nc.dati_fatture_collegate;
+      if(Array.isArray(dfc) && dfc.length) refNum = dfc[0].IdDocumento || dfc[0].numero || '';
+      else if(dfc.IdDocumento) refNum = dfc.IdDocumento;
+    }catch(e){}
+  }
+  if(refNum){
+    var exact = fatture.find(function(f){
+      return f.document_type!=='TD04'
+        && (f.fornitore||'').toLowerCase() === (nc.fornitore||'').toLowerCase()
+        && (f.numero||'').toString().trim() === refNum.toString().trim();
+    });
+    if(exact){
+      return [{fattura:exact, confidence:'alta', motivo:'Riferimento XML esplicito'}];
+    }
+  }
+  
+  // 2) Euristica: stesso fornitore, importo ≤ fattura originaria (nota copre max fattura), data ≥ fattura
+  var ncData = nc.data ? new Date(nc.data+'T12:00:00') : null;
+  var ncImporto = Math.abs(parseFloat(nc.importo||0));
+  
+  fatture.forEach(function(f){
+    if(f.document_type==='TD04') return;
+    if(f.compensazione_note && f.residuo_calcolato<=0.01) return; // già compensata al 100%
+    if((f.fornitore||'').toLowerCase() !== (nc.fornitore||'').toLowerCase()) return;
+    
+    var fData = f.data ? new Date(f.data+'T12:00:00') : null;
+    if(!fData || !ncData) return;
+    if(ncData < fData) return; // nota deve essere DOPO la fattura
+    
+    // differenza giorni max 365
+    var diffGiorni = (ncData - fData) / (24*3600*1000);
+    if(diffGiorni > 365) return;
+    
+    var fImporto = parseFloat(f.importo||0);
+    if(ncImporto > fImporto + 0.50) return; // la nota non può essere più grande della fattura
+    
+    var confidence = 'media';
+    var motivo = 'Stesso fornitore, importo compatibile';
+    // Match forte: importo esatto
+    if(Math.abs(fImporto - ncImporto) < 0.01){
+      confidence = 'alta';
+      motivo = 'Stesso fornitore, importo identico';
+    } else if(diffGiorni < 30){
+      confidence = 'alta';
+      motivo = 'Stesso fornitore, entro 30 giorni';
+    }
+    candidati.push({fattura:f, confidence:confidence, motivo:motivo, diffGiorni:Math.round(diffGiorni)});
+  });
+  
+  // Ordino per confidence (alta prima) e per importo più vicino
+  candidati.sort(function(a,b){
+    if(a.confidence==='alta' && b.confidence!=='alta') return -1;
+    if(b.confidence==='alta' && a.confidence!=='alta') return 1;
+    return Math.abs((a.fattura.importo||0)-ncImporto) - Math.abs((b.fattura.importo||0)-ncImporto);
+  });
+  
+  return candidati.slice(0,5);
+}
+
+// Calcola il residuo di una fattura considerando le note credito compensate
+function calcolaResiduoFattura(f){
+  if(!f || f.document_type==='TD04') return 0;
+  var importo = parseFloat(f.importo||0);
+  var compensato = 0;
+  if(f.compensazione_note){
+    try{
+      var notes = typeof f.compensazione_note==='string' ? JSON.parse(f.compensazione_note) : f.compensazione_note;
+      if(Array.isArray(notes)){
+        notes.forEach(function(n){ compensato += Math.abs(parseFloat(n.importo||0)); });
+      }
+    }catch(e){}
+  }
+  return Math.max(0, importo - compensato);
+}
+
+// Applica il collegamento nota credito ↔ fattura originaria
+async function collegaNotaCredito(ncId, fattId){
+  var nc = fatture.find(function(x){return x.id==ncId;});
+  var fa = fatture.find(function(x){return x.id==fattId;});
+  if(!nc || !fa){ toast('Fattura non trovata'); return; }
+  
+  var ncImporto = Math.abs(parseFloat(nc.importo||0));
+  
+  // Aggiorno nota credito con riferimento
+  nc.compensata_con = fa.id;
+  // Aggiorno fattura originaria con array compensazioni
+  var notes = [];
+  if(fa.compensazione_note){
+    try{
+      notes = typeof fa.compensazione_note==='string' ? JSON.parse(fa.compensazione_note) : (fa.compensazione_note||[]);
+      if(!Array.isArray(notes)) notes = [];
+    }catch(e){ notes = []; }
+  }
+  // Evita doppi inserimenti
+  if(!notes.find(function(n){return n.id==nc.id;})){
+    notes.push({id:nc.id, numero:nc.numero, data:nc.data, importo:ncImporto});
+  }
+  fa.compensazione_note = notes;
+  fa.residuo_calcolato = calcolaResiduoFattura(fa);
+  
+  try{
+    await sbFetch('fatture?id=eq.'+ncId, {method:'PATCH', body:JSON.stringify({compensata_con:fa.id})});
+    await sbFetch('fatture?id=eq.'+fattId, {method:'PATCH', body:JSON.stringify({compensazione_note:JSON.stringify(notes)})});
+    if(typeof save==='function') save(fatture);
+    toast('Nota credito collegata \u00b7 residuo \u20ac '+fa.residuo_calcolato.toFixed(2));
+    if(typeof renderLista==='function') renderLista();
+    if(typeof renderAlerts==='function') renderAlerts();
+    var mo = document.getElementById('alertDetailMo');
+    if(mo && mo.style.display!=='none') mo.style.display='none';
+  }catch(e){ 
+    // Se il campo non esiste in Supabase, almeno in memoria
+    if(typeof save==='function') save(fatture);
+    toast('Salvato localmente (campo Supabase assente)');
+    if(typeof renderLista==='function') renderLista();
+  }
+}
+
+// Scollegamento
+async function scollegaNotaCredito(ncId){
+  var nc = fatture.find(function(x){return x.id==ncId;});
+  if(!nc || !nc.compensata_con) return;
+  var fa = fatture.find(function(x){return x.id==nc.compensata_con;});
+  
+  if(fa && fa.compensazione_note){
+    var notes = [];
+    try{
+      notes = typeof fa.compensazione_note==='string' ? JSON.parse(fa.compensazione_note) : fa.compensazione_note;
+      if(!Array.isArray(notes)) notes = [];
+    }catch(e){ notes = []; }
+    notes = notes.filter(function(n){return n.id!=ncId;});
+    fa.compensazione_note = notes;
+    fa.residuo_calcolato = calcolaResiduoFattura(fa);
+    try{
+      await sbFetch('fatture?id=eq.'+fa.id, {method:'PATCH', body:JSON.stringify({compensazione_note:notes.length?JSON.stringify(notes):null})});
+    }catch(e){}
+  }
+  nc.compensata_con = null;
+  try{
+    await sbFetch('fatture?id=eq.'+ncId, {method:'PATCH', body:JSON.stringify({compensata_con:null})});
+  }catch(e){}
+  if(typeof save==='function') save(fatture);
+  toast('Scollegata');
+  if(typeof renderLista==='function') renderLista();
+  if(typeof renderAlerts==='function') renderAlerts();
+}
+
+// Tentativo di match automatico globale: per tutte le TD04 non ancora compensate
+async function nettingAutomatico(){
+  if(typeof fatture==='undefined' || !fatture) return;
+  var notes = fatture.filter(function(f){
+    return f.document_type==='TD04' && !f.compensata_con;
+  });
+  if(!notes.length){ toast('Nessuna nota credito pendente'); return; }
+  
+  var linkati = 0, ambigui = 0;
+  for(var i=0; i<notes.length; i++){
+    var cand = matchFatturaOriginaria(notes[i]);
+    if(cand.length && cand[0].confidence==='alta'){
+      await collegaNotaCredito(notes[i].id, cand[0].fattura.id);
+      linkati++;
+    } else if(cand.length){
+      ambigui++;
+    }
+  }
+  toast(linkati+' collegate automaticamente'+(ambigui?', '+ambigui+' da confermare':''));
+  if(typeof renderAlerts==='function') renderAlerts();
+}
+
+
+// Aggiunge badge compensazione alle card del registro dopo renderLista
+function applicaBadgeCompensazione(){
+  if(typeof fatture==='undefined' || !fatture) return;
+  fatture.forEach(function(f){
+    if(!f.compensazione_note) return;
+    var notes = [];
+    try{
+      notes = typeof f.compensazione_note==='string' ? JSON.parse(f.compensazione_note) : f.compensazione_note;
+      if(!Array.isArray(notes)) notes = [];
+    }catch(e){ return; }
+    if(!notes.length) return;
+    var tot = 0; notes.forEach(function(n){ tot += Math.abs(parseFloat(n.importo||0)); });
+    var residuo = Math.max(0, parseFloat(f.importo||0) - tot);
+    var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    var card = document.getElementById('fi-'+f.id);
+    if(!card) return;
+    if(card.querySelector('.nc-badge')) return;
+    var badge = document.createElement('div');
+    badge.className = 'nc-badge';
+    badge.style.cssText = 'margin-top:6px;background:#FFF4E0;border-left:3px solid #FF9500;padding:6px 10px;border-radius:6px;font-size:11px;color:#7a4a00;font-weight:600';
+    badge.innerHTML = '&#128196; Compensata da '+notes.length+' nota/e credito (\u2212\u20ac '+fe(tot)+')'+(residuo>0?' \u00b7 Residuo \u20ac '+fe(residuo):' \u00b7 <b>CHIUSA</b>');
+    card.appendChild(badge);
+  });
+}
+
+// Badge su note credito compensate
+function applicaBadgeNotaCreditoCompensata(){
+  if(typeof fatture==='undefined' || !fatture) return;
+  fatture.forEach(function(f){
+    if(f.document_type!=='TD04' || !f.compensata_con) return;
+    var orig = fatture.find(function(x){return x.id==f.compensata_con;});
+    if(!orig) return;
+    var card = document.getElementById('fi-'+f.id);
+    if(!card) return;
+    if(card.querySelector('.nc-comp-badge')) return;
+    var badge = document.createElement('div');
+    badge.className = 'nc-comp-badge';
+    badge.style.cssText = 'margin-top:6px;background:#E8F8ED;border-left:3px solid #00B884;padding:6px 10px;border-radius:6px;font-size:11px;color:#1a7a3a;font-weight:600';
+    badge.innerHTML = '&#10003; Compensata con fattura N. '+esc(orig.numero||'\u2014')+' <button onclick="event.stopPropagation();scollegaNotaCredito('+f.id+')" style="background:none;border:none;color:#1a7a3a;text-decoration:underline;cursor:pointer;font-size:11px;font-weight:600;padding:0 0 0 6px;font-family:inherit">scollega</button>';
+    card.appendChild(badge);
+  });
+}
+
+// Hook: se esiste renderLista, eseguo applicaBadge* dopo
+(function(){
+  if(typeof renderLista!=='function') return;
+  var originalRenderLista = renderLista;
+  window.renderLista = function(){
+    var r = originalRenderLista.apply(this, arguments);
+    setTimeout(function(){
+      try{ applicaBadgeCompensazione(); applicaBadgeNotaCreditoCompensata(); }catch(e){}
+    }, 50);
+    return r;
+  };
+})();
+
 // ══ SISTEMA ALERT INTELLIGENTI ══
 function calcolaAlerts(){
   var list = [];
@@ -4269,10 +4507,10 @@ function apriDettaglioAlert(alertId){
   });
   
   mo.innerHTML = '<div style="background:var(--bg);border-radius:16px;max-width:480px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
-    +'<div style="padding:16px 18px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
       +'<div><div style="font-size:16px;font-weight:700">'+a.icon+' '+a.titolo+'</div>'
       +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+a.desc+'</div></div>'
-      +'<button onclick="document.getElementById(\'alertDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">\u00d7</button>'
+      +(a.azione==='apriAzioneCompensaNota'?'<button onclick="nettingAutomatico()" style="padding:6px 10px;border:1px solid var(--blue);background:var(--blue-light);border-radius:8px;font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;font-family:inherit;margin-right:6px">Auto-collega</button>':'')+'<button onclick="document.getElementById(\'alertDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">\u00d7</button>'
     +'</div>'
     +'<div style="overflow-y:auto;flex:1">'+itemsHtml+'</div>'
   +'</div>';

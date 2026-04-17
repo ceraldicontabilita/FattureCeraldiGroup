@@ -622,6 +622,13 @@ body{padding-bottom:92px !important}
 <div id="view-riepilogo" class="view">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 
+  <div id="alertsCard" style="background:var(--surface);border-radius:14px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+    <div style="font-size:13px;font-weight:700;color:var(--ink)">&#9888; Anomalie da verificare <span id="alertsCount" style="background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:2px 8px;margin-left:4px;font-weight:700">0</span></div>
+    <button onclick="toggleAlerts()" id="alertsToggleBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px">Mostra</button>
+  </div>
+  <div id="alertsBody" style="display:none;margin-top:8px"></div>
+</div>
   <div class="tot-grid">
     <div class="tot-card full"><div class="tl">Totale</div><div class="tv" id="totAll">&#8364; 0,00</div></div>
     <div class="tot-card tc-c"><div class="tl">&#128181; Contanti</div><div class="tv" id="totC">&#8364; 0,00</div></div>
@@ -1079,7 +1086,7 @@ async function loadAll(){
     fatture = rows.map(dbToApp);
     fornitori = fornRows.map(r=>r.nome);
     cacheSet(K, fatture); cacheSet(KF, fornitori);
-    return true;
+    try{ renderAlerts(); proponiScadenzeAutomatiche(); }catch(e){} return true;
   }catch(e){
     console.warn('Supabase offline, uso cache locale', e);
     fatture = cacheGet(K,[]); fornitori = cacheGet(KF,[]);
@@ -1813,6 +1820,7 @@ function updRiep(){
   const sub=document.getElementById('rsub-filtri');
   if(sub) sub.textContent=parts.length?parts.join(' · '):'Tutti i dati';
   const icons={contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;'};
+  try{ renderAlerts(); }catch(e){}
 }
 function renderRiepilogo(){aggiornaDL();updRiep();}
 
@@ -3501,6 +3509,283 @@ async function caricaCachePOSBanca(anno){
     window._ecPosCache = cache;
   }catch(e){ window._ecPosCache = {}; }
 }
+
+// ══ SISTEMA ALERT INTELLIGENTI ══
+function calcolaAlerts(){
+  var list = [];
+  if(typeof fatture === 'undefined' || !fatture) return list;
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  
+  // A) Fatture senza metodo pagamento (gravità alta)
+  var senzaMetodo = fatture.filter(function(f){
+    return (!f.pagamento || f.pagamento==='') && f.stato!=='pagata';
+  });
+  if(senzaMetodo.length){
+    list.push({
+      sev:'alta',
+      id:'metodo_mancante',
+      icon:'&#128273;',
+      titolo:'Metodo pagamento non definito',
+      desc:senzaMetodo.length+' fatture non instradabili su cassa/banca',
+      items:senzaMetodo,
+      azione:'apriAzioneMetodo'
+    });
+  }
+  
+  // B) Fatture con metodo bonifico ma senza scadenza (gravità alta)
+  var senzaScadenza = fatture.filter(function(f){
+    return f.pagamento==='bonifico' && !f.scadenza && f.stato!=='pagata';
+  });
+  if(senzaScadenza.length){
+    list.push({
+      sev:'alta',
+      id:'scadenza_mancante',
+      icon:'&#9203;',
+      titolo:'Bonifico senza scadenza',
+      desc:senzaScadenza.length+' fatture bonifico senza data di scadenza',
+      items:senzaScadenza,
+      azione:'apriAzioneScadenza'
+    });
+  }
+  
+  // C) Fatture scadute non pagate (gravità alta)
+  var scadute = fatture.filter(function(f){
+    if(f.stato==='pagata' || !f.scadenza) return false;
+    return new Date(f.scadenza+'T12:00:00') < oggi;
+  });
+  if(scadute.length){
+    var tot = scadute.reduce(function(s,f){return s+(f.importo||0);},0);
+    list.push({
+      sev:'alta',
+      id:'scadute',
+      icon:'&#128681;',
+      titolo:'Fatture scadute non pagate',
+      desc:scadute.length+' fatture per \u20ac '+tot.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}),
+      items:scadute,
+      azione:null
+    });
+  }
+  
+  // D) Duplicati sospetti (stesso fornitore + stesso importo + stessa data, numero diverso)
+  var dupSospetti = [];
+  var seen = {};
+  fatture.forEach(function(f){
+    var k = (f.fornitore||'').toLowerCase() + '|' + (f.data||'') + '|' + Math.round((f.importo||0)*100);
+    if(seen[k]){
+      if(seen[k].numero !== f.numero) dupSospetti.push(f);
+    } else {
+      seen[k] = f;
+    }
+  });
+  if(dupSospetti.length){
+    list.push({
+      sev:'media',
+      id:'dup_sospetti',
+      icon:'&#128203;',
+      titolo:'Duplicati sospetti',
+      desc:dupSospetti.length+' fatture con stesso fornitore/data/importo ma numero diverso',
+      items:dupSospetti,
+      azione:null
+    });
+  }
+  
+  // E) Note credito TD04 non compensate (se campo esiste)
+  var notaCredito = fatture.filter(function(f){
+    return f.document_type==='TD04' && !f.compensata_con;
+  });
+  if(notaCredito.length){
+    list.push({
+      sev:'media',
+      id:'note_credito',
+      icon:'&#128196;',
+      titolo:'Note di credito da compensare',
+      desc:notaCredito.length+' note TD04 non ancora collegate a fattura originaria',
+      items:notaCredito,
+      azione:'apriAzioneCompensaNota'
+    });
+  }
+  
+  // F) Fatture senza numero (dati incompleti)
+  var senzaNum = fatture.filter(function(f){
+    return (!f.numero || f.numero==='') && !(f.pagamento==='assegno' && (!f.fornitore||f.importo===0));
+  });
+  if(senzaNum.length){
+    list.push({
+      sev:'bassa',
+      id:'num_mancante',
+      icon:'&#10067;',
+      titolo:'Numero documento mancante',
+      desc:senzaNum.length+' fatture senza numero documento',
+      items:senzaNum,
+      azione:null
+    });
+  }
+  
+  // G) Fornitori nuovi (stato non verificato) — se campo esiste
+  // Al momento i fornitori sono solo nome, non c'è stato — skip
+  
+  return list;
+}
+
+function renderAlerts(){
+  var card = document.getElementById('alertsCard');
+  var body = document.getElementById('alertsBody');
+  var count = document.getElementById('alertsCount');
+  if(!card || !body || !count) return;
+  
+  var list = calcolaAlerts();
+  if(!list.length){
+    card.style.display='none';
+    return;
+  }
+  card.style.display='block';
+  count.textContent = list.length;
+  
+  // Ordino per severità
+  var sevOrder = {'alta':1,'media':2,'bassa':3};
+  list.sort(function(a,b){return sevOrder[a.sev]-sevOrder[b.sev];});
+  
+  var h = '';
+  list.forEach(function(a){
+    var color = a.sev==='alta' ? '#F44336' : (a.sev==='media' ? '#FF9500' : '#FFC107');
+    var bg = a.sev==='alta' ? '#FFE8E8' : (a.sev==='media' ? '#FFF4E0' : '#FFFBEB');
+    var colorText = a.sev==='alta' ? '#b00020' : (a.sev==='media' ? '#7a4a00' : '#6b5500');
+    h += '<div style="background:'+bg+';border-left:3px solid '+color+';padding:10px 12px;margin-bottom:6px;border-radius:8px;cursor:pointer" onclick="apriDettaglioAlert(\''+a.id+'\')">'
+      +'<div style="display:flex;align-items:flex-start;gap:8px">'
+        +'<span style="font-size:18px">'+a.icon+'</span>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:700;color:'+colorText+'">'+a.titolo+'</div>'
+          +'<div style="font-size:11px;color:'+colorText+';opacity:.85;margin-top:1px">'+a.desc+'</div>'
+        +'</div>'
+        +'<span style="color:'+colorText+';font-size:16px">&#8250;</span>'
+      +'</div>'
+      +'</div>';
+  });
+  body.innerHTML = h;
+}
+
+function toggleAlerts(){
+  var body = document.getElementById('alertsBody');
+  var btn = document.getElementById('alertsToggleBtn');
+  if(!body || !btn) return;
+  if(body.style.display==='none'){
+    body.style.display='block';
+    btn.textContent='Nascondi';
+  } else {
+    body.style.display='none';
+    btn.textContent='Mostra';
+  }
+}
+
+function apriDettaglioAlert(alertId){
+  var list = calcolaAlerts();
+  var a = list.find(function(x){return x.id===alertId;});
+  if(!a) return;
+  
+  // Modal con lista fatture
+  var mo = document.getElementById('alertDetailMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'alertDetailMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+    mo.onclick = function(e){ if(e.target===mo) mo.style.display='none'; };
+    document.body.appendChild(mo);
+  }
+  
+  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var itemsHtml = '';
+  a.items.forEach(function(f){
+    var dataShow = f.data ? new Date(f.data+'T12:00:00').toLocaleDateString('it-IT') : '';
+    var scadShow = f.scadenza ? new Date(f.scadenza+'T12:00:00').toLocaleDateString('it-IT') : '';
+    itemsHtml += '<div style="padding:10px 12px;border-bottom:1px solid var(--sep)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+esc(f.fornitore||'(senza fornitore)')+'</div>'
+        +'<div style="font-size:11px;color:var(--ink3)">N. '+esc(f.numero||'—')+' \u00b7 '+dataShow+(scadShow?' \u00b7 Scad. '+scadShow:'')+(f.pagamento?' \u00b7 '+f.pagamento:'')+'</div></div>'
+        +'<div style="font-size:14px;font-weight:700">\u20ac '+fe(f.importo)+'</div>'
+      +'</div>';
+    // Azione rapida specifica
+    if(a.azione==='apriAzioneMetodo'){
+      itemsHtml += '<div style="display:flex;gap:6px;margin-top:8px">'
+        +'<button onclick="event.stopPropagation();impostaMetodoRapido('+f.id+',\'contanti\')" style="flex:1;padding:6px;border:1px solid #00B884;background:#E8F8ED;border-radius:6px;font-size:11px;font-weight:600;color:#1a7a3a;cursor:pointer">&#128181; Contanti</button>'
+        +'<button onclick="event.stopPropagation();impostaMetodoRapido('+f.id+',\'bonifico\')" style="flex:1;padding:6px;border:1px solid var(--blue);background:#E3F2FD;border-radius:6px;font-size:11px;font-weight:600;color:var(--blue);cursor:pointer">&#127974; Bonifico</button>'
+        +'<button onclick="event.stopPropagation();impostaMetodoRapido('+f.id+',\'assegno\')" style="flex:1;padding:6px;border:1px solid #FF9500;background:#FFF4E0;border-radius:6px;font-size:11px;font-weight:600;color:#7a4a00;cursor:pointer">&#128221; Assegno</button>'
+        +'</div>';
+    } else if(a.azione==='apriAzioneScadenza'){
+      itemsHtml += '<div style="display:flex;gap:6px;margin-top:8px;align-items:center">'
+        +'<span style="font-size:11px;color:var(--ink3)">Calcola scadenza:</span>'
+        +'<button onclick="event.stopPropagation();impostaScadenzaRapido('+f.id+',30)" style="flex:1;padding:6px;border:1px solid var(--blue);background:var(--surface);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+30gg</button>'
+        +'<button onclick="event.stopPropagation();impostaScadenzaRapido('+f.id+',60)" style="flex:1;padding:6px;border:1px solid var(--blue);background:var(--surface);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+60gg</button>'
+        +'<button onclick="event.stopPropagation();impostaScadenzaRapido('+f.id+',90)" style="flex:1;padding:6px;border:1px solid var(--blue);background:var(--surface);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+90gg</button>'
+        +'</div>';
+    }
+    itemsHtml += '</div>';
+  });
+  
+  mo.innerHTML = '<div style="background:var(--bg);border-radius:16px;max-width:480px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between">'
+      +'<div><div style="font-size:16px;font-weight:700">'+a.icon+' '+a.titolo+'</div>'
+      +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+a.desc+'</div></div>'
+      +'<button onclick="document.getElementById(\'alertDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">\u00d7</button>'
+    +'</div>'
+    +'<div style="overflow-y:auto;flex:1">'+itemsHtml+'</div>'
+  +'</div>';
+  mo.style.display='flex';
+}
+
+async function impostaMetodoRapido(fId, metodo){
+  try{
+    var f = fatture.find(function(x){return x.id==fId;});
+    if(!f) return;
+    f.pagamento = metodo;
+    if(typeof sbFetch === 'function'){
+      await sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify({pagamento:metodo})});
+    }
+    if(typeof save === 'function') save(fatture);
+    toast('Metodo impostato: '+metodo);
+    renderAlerts();
+    if(typeof renderLista === 'function') renderLista();
+    // Aggiorna modal se aperto — ricalcola
+    var mo = document.getElementById('alertDetailMo');
+    if(mo && mo.style.display!=='none'){ mo.style.display='none'; }
+  }catch(e){ toast('Errore: '+e.message.slice(0,40)); }
+}
+
+async function impostaScadenzaRapido(fId, giorni){
+  try{
+    var f = fatture.find(function(x){return x.id==fId;});
+    if(!f || !f.data) return;
+    var dt = new Date(f.data+'T12:00:00');
+    dt.setDate(dt.getDate()+giorni);
+    var nuova = dt.toISOString().slice(0,10);
+    f.scadenza = nuova;
+    if(typeof sbFetch === 'function'){
+      await sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify({scadenza:nuova})});
+    }
+    if(typeof save === 'function') save(fatture);
+    toast('Scadenza: +'+giorni+'gg');
+    renderAlerts();
+    if(typeof renderLista === 'function') renderLista();
+    var mo = document.getElementById('alertDetailMo');
+    if(mo && mo.style.display!=='none'){ mo.style.display='none'; }
+  }catch(e){ toast('Errore: '+e.message.slice(0,40)); }
+}
+
+// ══ CONDIZIONI PAGAMENTO: calcolo automatico scadenza ══
+// Applicato automaticamente quando si carica la lista: fatture bonifico senza scadenza → +30gg default
+function proponiScadenzeAutomatiche(){
+  if(typeof fatture === 'undefined' || !fatture) return 0;
+  var count = 0;
+  fatture.forEach(function(f){
+    if(f.pagamento==='bonifico' && !f.scadenza && f.data && f.stato!=='pagata'){
+      var dt = new Date(f.data+'T12:00:00');
+      dt.setDate(dt.getDate()+30);
+      f._scadenza_proposta = dt.toISOString().slice(0,10);
+      count++;
+    }
+  });
+  return count;
+}
+
 // ══ LIQUIDAZIONE IVA — Art. 1 DPR 100/98 ══
 async function calcolaIVA(){
   var anno=(document.getElementById('ivaAnno').value||'').trim();

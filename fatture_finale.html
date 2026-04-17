@@ -2974,30 +2974,42 @@ async function caricaCorrispettivi(){
     const local=JSON.parse(localStorage.getItem('corr_manuali')||'[]');
     window._corrManuali = local.filter(m=>m.data_corrispettivo && m.data_corrispettivo.startsWith(anno));
   }catch(e){window._corrManuali=[];}
-  try{
-    sbFetch('corrispettivi_manuali?data_corrispettivo=gte.'+anno+'-01-01&data_corrispettivo=lte.'+anno+'-12-31').then(function(r){
-      if(r&&r.length)window._corrManuali=r;
-    }).catch(function(){});
-  }catch(e){}
+  
   var td=document.getElementById('corrTotali'),ld=document.getElementById('corrLista');
   td.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';ld.innerHTML='';
   try{var r=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);if(!r.ok)throw new Error('HTTP '+r.status);
   var data=await r.json();var li=Array.isArray(data)?data:(data.items||[]);
-  // MERGE inserimenti manuali (da localStorage + DB)
+  // MERGE inserimenti manuali (localStorage + eventuali da DB già fetchati)
   try {
-    const manuali = window._corrManuali || [];
+    let manuali = window._corrManuali || [];
+    // Anche leggi direttamente dal localStorage (ultima versione)
+    try{
+      const local = JSON.parse(localStorage.getItem('corr_manuali')||'[]');
+      manuali = [...manuali, ...local];
+    }catch(e){}
+    // Dedup per data (vince l'ultimo inserimento)
+    const byDate = {};
     manuali.forEach(function(m){
-      // Se c'è già una riga XML con stessa data, NON duplicare (il manuale diventa solo confronto)
-      const exists = li.some(function(x){return x.data===m.data_corrispettivo;});
+      const d = m.data || m.data_corrispettivo;
+      if(!d) return;
+      if(!d.startsWith(anno)) return;
+      byDate[d] = {
+        data: d,
+        totale: m.totale || ((m.contanti||m.pagato_contanti||0)+(m.pos||m.pagato_elettronico||0)),
+        pagato_contanti: m.contanti || m.pagato_contanti || 0,
+        pagato_elettronico: m.pos || m.pagato_elettronico || 0,
+        note: m.note || '',
+        _manuale: true
+      };
+    });
+    Object.values(byDate).forEach(function(m){
+      const exists = li.some(function(x){return x.data===m.data;});
       if(!exists){
-        li.push({
-          data: m.data_corrispettivo,
-          totale: m.totale || ((m.contanti||0)+(m.pos||0)),
-          pagato_contanti: m.contanti || 0,
-          pagato_elettronico: m.pos || 0,
-          note: m.note || '',
-          _manuale: true
-        });
+        li.push(m);
+      } else {
+        // Marca XML come "ha_manuale" per il badge coerenza
+        const xmlRow = li.find(function(x){return x.data===m.data;});
+        if(xmlRow) xmlRow._manuale_ref = m;
       }
     });
   } catch(e){ console.warn('merge manuali fallito:', e); }
@@ -3206,7 +3218,7 @@ function corrCalcTot(){
   const tot=c+p;
   document.getElementById('corrManTot').textContent='\u20ac '+tot.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-async function salvaCorrManuale(){
+async async function salvaCorrManuale(){
   const data=document.getElementById('corrManData').value;
   const contanti=parseFloat((document.getElementById('corrManContanti').value||'0').replace(',','.'))||0;
   const pos=parseFloat((document.getElementById('corrManPos').value||'0').replace(',','.'))||0;
@@ -3214,26 +3226,31 @@ async function salvaCorrManuale(){
   if(!data){toast('⚠️ Inserisci la data');return;}
   if(contanti===0&&pos===0){toast('⚠️ Inserisci almeno un importo');return;}
   const totale=contanti+pos;
+  // Record compatibile con la tabella corrispettivi esistente
   const rec={
-    data_corrispettivo:data,
-    contanti:contanti,
-    pos:pos,
+    data:data,
     totale:totale,
+    pagato_contanti:contanti,
+    pagato_elettronico:pos,
     note:note,
-    tipo:'manuale',
-    inserito_il:new Date().toISOString()
+    fonte:'manuale',
+    ts:Date.now()
   };
-  // Salva SEMPRE in localStorage (copia sicura)
-  const key='corr_manuali';
-  const list=JSON.parse(localStorage.getItem(key)||'[]');
-  list.push(rec);
-  localStorage.setItem(key,JSON.stringify(list));
-  // Prova anche a salvare nel DB
+  // Salva SEMPRE anche in localStorage (backup)
   try{
-    await sbFetch('corrispettivi_manuali',{method:'POST',body:JSON.stringify(rec)});
-    toast('✅ Salvato: '+'\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
+    const key='corr_manuali';
+    const list=JSON.parse(localStorage.getItem(key)||'[]');
+    // Rimuovi eventuale duplicato della stessa data (sovrascrittura)
+    const filtered=list.filter(function(x){return x.data!==data;});
+    filtered.push(rec);
+    localStorage.setItem(key,JSON.stringify(filtered));
+  }catch(e){}
+  // Prova a salvare su Supabase (tabella corrispettivi condivisa)
+  try{
+    await sbFetch('corrispettivi',{method:'POST',body:JSON.stringify(rec)});
+    toast('✅ Salvato: €'+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
   }catch(e){
-    toast('✅ Salvato localmente (DB offline)');
+    toast('⚠️ DB offline, salvato solo localmente: '+(e.message||'').substring(0,40));
   }
   // Reset form
   document.getElementById('corrManData').value=new Date().toISOString().slice(0,10);

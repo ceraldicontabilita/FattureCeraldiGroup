@@ -2967,136 +2967,117 @@ async function compilaAssegno(id){
   var f=fatture.find(function(x){return x.id==id;});if(f){f.fornitore=ben;f.importo=imp;f.numero=nf;f.stato='pagata';}save(fatture);toast('Salvato!');caricaAssegniSalvati();}catch(e){toast('Errore: '+e.message);}
 }
 async function caricaCorrispettivi(){
-  var anno=(document.getElementById('corrAnno').value||'').trim();if(!anno){toast('Anno');return;}
-  // Carica inserimenti manuali dello stesso anno per confronto
-  window._corrManuali = window._corrManuali || [];
+  const anno=(document.getElementById('corrAnno').value||'').trim();
+  if(!anno){toast('Inserisci anno');return;}
+  const td=document.getElementById('corrTotali'),ld=document.getElementById('corrLista');
+  td.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink3)">&#9203; Caricamento...</div>';
+  ld.innerHTML='';
+
+  let li=[];
+  // 1) SUPABASE (fonte primaria, condivisa tra dispositivi)
   try{
-    const local=JSON.parse(localStorage.getItem('corr_manuali')||'[]');
-    window._corrManuali = local.filter(m=>m.data_corrispettivo && m.data_corrispettivo.startsWith(anno));
-  }catch(e){window._corrManuali=[];}
-  
-  var td=document.getElementById('corrTotali'),ld=document.getElementById('corrLista');
-  td.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';ld.innerHTML='';
-  try{var r=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);if(!r.ok)throw new Error('HTTP '+r.status);
-  var data=await r.json();var li=Array.isArray(data)?data:(data.items||[]);
-  // MERGE inserimenti manuali (localStorage + eventuali da DB già fetchati)
-  try {
-    let manuali = window._corrManuali || [];
-    // Anche leggi direttamente dal localStorage (ultima versione)
-    try{
-      const local = JSON.parse(localStorage.getItem('corr_manuali')||'[]');
-      manuali = [...manuali, ...local];
-    }catch(e){}
-    // Dedup per data (vince l'ultimo inserimento)
-    const byDate = {};
-    manuali.forEach(function(m){
-      const d = m.data || m.data_corrispettivo;
-      if(!d) return;
-      if(!d.startsWith(anno)) return;
-      byDate[d] = {
-        data: d,
-        totale: m.totale || ((m.contanti||m.pagato_contanti||0)+(m.pos||m.pagato_elettronico||0)),
-        pagato_contanti: m.contanti || m.pagato_contanti || 0,
-        pagato_elettronico: m.pos || m.pagato_elettronico || 0,
-        note: m.note || '',
-        _manuale: true
-      };
-    });
-    Object.values(byDate).forEach(function(m){
-      const exists = li.some(function(x){return x.data===m.data;});
-      if(!exists){
-        li.push(m);
-      } else {
-        // Marca XML come "ha_manuale" per il badge coerenza
-        const xmlRow = li.find(function(x){return x.data===m.data;});
-        if(xmlRow) xmlRow._manuale_ref = m;
-      }
-    });
-  } catch(e){ console.warn('merge manuali fallito:', e); }
-  if(!li.length){td.innerHTML='<div class="empty"><p>Nessun corrispettivo</p></div>';return;}
-  li.sort(function(a,b){return(b.data||'').localeCompare(a.data||'');});
-  var tt=0,tc=0,te=0;li.forEach(function(c){tt+=parseFloat(c.totale||0);tc+=parseFloat(c.pagato_contanti||0);te+=parseFloat(c.pagato_elettronico||0);});
-  var fe=function(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-  td.innerHTML='<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:10px"><div style="font-size:11px;opacity:.7">TOTALE</div><div style="font-size:28px;font-weight:800;margin-top:4px">'+fe(tt)+'</div><div style="font-size:12px;opacity:.8">'+li.length+' chiusure</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:var(--green-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:#1a7a3a">CONTANTI</div><div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fe(tc)+'</div></div><div style="background:#E3F2FD;border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">ELETTRONICO</div><div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fe(te)+'</div></div></div>';
-  var h='';li.forEach(function(c){var df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'}):'';var imp=parseFloat(c.totale_imponibile||0);var ivac=parseFloat(c.totale_iva||0);var ivaD='';
-    if(c.riepilogo_iva&&c.riepilogo_iva.length){ivaD='<div style="margin-top:6px;font-size:11px">';c.riepilogo_iva.forEach(function(r){ivaD+='<div>IVA '+r.aliquota_iva+'%: imp. '+fe(parseFloat(r.ammontare||0))+' / iva '+fe(parseFloat(r.imposta||0))+'</div>';});ivaD+='</div>';}
-    h+='<div style="background:var(--surface);border-radius:var(--radius);padding:12px 16px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer" onclick="var d=this.querySelector(\'.cd\');if(d)d.style.display=d.style.display===\'none\'?\'block\':\'none\'"><div style="display:flex;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">'+df+'</div><div style="font-size:11px;color:var(--ink3)">'+(c.numero_documenti||0)+' scontrini</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700">'+fe(parseFloat(c.totale||0))+'</div><div style="font-size:11px;color:var(--ink3)">C:'+fe(parseFloat(c.pagato_contanti||0))+' E:'+fe(parseFloat(c.pagato_elettronico||0))+'</div></div></div><div class="cd" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--sep);font-size:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div>Imponibile: <b>'+fe(imp)+'</b></div><div>IVA: <b>'+fe(ivac)+'</b></div></div>'+ivaD+'</div></div>';});
-  ld.innerHTML=h;
-  // POST-PROCESS: aggiungi badge coerenza per ogni giorno con inserimento manuale
-  try {
-    const manuali = window._corrManuali || [];
-    if(manuali.length){
-      li.forEach(function(c){
-        const m = manuali.find(function(x){return x.data_corrispettivo===c.data;});
-        if(!m) return;
-        const diffPos = parseFloat(c.pagato_elettronico||0) - parseFloat(m.pos||0);
-        const diffCont = parseFloat(c.pagato_contanti||0) - parseFloat(m.contanti||0);
-        let badge='';
-        if(Math.abs(diffPos)>0.01 || Math.abs(diffCont)>0.01){
-          const parts=[];
-          if(Math.abs(diffPos)>0.01) parts.push('POS '+(diffPos>0?'+':'')+diffPos.toFixed(2)+'€');
-          if(Math.abs(diffCont)>0.01) parts.push('Contanti '+(diffCont>0?'+':'')+diffCont.toFixed(2)+'€');
-          badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:6px;border-radius:8px;font-size:12px;color:#B45309;font-weight:600">⚠️ Scostamento vs manuale: '+parts.join(' · ')+'</div>';
-        } else {
-          badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:6px 10px;margin-top:6px;border-radius:8px;font-size:11px;color:#1a7a3a;font-weight:600">✓ Coerente con inserimento manuale</div>';
+    const rows=await sbFetch('corrispettivi?data=gte.'+anno+'-01-01&data=lte.'+anno+'-12-31&select=*&order=data.desc');
+    if(rows&&rows.length) li=rows;
+  }catch(e){console.warn('DB corrispettivi:',e.message);}
+
+  // 2) API XML ESTERNA (integrazione per POS da registratore telematico)
+  try{
+    const r=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+    if(r.ok){
+      const data=await r.json();
+      const xmlItems=Array.isArray(data)?data:(data.items||[]);
+      xmlItems.forEach(function(x){
+        const existing=li.find(function(m){return m.data===x.data;});
+        if(!existing){
+          li.push({...x, fonte:x.fonte||'xml'});
+        } else if((existing.fonte||'')==='manuale'){
+          existing._xml_ref={pagato_contanti:x.pagato_contanti||0,pagato_elettronico:x.pagato_elettronico||0,totale:x.totale||0};
         }
-        // Trova la card di questo giorno e appendi il badge
-        const cards = ld.querySelectorAll('[data-corr-date],.corr-card');
-        // Fallback: cerca per testo la data
-        const dateFmt = c.data ? new Date(c.data+'T12:00:00').toLocaleDateString('it-IT') : '';
-        ld.querySelectorAll('div').forEach(function(el){
-          if(el.getAttribute('data-coerenza-done')) return;
-          if(el.textContent && el.textContent.indexOf(dateFmt)===0 && !el.querySelector('[data-coerenza-badge]')){
-            const badgeEl = document.createElement('div');
-            badgeEl.setAttribute('data-coerenza-badge','1');
-            badgeEl.innerHTML=badge;
-            el.setAttribute('data-coerenza-done','1');
-            if(el.firstChild) el.appendChild(badgeEl.firstChild);
-          }
-        });
       });
     }
-  } catch(e){ console.warn('coerenza check fallita:', e); }toast(li.length+' corrispettivi');}catch(e){
-    // Se fetch XML fallisce, mostra comunque i manuali
-    const manuali = window._corrManuali || [];
-    if(manuali.length){
-      const li = manuali.map(function(m){return {data:m.data_corrispettivo,totale:m.totale||((m.contanti||0)+(m.pos||0)),pagato_contanti:m.contanti||0,pagato_elettronico:m.pos||0,note:m.note||'',_manuale:true};});
-      li.sort(function(a,b){return(b.data||'').localeCompare(a.data||'');});
-      var tt=0,tc=0,te=0;li.forEach(function(c){tt+=parseFloat(c.totale||0);tc+=parseFloat(c.pagato_contanti||0);te+=parseFloat(c.pagato_elettronico||0);});
-      var fe=function(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-      td.innerHTML='<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:14px;padding:16px;color:#fff;margin-bottom:10px"><div style="font-size:11px;opacity:.7">TOTALE (solo manuali)</div><div style="font-size:28px;font-weight:800;margin-top:4px">'+fe(tt)+'</div><div style="font-size:12px;opacity:.8">'+li.length+' giornate</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:var(--green-light);border-radius:10px;padding:14px"><div style="font-size:10px;font-weight:600;color:#1a7a3a">CONTANTI</div><div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fe(tc)+'</div></div><div style="background:#E3F2FD;border-radius:10px;padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">POS</div><div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fe(te)+'</div></div></div>';
-      var h='';li.forEach(function(c){var df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'}):'—';h+='<div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:relative"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><div style="font-weight:700;font-size:14px">'+df+' <span style="background:#FFF4E0;color:#B45309;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:4px">MANUALE</span></div><div style="font-size:17px;font-weight:800">'+fe(c.totale)+'</div></div><div style="font-size:12px;color:var(--ink3)">&#128181; '+fe(c.pagato_contanti)+' &middot; &#128179; '+fe(c.pagato_elettronico)+'</div>'+(c.note?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;font-style:italic">'+esc(c.note)+'</div>':'')+'</div>';});
-      ld.innerHTML=h;
-    } else {
-      td.innerHTML='<div style="background:#FFF4E0;border-radius:10px;padding:14px;color:#B45309;font-size:13px;text-align:center">⚠️ API XML non disponibile. Nessun inserimento manuale per questo anno.</div>';
+  }catch(e){console.warn('API XML offline:',e.message);}
+
+  // RENDER
+  if(!li.length){
+    td.innerHTML='<div class="empty" style="padding:40px 20px;text-align:center"><div style="font-size:42px;opacity:.35;margin-bottom:8px">&#128179;</div><p style="color:var(--ink3)">Nessun corrispettivo per '+anno+'</p><p style="color:var(--ink3);font-size:12px;margin-top:4px">Inserisci la prima giornata con il form sopra</p></div>';
+    return;
+  }
+  li.sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+
+  let tt=0,tc=0,te=0;
+  li.forEach(function(c){
+    tt+=parseFloat(c.totale||0);
+    tc+=parseFloat(c.pagato_contanti||0);
+    te+=parseFloat(c.pagato_elettronico||0);
+  });
+  const fe=function(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+
+  td.innerHTML=
+    '<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:14px;padding:16px;color:#fff;margin-bottom:10px">'+
+      '<div style="font-size:11px;opacity:.75;letter-spacing:.5px">TOTALE '+anno+'</div>'+
+      '<div style="font-size:28px;font-weight:800;margin-top:4px">'+fe(tt)+'</div>'+
+      '<div style="font-size:12px;opacity:.8">'+li.length+' giornate</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+      '<div style="background:var(--green-light);border-radius:12px;padding:14px">'+
+        '<div style="font-size:10px;font-weight:700;color:#1a7a3a;letter-spacing:.4px">&#128181; CONTANTI</div>'+
+        '<div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fe(tc)+'</div>'+
+      '</div>'+
+      '<div style="background:#E3F2FD;border-radius:12px;padding:14px">'+
+        '<div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.4px">&#128179; POS</div>'+
+        '<div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fe(te)+'</div>'+
+      '</div>'+
+    '</div>';
+
+  let h='';
+  li.forEach(function(c){
+    const df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}):'—';
+    const isMan=(c.fonte||'')==='manuale';
+    const tagMan=isMan?'<span style="background:#FFF4E0;color:#B45309;font-size:10px;padding:2px 7px;border-radius:6px;margin-left:6px;font-weight:700;letter-spacing:.3px">MANUALE</span>':'';
+    // Badge coerenza se c'è riferimento XML
+    let badge='';
+    if(isMan && c._xml_ref){
+      const dP=parseFloat(c._xml_ref.pagato_elettronico||0)-parseFloat(c.pagato_elettronico||0);
+      const dC=parseFloat(c._xml_ref.pagato_contanti||0)-parseFloat(c.pagato_contanti||0);
+      const parts=[];
+      if(Math.abs(dP)>0.01) parts.push('POS '+(dP>0?'+':'')+dP.toFixed(2)+'\u20ac');
+      if(Math.abs(dC)>0.01) parts.push('Contanti '+(dC>0?'+':'')+dC.toFixed(2)+'\u20ac');
+      if(parts.length){
+        badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:8px;border-radius:8px;font-size:12px;color:#B45309;font-weight:600">\u26a0 Scostamento registratore: '+parts.join(' \u00b7 ')+'</div>';
+      } else {
+        badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:6px 10px;margin-top:8px;border-radius:8px;font-size:11px;color:#1a7a3a;font-weight:600">\u2713 Coerente con registratore telematico</div>';
+      }
     }
+    const actDel=isMan?'<button onclick="eliminaCorrManuale(\''+c.data+'\',event)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 8px">&#128465;</button>':'';
+    h+='<div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.03)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:var(--ink)">'+df+tagMan+'</div></div>'+
+        '<div style="display:flex;align-items:center;gap:4px"><div style="font-size:17px;font-weight:800;color:var(--ink)">'+fe(c.totale)+'</div>'+actDel+'</div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--ink3);display:flex;gap:12px;flex-wrap:wrap">'+
+        '<span>&#128181; '+fe(c.pagato_contanti)+'</span>'+
+        '<span>&#128179; '+fe(c.pagato_elettronico)+'</span>'+
+      '</div>'+
+      (c.note?'<div style="font-size:12px;color:var(--ink3);margin-top:4px;font-style:italic">\u201c'+esc(c.note)+'\u201d</div>':'')+
+      badge+
+    '</div>';
+  });
+  ld.innerHTML=h;
+}
+
+async function eliminaCorrManuale(data,ev){
+  if(ev) ev.stopPropagation();
+  if(!confirm('Eliminare il corrispettivo del '+new Date(data+'T12:00:00').toLocaleDateString('it-IT')+'?')) return;
+  try{
+    await sbFetch('corrispettivi?data=eq.'+data+'&fonte=eq.manuale',{method:'DELETE'});
+    toast('\u2713 Eliminato');
+    await caricaCorrispettivi();
+  }catch(e){
+    toast('\u274c Errore: '+(e.message||'').substring(0,80));
   }
 }
-async function calcolaIVA(){
-  var anno=(document.getElementById('ivaAnno').value||'').trim();if(!anno){toast('Anno');return;}
-  var td=document.getElementById('ivaTotali'),md=document.getElementById('ivaMesi');
-  td.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';md.innerHTML='';
-  try{var r1=await fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500');var r2=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
-  if(!r1.ok||!r2.ok)throw new Error('Errore API');var fa=await r1.json();var co=await r2.json();
-  fa=Array.isArray(fa)?fa:(fa.items||[]);co=Array.isArray(co)?co:(co.items||[]);
-  var fe=function(n){return(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-  var nm=['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-  var ms={};for(var m=1;m<=12;m++)ms[m]={cr:0,db:0};
-  fa.forEach(function(f){var d=(f.invoice_date||f.data_effettiva||'').toString().slice(0,10);if(!d||d.slice(0,4)!==anno)return;var dr=(f.imported_at||'').toString().slice(0,10);var mf=parseInt(d.slice(5,7));var mc=mf;if(dr){var mr=parseInt(dr.slice(5,7));var gr=parseInt(dr.slice(8,10));if(dr.slice(0,4)===anno&&mr===mf+1&&gr<=15)mc=mf;else if(dr.slice(0,4)===anno&&mr>mf+1)mc=mr;}if(mc<1||mc>12)return;if(f.document_type==='TD04'){ms[mc].cr-=parseFloat(f.vat_amount||0);return;}ms[mc].cr+=parseFloat(f.vat_amount||f.totale_iva||0);});
-  co.forEach(function(c){var d=(c.data||'').slice(0,10);var m=parseInt(d.slice(5,7));if(!m||m<1||m>12)return;ms[m].db+=parseFloat(c.totale_iva||0);});
-  var tc=0,tdb=0,rip=0,mh='',ma=0;
-  for(var m=1;m<=12;m++){var d=ms[m];if(!d.cr&&!d.db)continue;ma++;tc+=d.cr;tdb+=d.db;var s=d.db-d.cr-rip;var dv=s>0?s:0;var cr2=s<0?Math.abs(s):0;
-  var msn=m<12?m+1:1;var asn=m<12?parseInt(anno):parseInt(anno)+1;var sc=asn+'-'+String(msn).padStart(2,'0')+'-16';var sf=new Date(sc+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'});var scu=new Date(sc+'T12:00:00')<new Date()&&dv>0;
-  var bc=dv>0?(scu?'var(--red)':'#FF9800'):'var(--green)';
-  mh+='<div style="background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid '+bc+'"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:700">'+nm[m]+' '+anno+'</div><div style="font-size:11px;color:var(--ink3)">F24 entro '+sf+(scu?' SCADUTO':'')+'</div></div>';
-  if(dv>0)mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fe(dv)+'</div><div style="font-size:10px;color:var(--red)">DA VERSARE</div></div>';
-  else mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fe(cr2)+'</div><div style="font-size:10px;color:#1a7a3a">CREDITO</div></div>';
-  mh+='</div><div style="display:flex;gap:12px;margin-top:6px;font-size:12px"><span style="color:var(--blue)">Credito \u20ac'+fe(d.cr)+'</span><span style="color:var(--red)">Debito \u20ac'+fe(d.db)+'</span></div></div>';
-  rip=cr2;}
-  var sa=tdb-tc;var ic=sa<0;
-  td.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#E3F2FD;border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue)">\u20ac '+fe(tc)+'</div></div><div style="background:var(--red-light);border-radius:var(--radius);padding:14px"><div style="font-size:10px;font-weight:600;color:var(--red)">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red)">\u20ac '+fe(tdb)+'</div></div></div><div style="background:'+(ic?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:var(--radius);padding:16px;color:#fff;margin-bottom:14px"><div style="font-size:11px;opacity:.7">SALDO '+anno+'</div><div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(Math.abs(sa))+'</div><div style="font-size:13px;opacity:.9">'+(ic?'A CREDITO':'A DEBITO')+'</div></div>';
-  md.innerHTML=mh||'<div style="text-align:center;padding:20px">Nessun dato</div>';toast('IVA: '+ma+' mesi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
-}
+
+
 function apriDettaglioRegistro(fId){
   var f = fatture.find(function(x){return x.id==fId;});
   if(!f) return;
@@ -3219,6 +3200,7 @@ function corrCalcTot(){
   document.getElementById('corrManTot').textContent='\u20ac '+tot.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 async function salvaCorrManuale(){
+  const btn=event?.target;
   const data=document.getElementById('corrManData').value;
   const contanti=parseFloat((document.getElementById('corrManContanti').value||'0').replace(',','.'))||0;
   const pos=parseFloat((document.getElementById('corrManPos').value||'0').replace(',','.'))||0;
@@ -3226,7 +3208,6 @@ async function salvaCorrManuale(){
   if(!data){toast('⚠️ Inserisci la data');return;}
   if(contanti===0&&pos===0){toast('⚠️ Inserisci almeno un importo');return;}
   const totale=contanti+pos;
-  // Record compatibile con la tabella corrispettivi esistente
   const rec={
     data:data,
     totale:totale,
@@ -3236,21 +3217,28 @@ async function salvaCorrManuale(){
     fonte:'manuale',
     ts:Date.now()
   };
-  // Salva SEMPRE anche in localStorage (backup)
+  if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   try{
-    const key='corr_manuali';
-    const list=JSON.parse(localStorage.getItem(key)||'[]');
-    // Rimuovi eventuale duplicato della stessa data (sovrascrittura)
-    const filtered=list.filter(function(x){return x.data!==data;});
-    filtered.push(rec);
-    localStorage.setItem(key,JSON.stringify(filtered));
-  }catch(e){}
-  // Prova a salvare su Supabase (tabella corrispettivi condivisa)
-  try{
-    await sbFetch('corrispettivi',{method:'POST',body:JSON.stringify(rec)});
-    toast('✅ Salvato: €'+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
+    // Upsert: se esiste già una riga con quella data, aggiorna
+    const existing=await sbFetch('corrispettivi?data=eq.'+data+'&select=id&limit=1');
+    if(existing&&existing.length){
+      await sbFetch('corrispettivi?data=eq.'+data,{method:'PATCH',body:JSON.stringify(rec)});
+    } else {
+      await sbFetch('corrispettivi',{method:'POST',body:JSON.stringify(rec)});
+    }
+    toast('✅ Salvato nel database: €'+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
+    document.getElementById('corrManData').value=new Date().toISOString().slice(0,10);
+    document.getElementById('corrManContanti').value='';
+    document.getElementById('corrManPos').value='';
+    document.getElementById('corrManNote').value='';
+    corrCalcTot();
+    await caricaCorrispettivi();
   }catch(e){
-    toast('⚠️ DB offline, salvato solo localmente: '+(e.message||'').substring(0,40));
+    const msg=(e.message||'').substring(0,100);
+    toast('❌ Errore salvataggio: '+msg);
+    console.error('Errore Supabase:',e);
+  } finally {
+    if(btn){btn.disabled=false;btn.innerHTML='&#128190; Salva giornata';}
   }
   // Reset form
   document.getElementById('corrManData').value=new Date().toISOString().slice(0,10);

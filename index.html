@@ -4015,8 +4015,10 @@ async function caricaProvvisoria(){
     if(typeof fatture !== 'undefined' && fatture){
       fatture.forEach(function(f){
         if(f.document_type==='TD04') return;
-        if(f.stato==='pagata') return;
         if(!f.importo || f.importo<=0) return;
+        var nonPagata = f.stato!=='pagata';
+        var pagataNonRiconc = f.stato==='pagata' && !f.riconciliato_cassa && !f.riconciliato_banca;
+        if(!nonPagata && !pagataNonRiconc) return;
         var d = (f.data||'').slice(0,10);
         if(d<daIni || d>daFin) return;
         // Residuo considerando compensazioni note credito
@@ -4157,23 +4159,24 @@ async function riconciliaFatturaProv(fId, dove){
   if(!f){ toast('Fattura non trovata'); return; }
   var oggi = new Date().toISOString().slice(0,10);
   var payload = {stato:'pagata', data_pagamento:oggi};
-  if(dove==='banca') payload.riconciliato_banca = -1; // flag "riconciliata banca ma senza id movimento"
-  
+  if(dove==='banca'){ payload.riconciliato_banca = -1; payload.riconciliato_cassa = null; }
+  else if(dove==='cassa'){ payload.riconciliato_cassa = true; payload.riconciliato_banca = null; }
   try {
     await sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify(payload)});
     f.stato = 'pagata';
     f.data_pagamento = oggi;
-    if(dove==='banca') f.riconciliato_banca = -1;
+    if(dove==='banca'){ f.riconciliato_banca = -1; f.riconciliato_cassa = null; }
+    else if(dove==='cassa'){ f.riconciliato_cassa = true; f.riconciliato_banca = null; }
     if(typeof save==='function') save(fatture);
     toast('Fattura spostata in '+dove);
     caricaProvvisoria();
     if(typeof renderLista==='function') renderLista();
     if(typeof renderAlerts==='function') renderAlerts();
   } catch(e){
-    // Fallback locale
     f.stato = 'pagata';
     f.data_pagamento = oggi;
-    if(dove==='banca') f.riconciliato_banca = -1;
+    if(dove==='banca'){ f.riconciliato_banca = -1; f.riconciliato_cassa = null; }
+    else if(dove==='cassa'){ f.riconciliato_cassa = true; f.riconciliato_banca = null; }
     if(typeof save==='function') save(fatture);
     toast('Salvato in memoria');
     caricaProvvisoria();
@@ -4343,7 +4346,7 @@ async function riconciliaAutomatica(){
       
       if(match){
         try {
-          await sbFetch('fatture?id=eq.'+match.id, {method:'PATCH', body:JSON.stringify({stato:'pagata', riconciliato_banca:m.id, data_pagamento:data})});
+          await sbFetch('fatture?id=eq.'+match.id, {method:'PATCH', body:JSON.stringify({stato:'pagata', riconciliato_banca:m.id, riconciliato_cassa:null, data_pagamento:data})});
           match.stato = 'pagata';
           count++;
         } catch(e){}
@@ -4441,12 +4444,13 @@ async function caricaCassa(){
     // Uso le fatture già in memoria (più affidabile)
     if(typeof fatture !== 'undefined' && fatture){
       fatture.forEach(function(f){
-        // Regola: una fattura rientra in CASSA solo se contanti + NON riconciliata banca
+        // NUOVA REGOLA: cassa richiede conferma esplicita (riconciliato_cassa)
         if(f.pagamento!=='contanti') return;
         if(!f.importo || f.importo<=0) return;
         if(!f.fornitore) return;
         if(f.document_type==='TD04') return;
         if(f.riconciliato_banca) return;
+        if(!f.riconciliato_cassa) return;
         var dPag = (f.data_pagamento || f.data || '').slice(0,10);
         if(dPag>=daIni && dPag<=daFin){
           movimenti.push({

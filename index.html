@@ -2983,6 +2983,24 @@ async function caricaCorrispettivi(){
   td.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';ld.innerHTML='';
   try{var r=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);if(!r.ok)throw new Error('HTTP '+r.status);
   var data=await r.json();var li=Array.isArray(data)?data:(data.items||[]);
+  // MERGE inserimenti manuali (da localStorage + DB)
+  try {
+    const manuali = window._corrManuali || [];
+    manuali.forEach(function(m){
+      // Se c'è già una riga XML con stessa data, NON duplicare (il manuale diventa solo confronto)
+      const exists = li.some(function(x){return x.data===m.data_corrispettivo;});
+      if(!exists){
+        li.push({
+          data: m.data_corrispettivo,
+          totale: m.totale || ((m.contanti||0)+(m.pos||0)),
+          pagato_contanti: m.contanti || 0,
+          pagato_elettronico: m.pos || 0,
+          note: m.note || '',
+          _manuale: true
+        });
+      }
+    });
+  } catch(e){ console.warn('merge manuali fallito:', e); }
   if(!li.length){td.innerHTML='<div class="empty"><p>Nessun corrispettivo</p></div>';return;}
   li.sort(function(a,b){return(b.data||'').localeCompare(a.data||'');});
   var tt=0,tc=0,te=0;li.forEach(function(c){tt+=parseFloat(c.totale||0);tc+=parseFloat(c.pagato_contanti||0);te+=parseFloat(c.pagato_elettronico||0);});
@@ -3026,7 +3044,21 @@ async function caricaCorrispettivi(){
         });
       });
     }
-  } catch(e){ console.warn('coerenza check fallita:', e); }toast(li.length+' corrispettivi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
+  } catch(e){ console.warn('coerenza check fallita:', e); }toast(li.length+' corrispettivi');}catch(e){
+    // Se fetch XML fallisce, mostra comunque i manuali
+    const manuali = window._corrManuali || [];
+    if(manuali.length){
+      const li = manuali.map(function(m){return {data:m.data_corrispettivo,totale:m.totale||((m.contanti||0)+(m.pos||0)),pagato_contanti:m.contanti||0,pagato_elettronico:m.pos||0,note:m.note||'',_manuale:true};});
+      li.sort(function(a,b){return(b.data||'').localeCompare(a.data||'');});
+      var tt=0,tc=0,te=0;li.forEach(function(c){tt+=parseFloat(c.totale||0);tc+=parseFloat(c.pagato_contanti||0);te+=parseFloat(c.pagato_elettronico||0);});
+      var fe=function(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+      td.innerHTML='<div style="background:linear-gradient(135deg,#007AFF,#5856D6);border-radius:14px;padding:16px;color:#fff;margin-bottom:10px"><div style="font-size:11px;opacity:.7">TOTALE (solo manuali)</div><div style="font-size:28px;font-weight:800;margin-top:4px">'+fe(tt)+'</div><div style="font-size:12px;opacity:.8">'+li.length+' giornate</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:var(--green-light);border-radius:10px;padding:14px"><div style="font-size:10px;font-weight:600;color:#1a7a3a">CONTANTI</div><div style="font-size:20px;font-weight:800;color:#1a7a3a;margin-top:4px">'+fe(tc)+'</div></div><div style="background:#E3F2FD;border-radius:10px;padding:14px"><div style="font-size:10px;font-weight:600;color:var(--blue)">POS</div><div style="font-size:20px;font-weight:800;color:var(--blue);margin-top:4px">'+fe(te)+'</div></div></div>';
+      var h='';li.forEach(function(c){var df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'}):'—';h+='<div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:relative"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><div style="font-weight:700;font-size:14px">'+df+' <span style="background:#FFF4E0;color:#B45309;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:4px">MANUALE</span></div><div style="font-size:17px;font-weight:800">'+fe(c.totale)+'</div></div><div style="font-size:12px;color:var(--ink3)">&#128181; '+fe(c.pagato_contanti)+' &middot; &#128179; '+fe(c.pagato_elettronico)+'</div>'+(c.note?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;font-style:italic">'+esc(c.note)+'</div>':'')+'</div>';});
+      ld.innerHTML=h;
+    } else {
+      td.innerHTML='<div style="background:#FFF4E0;border-radius:10px;padding:14px;color:#B45309;font-size:13px;text-align:center">⚠️ API XML non disponibile. Nessun inserimento manuale per questo anno.</div>';
+    }
+  }
 }
 async function calcolaIVA(){
   var anno=(document.getElementById('ivaAnno').value||'').trim();if(!anno){toast('Anno');return;}
@@ -3191,28 +3223,26 @@ async function salvaCorrManuale(){
     tipo:'manuale',
     inserito_il:new Date().toISOString()
   };
+  // Salva SEMPRE in localStorage (copia sicura)
+  const key='corr_manuali';
+  const list=JSON.parse(localStorage.getItem(key)||'[]');
+  list.push(rec);
+  localStorage.setItem(key,JSON.stringify(list));
+  // Prova anche a salvare nel DB
   try{
-    const ok=await sbFetch('corrispettivi_manuali',{method:'POST',body:JSON.stringify(rec)});
-    toast('✅ Giornata salvata: '+'\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
-    document.getElementById('corrManData').value='';
-    document.getElementById('corrManContanti').value='';
-    document.getElementById('corrManPos').value='';
-    document.getElementById('corrManNote').value='';
-    corrCalcTot();
-    caricaCorrispettivi();
+    await sbFetch('corrispettivi_manuali',{method:'POST',body:JSON.stringify(rec)});
+    toast('✅ Salvato: '+'\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
   }catch(e){
-    // Fallback: salva in localStorage
-    const key='corr_manuali';
-    const list=JSON.parse(localStorage.getItem(key)||'[]');
-    list.push(rec);
-    localStorage.setItem(key,JSON.stringify(list));
     toast('✅ Salvato localmente (DB offline)');
-    document.getElementById('corrManData').value='';
-    document.getElementById('corrManContanti').value='';
-    document.getElementById('corrManPos').value='';
-    document.getElementById('corrManNote').value='';
-    corrCalcTot();
   }
+  // Reset form
+  document.getElementById('corrManData').value=new Date().toISOString().slice(0,10);
+  document.getElementById('corrManContanti').value='';
+  document.getElementById('corrManPos').value='';
+  document.getElementById('corrManNote').value='';
+  corrCalcTot();
+  // Ricarica lista dopo un piccolo delay
+  setTimeout(function(){ if(typeof caricaCorrispettivi==='function') caricaCorrispettivi(); }, 200);
 }
 
 // Auto-data odierna quando si apre la view

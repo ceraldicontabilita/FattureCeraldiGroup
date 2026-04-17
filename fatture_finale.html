@@ -1054,6 +1054,27 @@ body{padding-bottom:92px !important}
 <div id="bancaLista"></div>
 </div>
 
+<!-- FORNITORI -->
+<div class="view" id="view-fornitori" style="padding:16px;padding-bottom:100px">
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
+<p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Fornitori</p>
+<p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Anagrafica · IBAN / PEC · Storico acquisti</p>
+
+<div style="position:relative;margin-bottom:12px">
+  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink3)">&#128269;</span>
+  <input type="text" id="fornSearch" placeholder="Cerca fornitore..." oninput="renderFornitori()" style="width:100%;padding:10px 10px 10px 36px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+</div>
+<div id="fornStats" style="margin-bottom:12px"></div>
+<div id="fornLista"></div>
+</div>
+
+<!-- MODAL DETTAGLIO FORNITORE -->
+<div id="fornDetailMo" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div id="fornDetailSheet" style="background:var(--bg);border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)"></div>
+</div>
+
+
+
 
 
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
@@ -1110,6 +1131,10 @@ body{padding-bottom:92px !important}
   <button class="tab-item" onclick="goTab('cassa',this)">
     <span class="tab-ico">&#128176;</span>
     <span class="tab-lbl">Cassa</span>
+  </button>
+  <button class="tab-item" onclick="goTab('fornitori',this)">
+    <span class="tab-ico">&#128101;</span>
+    <span class="tab-lbl">Fornit.</span>
   </button>
   <button class="tab-item" onclick="goTab('banca',this)">
     <span class="tab-ico">&#127974;</span>
@@ -1337,6 +1362,7 @@ function goTab(tab,btn){
   }
   if(tab==='cassa' && typeof caricaCassa==='function') caricaCassa();
   if(tab==='banca' && typeof caricaBanca==='function') caricaBanca();
+  if(tab==='fornitori' && typeof renderFornitori==='function') renderFornitori();
   if(tab==='iva' && typeof calcolaIVA==='function') calcolaIVA();
 }
 
@@ -3606,6 +3632,280 @@ async function caricaCachePOSBanca(anno){
 
 
 
+
+// ══ FORNITORI — ANAGRAFICA + STORICO ACQUISTI ══
+// Cache di fornitori con dati derivati da fatture
+window._fornCache = null;
+
+function buildFornCache(){
+  var cache = {};
+  // Prendo nomi da fornitori Supabase + dedotti dalle fatture
+  if(typeof fornitori!=='undefined' && fornitori){
+    (Array.isArray(fornitori)?fornitori:[]).forEach(function(n){
+      if(n && !cache[n]) cache[n] = {nome:n, fatture:[], totale:0, pagato:0, da_pagare:0, ultima_data:'', piva:'', pec:'', iban:'', indirizzo:'', metodo_default:''};
+    });
+  }
+  // Aggrego dati dalle fatture
+  if(typeof fatture!=='undefined' && fatture){
+    fatture.forEach(function(f){
+      if(!f.fornitore) return;
+      if(!cache[f.fornitore]){
+        cache[f.fornitore] = {nome:f.fornitore, fatture:[], totale:0, pagato:0, da_pagare:0, ultima_data:'', piva:'', pec:'', iban:'', indirizzo:'', metodo_default:''};
+      }
+      var c = cache[f.fornitore];
+      c.fatture.push(f);
+      var imp = parseFloat(f.importo||0);
+      if(f.document_type==='TD04') imp = -imp;
+      c.totale += imp;
+      if(f.stato==='pagata') c.pagato += Math.abs(imp);
+      else c.da_pagare += Math.max(0, imp);
+      if((f.data||'') > c.ultima_data) c.ultima_data = f.data||'';
+      // Propaga anagrafica dalla fattura se assente
+      if(!c.piva && f.fornitore_piva) c.piva = f.fornitore_piva;
+      if(!c.piva && f.cedente_piva) c.piva = f.cedente_piva;
+      if(!c.pec && f.fornitore_pec) c.pec = f.fornitore_pec;
+      if(!c.indirizzo && f.cedente_indirizzo) c.indirizzo = f.cedente_indirizzo;
+      if(!c.metodo_default && f.pagamento) c.metodo_default = f.pagamento;
+    });
+  }
+  return cache;
+}
+
+async function loadFornAnagrafica(){
+  // Carico anagrafica estesa da Supabase (campi aggiuntivi se esistono)
+  try {
+    var rows = await sbFetch('fornitori?select=*');
+    if(!Array.isArray(rows)) return;
+    if(!window._fornCache) window._fornCache = buildFornCache();
+    rows.forEach(function(r){
+      var nome = r.nome;
+      if(!nome || !window._fornCache[nome]) return;
+      var c = window._fornCache[nome];
+      if(r.piva) c.piva = r.piva;
+      if(r.pec) c.pec = r.pec;
+      if(r.iban) c.iban = r.iban;
+      if(r.indirizzo) c.indirizzo = r.indirizzo;
+      if(r.metodo_default) c.metodo_default = r.metodo_default;
+      if(r.note) c.note = r.note;
+    });
+  } catch(e){}
+}
+
+async function renderFornitori(){
+  window._fornCache = buildFornCache();
+  await loadFornAnagrafica();
+  
+  var listEl = document.getElementById('fornLista');
+  var statsEl = document.getElementById('fornStats');
+  var searchEl = document.getElementById('fornSearch');
+  if(!listEl) return;
+  
+  var q = (searchEl && searchEl.value || '').toLowerCase().trim();
+  var all = Object.values(window._fornCache);
+  var filtered = q ? all.filter(function(c){ return (c.nome||'').toLowerCase().indexOf(q)>=0; }) : all;
+  
+  // Ordina per totale decrescente
+  filtered.sort(function(a,b){ return Math.abs(b.totale||0) - Math.abs(a.totale||0); });
+  
+  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  
+  // Stats globali
+  var totForn = all.length;
+  var totAcquisti = all.reduce(function(s,c){return s + Math.max(0, c.totale||0);}, 0);
+  var totDaPagare = all.reduce(function(s,c){return s + (c.da_pagare||0);}, 0);
+  if(statsEl){
+    statsEl.innerHTML = 
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'+
+        '<div style="background:var(--surface);border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04);text-align:center">'+
+          '<div style="font-size:9px;font-weight:700;color:var(--ink3);letter-spacing:.4px">FORNITORI</div>'+
+          '<div style="font-size:20px;font-weight:800;margin-top:2px">'+totForn+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04);text-align:center">'+
+          '<div style="font-size:9px;font-weight:700;color:var(--ink3);letter-spacing:.4px">TOT. ACQUISTI</div>'+
+          '<div style="font-size:14px;font-weight:800;margin-top:2px">\u20ac '+fe(totAcquisti)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--red-light);border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04);text-align:center">'+
+          '<div style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:.4px">DA PAGARE</div>'+
+          '<div style="font-size:14px;font-weight:800;color:var(--red);margin-top:2px">\u20ac '+fe(totDaPagare)+'</div>'+
+        '</div>'+
+      '</div>';
+  }
+  
+  if(!filtered.length){
+    listEl.innerHTML = '<div class="empty" style="padding:30px 16px;text-align:center;color:var(--ink3)">Nessun fornitore trovato</div>';
+    return;
+  }
+  
+  var h = '';
+  filtered.forEach(function(c){
+    var alerts = [];
+    if(c.metodo_default==='bonifico' && !c.iban) alerts.push('IBAN');
+    if(!c.piva && c.fatture && c.fatture.length) alerts.push('P.IVA');
+    if(!c.metodo_default || c.metodo_default==='') alerts.push('METODO');
+    var badge = alerts.length ? '<span style="background:#FFE8E8;color:#b00020;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px">MANCA '+alerts.join(' ')+'</span>' : '';
+    var ultDataFmt = c.ultima_data ? new Date(c.ultima_data+'T12:00:00').toLocaleDateString('it-IT') : '\u2014';
+    var iconaMetodo = {contanti:'&#128181;', bonifico:'&#127974;', assegno:'&#128221;'}[c.metodo_default] || '&#10067;';
+    
+    h += '<div onclick="apriDettFornitore(\''+(c.nome||'').replace(/\x27/g,"\\'")+'\')" style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:14px;font-weight:700;color:var(--ink)">'+esc(c.nome)+badge+'</div>'+
+          '<div style="font-size:11px;color:var(--ink3);margin-top:3px">'+iconaMetodo+' '+(c.metodo_default||'—')+' \u00b7 '+c.fatture.length+' fatt. \u00b7 ult. '+ultDataFmt+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:15px;font-weight:800;color:var(--ink)">\u20ac '+fe(Math.max(0,c.totale))+'</div>'+
+          (c.da_pagare>0 ? '<div style="font-size:10px;color:var(--red);font-weight:700">da pag. \u20ac '+fe(c.da_pagare)+'</div>' : '')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  });
+  listEl.innerHTML = h;
+}
+
+function apriDettFornitore(nome){
+  if(!window._fornCache || !window._fornCache[nome]){
+    toast('Fornitore non trovato');
+    return;
+  }
+  var c = window._fornCache[nome];
+  var mo = document.getElementById('fornDetailMo');
+  var sheet = document.getElementById('fornDetailSheet');
+  if(!mo || !sheet) return;
+  
+  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  
+  // Storico fatture (ordinate per data desc)
+  var fatts = (c.fatture||[]).slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+  var storicoHtml = '';
+  fatts.slice(0,50).forEach(function(f){
+    var dataFmt = f.data ? new Date(f.data+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'}) : '';
+    var stColor = f.stato==='pagata' ? '#1a7a3a' : 'var(--red)';
+    var stLabel = f.stato==='pagata' ? 'Pagata' : 'Da pagare';
+    var segno = f.document_type==='TD04' ? '\u2212' : '';
+    var ncBadge = f.document_type==='TD04' ? '<span style="background:#FFE8E8;color:#b00020;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px">NC</span>' : '';
+    storicoHtml += '<div style="padding:8px 12px;border-bottom:1px solid var(--sep);display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:12px;font-weight:600">N. '+esc(f.numero||'—')+ncBadge+'</div>'+
+        '<div style="font-size:10px;color:var(--ink3)">'+dataFmt+' \u00b7 <span style="color:'+stColor+';font-weight:600">'+stLabel+'</span>'+(f.pagamento?' \u00b7 '+f.pagamento:'')+'</div>'+
+      '</div>'+
+      '<div style="font-size:13px;font-weight:700">'+segno+'\u20ac '+fe(Math.abs(f.importo||0))+'</div>'+
+    '</div>';
+  });
+  if(fatts.length>50) storicoHtml += '<div style="padding:8px 12px;text-align:center;color:var(--ink3);font-size:11px">... e altre '+(fatts.length-50)+' fatture</div>';
+  
+  sheet.innerHTML = 
+    '<div style="padding:16px 18px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.nome)+'</div>'+
+        '<div style="font-size:11px;color:var(--ink3)">'+c.fatture.length+' fatture \u00b7 Tot. \u20ac '+fe(Math.max(0,c.totale))+(c.da_pagare>0?' \u00b7 Da pag. \u20ac '+fe(c.da_pagare):'')+'</div>'+
+      '</div>'+
+      '<button onclick="document.getElementById(\'fornDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px">\u00d7</button>'+
+    '</div>'+
+    // Tabs: Anagrafica / Storico
+    '<div style="display:flex;border-bottom:1px solid var(--sep);background:var(--surface2)">'+
+      '<button onclick="switchFornTab(\'anag\')" id="fornTabAnag" class="fornTabBtn" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--blue);border-bottom:2px solid var(--blue);font-family:inherit">Anagrafica</button>'+
+      '<button onclick="switchFornTab(\'stor\')" id="fornTabStor" class="fornTabBtn" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;font-family:inherit">Storico ('+fatts.length+')</button>'+
+    '</div>'+
+    // Contenuti
+    '<div id="fornContentAnag" style="overflow-y:auto;flex:1;padding:16px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">P.IVA</label>'+
+      '<input type="text" id="fdPiva" value="'+esc(c.piva||'')+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">PEC</label>'+
+      '<input type="email" id="fdPec" value="'+esc(c.pec||'')+'" placeholder="pec@esempio.it" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">IBAN</label>'+
+      '<input type="text" id="fdIban" value="'+esc(c.iban||'')+'" placeholder="IT00X0000000000000000000000" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;font-family:monospace;box-sizing:border-box;margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Indirizzo</label>'+
+      '<input type="text" id="fdIndirizzo" value="'+esc(c.indirizzo||'')+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Metodo pagamento preferito</label>'+
+      '<select id="fdMetodo" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:10px">'+
+        '<option value="">— Non definito —</option>'+
+        '<option value="contanti"'+(c.metodo_default==='contanti'?' selected':'')+'>Contanti</option>'+
+        '<option value="bonifico"'+(c.metodo_default==='bonifico'?' selected':'')+'>Bonifico</option>'+
+        '<option value="assegno"'+(c.metodo_default==='assegno'?' selected':'')+'>Assegno</option>'+
+      '</select>'+
+      '<label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Note</label>'+
+      '<textarea id="fdNote" rows="2" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:14px;resize:vertical">'+esc(c.note||'')+'</textarea>'+
+      '<button class="btn btn-p" onclick="salvaFornitore(\''+(c.nome||'').replace(/\x27/g,"\\'")+'\')" style="width:100%;padding:12px;font-size:14px">Salva anagrafica</button>'+
+    '</div>'+
+    '<div id="fornContentStor" style="display:none;overflow-y:auto;flex:1">'+
+      (storicoHtml || '<div style="padding:30px;text-align:center;color:var(--ink3)">Nessuna fattura</div>')+
+    '</div>';
+  
+  mo.style.display = 'flex';
+  sheet.dataset.fornNome = c.nome;
+}
+
+function switchFornTab(which){
+  var anag = document.getElementById('fornContentAnag');
+  var stor = document.getElementById('fornContentStor');
+  var btnA = document.getElementById('fornTabAnag');
+  var btnS = document.getElementById('fornTabStor');
+  if(!anag||!stor||!btnA||!btnS) return;
+  if(which==='stor'){
+    anag.style.display='none'; stor.style.display='block';
+    btnA.style.color='var(--ink3)'; btnA.style.borderBottomColor='transparent';
+    btnS.style.color='var(--blue)'; btnS.style.borderBottomColor='var(--blue)';
+  } else {
+    anag.style.display='block'; stor.style.display='none';
+    btnS.style.color='var(--ink3)'; btnS.style.borderBottomColor='transparent';
+    btnA.style.color='var(--blue)'; btnA.style.borderBottomColor='var(--blue)';
+  }
+}
+
+async function salvaFornitore(nome){
+  var piva = document.getElementById('fdPiva').value.trim();
+  var pec = document.getElementById('fdPec').value.trim();
+  var iban = document.getElementById('fdIban').value.trim().replace(/\s/g,'').toUpperCase();
+  var indirizzo = document.getElementById('fdIndirizzo').value.trim();
+  var metodo = document.getElementById('fdMetodo').value;
+  var note = document.getElementById('fdNote').value.trim();
+  
+  // Validazione IBAN base
+  if(iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)){
+    if(!confirm('IBAN non sembra valido. Salvo comunque?')) return;
+  }
+  
+  var payload = {
+    piva: piva || null,
+    pec: pec || null,
+    iban: iban || null,
+    indirizzo: indirizzo || null,
+    metodo_default: metodo || null,
+    note: note || null
+  };
+  
+  try {
+    // Provo PATCH
+    var existing = await sbFetch('fornitori?nome=eq.'+encodeURIComponent(nome)+'&select=nome');
+    if(existing && existing.length){
+      await sbFetch('fornitori?nome=eq.'+encodeURIComponent(nome), {method:'PATCH', body:JSON.stringify(payload)});
+    } else {
+      payload.nome = nome;
+      await sbFetch('fornitori', {method:'POST', body:JSON.stringify(payload)});
+    }
+    // Aggiorno cache locale
+    if(window._fornCache && window._fornCache[nome]){
+      Object.assign(window._fornCache[nome], {piva:piva, pec:pec, iban:iban, indirizzo:indirizzo, metodo_default:metodo, note:note});
+    }
+    toast('Anagrafica salvata');
+    document.getElementById('fornDetailMo').style.display='none';
+    renderFornitori();
+    if(typeof renderAlerts==='function') renderAlerts();
+  } catch(e){
+    // Fallback locale
+    if(window._fornCache && window._fornCache[nome]){
+      Object.assign(window._fornCache[nome], {piva:piva, pec:pec, iban:iban, indirizzo:indirizzo, metodo_default:metodo, note:note});
+    }
+    if(e.message && e.message.indexOf('column')>=0){
+      toast('Tabella Supabase da estendere (piva/pec/iban)');
+    } else {
+      toast('Salvato in memoria');
+    }
+    document.getElementById('fornDetailMo').style.display='none';
+    renderFornitori();
+  }
+}
+
 // ══ PRIMA NOTA BANCA + RICONCILIAZIONE ══
 async function caricaBanca(){
   var anno = (document.getElementById('bancaAnno').value||'').trim();
@@ -4408,6 +4708,27 @@ function calcolaAlerts(){
   
   // G) Fornitori nuovi (stato non verificato) — se campo esiste
   // Al momento i fornitori sono solo nome, non c'è stato — skip
+  
+  // H) Fornitori con metodo bonifico senza IBAN
+  try {
+    var cache = (typeof window._fornCache === 'object' && window._fornCache) ? window._fornCache : buildFornCache();
+    var fornSenzaIban = Object.values(cache).filter(function(c){
+      return c.metodo_default === 'bonifico' && !c.iban && c.fatture && c.fatture.length;
+    });
+    if(fornSenzaIban.length){
+      list.push({
+        sev:'media',
+        id:'iban_mancante',
+        icon:'&#127974;',
+        titolo:'Fornitori bonifico senza IBAN',
+        desc:fornSenzaIban.length+' fornitori con pagamento bonifico ma IBAN non impostato',
+        items:fornSenzaIban.map(function(c){
+          return {id:'forn_'+c.nome, fornitore:c.nome, importo:c.da_pagare, numero:c.fatture.length+' fatt.', data:c.ultima_data, _forn_nome:c.nome};
+        }),
+        azione:'apriForn'
+      });
+    }
+  } catch(e){}
   
   return list;
 }

@@ -4441,19 +4441,23 @@ async function caricaCassa(){
     // Uso le fatture già in memoria (più affidabile)
     if(typeof fatture !== 'undefined' && fatture){
       fatture.forEach(function(f){
-        if(f.pagamento==='contanti' && f.importo>0 && f.fornitore){
-          var d = (f.data||'').slice(0,10);
-          if(d>=daIni && d<=daFin){
-            movimenti.push({
-              data:d,
-              tipo:'uscita',
-              importo:f.importo,
-              categoria:'fattura_contanti',
-              descrizione:esc(f.fornitore) + (f.numero?' \u00b7 N.'+esc(f.numero):''),
-              origine:'fattura',
-              ref_id:f.id
-            });
-          }
+        // Regola: una fattura rientra in CASSA solo se contanti + NON riconciliata banca
+        if(f.pagamento!=='contanti') return;
+        if(!f.importo || f.importo<=0) return;
+        if(!f.fornitore) return;
+        if(f.document_type==='TD04') return;
+        if(f.riconciliato_banca) return;
+        var dPag = (f.data_pagamento || f.data || '').slice(0,10);
+        if(dPag>=daIni && dPag<=daFin){
+          movimenti.push({
+            data:dPag,
+            tipo:'uscita',
+            importo:f.importo,
+            categoria:'fattura_contanti',
+            descrizione:esc(f.fornitore) + (f.numero?' \u00b7 N.'+esc(f.numero):''),
+            origine:'fattura',
+            ref_id:f.id
+          });
         }
       });
     }

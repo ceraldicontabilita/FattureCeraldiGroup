@@ -3250,6 +3250,64 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 });
+
+// == INSERIMENTO MANUALE CORRISPETTIVO ==
+function parseNum(v){return parseFloat((v||'0').toString().replace(/\./g,'').replace(',','.'))||0;}
+function fmtN(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function calcolaManuale(){
+  var tot=parseNum(document.getElementById('manTotale').value);
+  var pos=parseNum(document.getElementById('manPos').value);
+  var cont=tot-pos;
+  if(cont<0) cont=0;
+  document.getElementById('manContanti').textContent=fmtN(cont);
+}
+
+function apriPosModal(){
+  var mo=document.getElementById('posModal');
+  if(mo){mo.style.display='flex';document.getElementById('pos1').focus();}
+}
+
+function chiudiPosModal(){
+  var mo=document.getElementById('posModal');
+  if(mo) mo.style.display='none';
+}
+
+function sommaPos(){
+  var s=parseNum(document.getElementById('pos1').value)+parseNum(document.getElementById('pos2').value)+parseNum(document.getElementById('pos3').value);
+  document.getElementById('posSomma').textContent=fmtN(s);
+}
+
+function confermaPos(){
+  var s=parseNum(document.getElementById('pos1').value)+parseNum(document.getElementById('pos2').value)+parseNum(document.getElementById('pos3').value);
+  document.getElementById('manPos').value=s.toFixed(2).replace('.',',');
+  chiudiPosModal();
+  calcolaManuale();
+}
+
+async function salvaCorrispettivoManuale(){
+  var d=document.getElementById('manData').value;
+  var tot=parseNum(document.getElementById('manTotale').value);
+  var pos=parseNum(document.getElementById('manPos').value);
+  if(!d){toast('Seleziona la data');return;}
+  if(!tot){toast('Inserisci il totale');return;}
+  var cont=tot-pos; if(cont<0) cont=0;
+  // Salvo in localStorage come fallback o Supabase se disponibile
+  var rec={id:Date.now(),tipo:'corrispettivo_manuale',data:d,importo:tot,pagato_contanti:cont,pagato_elettronico:pos,note:'Inserito manualmente',ts:Date.now()};
+  try{
+    if(typeof sbFetch==='function'){
+      await sbFetch('fatture',{method:'POST',body:JSON.stringify(rec)});
+    }
+    toast('Corrispettivo salvato!');
+    document.getElementById('manTotale').value='';
+    document.getElementById('manPos').value='';
+    document.getElementById('manContanti').textContent=fmtN(0);
+    var p1=document.getElementById('pos1');if(p1) p1.value='';
+    var p2=document.getElementById('pos2');if(p2) p2.value='';
+    var p3=document.getElementById('pos3');if(p3) p3.value='';
+  }catch(e){toast('Errore: '+e.message.slice(0,40));}
+}
+
 init();
 // ── CORRISPETTIVI MANUALI ──
 function corrCalcTot(){

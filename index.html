@@ -3081,15 +3081,28 @@ async function caricaCorrispettivi(){
     // Badge coerenza se c'è riferimento XML
     let badge='';
     if(isMan && c._xml_ref){
+      const totXml=parseFloat(c._xml_ref.totale||0);
+      const totMan=parseFloat(c.totale||0);
+      const dTot=totXml-totMan;
       const dP=parseFloat(c._xml_ref.pagato_elettronico||0)-parseFloat(c.pagato_elettronico||0);
       const dC=parseFloat(c._xml_ref.pagato_contanti||0)-parseFloat(c.pagato_contanti||0);
-      const parts=[];
-      if(Math.abs(dP)>0.01) parts.push('POS '+(dP>0?'+':'')+dP.toFixed(2)+'\u20ac');
-      if(Math.abs(dC)>0.01) parts.push('Contanti '+(dC>0?'+':'')+dC.toFixed(2)+'\u20ac');
-      if(parts.length){
-        badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:8px;border-radius:8px;font-size:12px;color:#B45309;font-weight:600">\u26a0 Scostamento registratore: '+parts.join(' \u00b7 ')+'</div>';
+      const coerenteTot=Math.abs(dTot)<0.01;
+      const coerenteTutto=coerenteTot && Math.abs(dP)<0.01 && Math.abs(dC)<0.01;
+      const fmtD=function(n){return (n>0?'+':'')+n.toFixed(2)+'\u20ac';};
+      if(coerenteTutto){
+        badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:10px;margin-top:8px;border-radius:8px;font-size:12px;color:#1a7a3a">'+
+          '<div style="font-weight:700;margin-bottom:2px">\u2713 COERENZA POST-FISCALE OK</div>'+
+          '<div style="font-size:11px;opacity:.85">Chiusura manuale = Registratore telematico: '+fe(totMan)+'</div>'+
+          '</div>';
       } else {
-        badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:6px 10px;margin-top:8px;border-radius:8px;font-size:11px;color:#1a7a3a;font-weight:600">\u2713 Coerente con registratore telematico</div>';
+        const parts=[];
+        if(Math.abs(dTot)>0.01) parts.push('<div><b>Totale:</b> manuale '+fe(totMan)+' vs XML '+fe(totXml)+' <span style="color:#B45309">('+fmtD(dTot)+')</span></div>');
+        if(Math.abs(dC)>0.01) parts.push('<div>Contanti: '+fe(c.pagato_contanti)+' vs XML '+fe(c._xml_ref.pagato_contanti)+' <span style="color:#B45309">('+fmtD(dC)+')</span></div>');
+        if(Math.abs(dP)>0.01) parts.push('<div>POS: '+fe(c.pagato_elettronico)+' vs XML '+fe(c._xml_ref.pagato_elettronico)+' <span style="color:#B45309">('+fmtD(dP)+')</span></div>');
+        badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:10px;margin-top:8px;border-radius:8px;font-size:12px;color:#7a4a00">'+
+          '<div style="font-weight:700;margin-bottom:4px">\u26a0 SCOSTAMENTO POST-FISCALE</div>'+
+          parts.join('')+
+          '</div>';
       }
     }
     const actDel=isMan?'<button onclick="eliminaCorrManuale(\''+c.data+'\',event)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 8px">&#128465;</button>':'';
@@ -3106,6 +3119,7 @@ async function caricaCorrispettivi(){
       badge+
     '</div>';
   });
+  window._corrListaCache = li;
   ld.innerHTML=h;
 }
 
@@ -3373,7 +3387,7 @@ function apriModalManuale(){
     +'<div style="font-size:12px;color:var(--ink3);margin-bottom:14px">Verifica coerenza tra totale corrispettivo e somma incassi POS + contanti</div>'
     
     +'<label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Data</label>'
-    +'<input type="date" id="cmData" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:12px">'
+    +'<input type="date" id="cmData" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:12px" onchange="verificaXMLEsistente()">'
     
     +'<label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Totale corrispettivo (\u20ac)</label>'
     +'<input type="text" id="cmTotale" inputmode="decimal" placeholder="0,00" oninput="verificaCoerenzaPOS()" style="width:100%;padding:12px;border:1.5px solid var(--blue);border-radius:var(--radius-sm);font-size:18px;font-weight:700;background:var(--surface);box-sizing:border-box;margin-bottom:14px">'
@@ -3393,7 +3407,7 @@ function apriModalManuale(){
     +'<div id="cmPosTot" style="font-size:12px;color:var(--ink3);text-align:right">Totale POS: \u20ac 0,00</div>'
     +'</div>'
     
-    +'<div id="cmVerifica" style="padding:14px;border-radius:12px;text-align:center;margin-bottom:14px;background:var(--surface2);font-size:13px;color:var(--ink3)">Inserisci gli importi per verificare la coerenza</div>'
+    +'<div id="cmXmlAvviso" style="margin-bottom:10px;display:none"></div>'+'<div id="cmVerifica" style="padding:14px;border-radius:12px;text-align:center;margin-bottom:14px;background:var(--surface2);font-size:13px;color:var(--ink3)">Inserisci gli importi per verificare la coerenza</div>'
     
     +'<button class="btn btn-p" onclick="salvaCorrManuale()" style="width:100%;padding:12px">Salva corrispettivo</button>'
     +'</div>';
@@ -3404,6 +3418,29 @@ function apriModalManuale(){
 function parsePrice(s){
   if(!s) return 0;
   return parseFloat(s.toString().replace(/\./g,'').replace(',','.'))||0;
+}
+
+function verificaXMLEsistente(){
+  var dataEl=document.getElementById('cmData');
+  var box=document.getElementById('cmXmlAvviso');
+  if(!dataEl || !box) return;
+  var d=dataEl.value;
+  if(!d){ box.style.display='none'; return; }
+  // Cerca nei dati caricati se esiste già un record XML per quella data
+  try{
+    var existing=(typeof _corrListaCache!=='undefined' && _corrListaCache)?_corrListaCache.find(function(x){return x.data===d && (x.fonte||'')!=='manuale';}):null;
+    if(existing){
+      var fe=function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+      box.style.display='block';
+      box.innerHTML='<div style="background:#E3F2FD;border-left:3px solid var(--blue);padding:10px;border-radius:8px;font-size:12px;color:#0d47a1">'+
+        '<div style="font-weight:700;margin-bottom:3px">\u2139 Registratore telematico per '+new Date(d+'T12:00:00').toLocaleDateString('it-IT')+'</div>'+
+        '<div style="font-size:11px">Totale XML: \u20ac '+fe(existing.totale)+' (Contanti \u20ac '+fe(existing.pagato_contanti)+' \u00b7 POS \u20ac '+fe(existing.pagato_elettronico)+')</div>'+
+        '<div style="font-size:10px;opacity:.8;margin-top:2px">Se digiti un importo diverso vedrai lo scostamento post-fiscale</div>'+
+        '</div>';
+    } else {
+      box.style.display='none';
+    }
+  }catch(e){ box.style.display='none'; }
 }
 
 function verificaCoerenzaPOS(){

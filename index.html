@@ -17,7 +17,7 @@
   --shadow:0 2px 8px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:84px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:92px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .ios-header{background:rgba(242,242,247,.94);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep);padding:52px 20px 12px;position:sticky;top:0;z-index:100}
 .ios-header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
 .ios-header p{font-size:13px;color:var(--ink3);margin-top:1px}
@@ -287,36 +287,39 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 .tab-bar{
   position:fixed!important;
   bottom:0;left:0;right:0;
-  background:rgba(255,255,255,.85);
+  background:rgba(255,255,255,.92);
   backdrop-filter:saturate(180%) blur(24px);
   -webkit-backdrop-filter:saturate(180%) blur(24px);
   border-top:1px solid rgba(0,0,0,.06);
   display:flex!important;
   flex-wrap:nowrap;
-  padding:10px 4px env(safe-area-inset-bottom,20px);
+  padding:14px 4px env(safe-area-inset-bottom,24px);
   z-index:500;
-  box-shadow:0 -2px 20px rgba(0,0,0,.04);
+  box-shadow:0 -4px 24px rgba(0,0,0,.06);
+  min-height:78px;
 }
 .tab-item{
   flex:1;
   min-width:0;
-  padding:6px 2px !important;
+  padding:8px 2px !important;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:3px;
+  justify-content:center;
+  gap:5px;
   border:none;
   background:transparent;
   cursor:pointer;
-  border-radius:10px;
+  border-radius:12px;
   transition:all .18s;
 }
 .tab-item:active{transform:scale(0.92)}
-.tab-ico{font-size:22px;line-height:1;filter:grayscale(.5);opacity:.6;transition:all .18s}
-.tab-lbl{font-size:10px !important;font-weight:600;color:var(--ink3);letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;transition:color .18s}
-.tab-item.active .tab-ico{filter:none;opacity:1;transform:translateY(-1px)}
-.tab-item.active .tab-lbl{color:var(--blue)}
-.tab-item.active{background:rgba(0,122,255,.08)}
+.tab-ico{font-size:30px!important;line-height:1;filter:grayscale(.3);opacity:.7;transition:all .18s}
+.tab-lbl{font-size:11px !important;font-weight:600;color:var(--ink3);letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;transition:color .18s}
+.tab-item.active .tab-ico{filter:none;opacity:1;transform:translateY(-2px) scale(1.05)}
+.tab-item.active .tab-lbl{color:var(--blue);font-weight:700}
+.tab-item.active{background:linear-gradient(180deg,rgba(0,122,255,.12),rgba(0,122,255,.04))}
+body{padding-bottom:92px !important}
 </style>
 
 <body>
@@ -930,9 +933,37 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 <div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px;overflow-x:hidden;max-width:100%">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm)"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
-<div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:100px">
+<div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:120px">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
-<p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
+<p class="stitle" style="font-size:22px;font-weight:700;margin-bottom:14px">Corrispettivi</p>
+
+<div style="background:var(--surface);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)">
+  <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px;display:flex;align-items:center;gap:6px">&#9998; INSERIMENTO MANUALE</div>
+  <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">DATA</label>
+    <input type="date" id="corrManData" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:14px;background:var(--surface);box-sizing:border-box"></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="flex:1"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">&#128181; CONTANTI</label>
+      <input type="text" id="corrManContanti" placeholder="0,00" inputmode="decimal" oninput="corrCalcTot()" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
+    <div style="flex:1"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">&#128179; POS</label>
+      <input type="text" id="corrManPos" placeholder="0,00" inputmode="decimal" oninput="corrCalcTot()" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
+  </div>
+  <div id="corrManTotRow" style="background:var(--blue-light);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:12px;font-weight:700;color:var(--blue)">TOTALE GIORNO</span>
+    <span id="corrManTot" style="font-size:18px;font-weight:800;color:var(--blue)">&#8364; 0,00</span>
+  </div>
+  <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">NOTE (opzionale)</label>
+    <input type="text" id="corrManNote" placeholder="Es. Festa, evento..." style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:14px;background:var(--surface);box-sizing:border-box"></div>
+  <button class="btn btn-p" onclick="salvaCorrManuale()" style="width:100%;padding:12px;font-size:15px;font-weight:700">&#128190; Salva giornata</button>
+</div>
+
+<div style="background:var(--surface);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)">
+  <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">&#128202; VISUALIZZA ANNO</div>
+  <div style="display:flex;gap:8px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div>
+</div>
+
+<div id="corrTotali" style="margin-bottom:14px"></div>
+<div id="corrLista"></div>
+</div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
@@ -951,7 +982,7 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
   </button>
   <button class="tab-item" onclick="goTab('scadenzario',this)" style="position:relative">
     <span class="tab-ico">&#9200;</span>
-    <span class="tab-lbl">Scadenze</span>
+    <span class="tab-lbl">Scad.</span>
     <span id="scadBadge" style="display:none;position:absolute;top:4px;right:18px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;line-height:18px;text-align:center"></span>
   </button>
   <button class="tab-item" onclick="goTab('corrispettivi',this)">
@@ -964,7 +995,7 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
   </button>
   <button class="tab-item" onclick="goTab('riepilogo',this)">
     <span class="tab-ico">&#128202;</span>
-    <span class="tab-lbl">Riepilogo</span>
+    <span class="tab-lbl">Riep.</span>
   </button>
 </nav>
 
@@ -1172,7 +1203,12 @@ function goTab(tab,btn){
   if(tab==='riepilogo') renderRiepilogo();
   if(tab==='scadenzario') renderScadenzario();
   if(tab==='assegni' && typeof caricaAssegniSalvati==='function') caricaAssegniSalvati();
-  if(tab==='corrispettivi' && typeof caricaCorrispettivi==='function') caricaCorrispettivi();
+  if(tab==='corrispettivi' && typeof caricaCorrispettivi==='function') {
+    caricaCorrispettivi();
+    const dataIn=document.getElementById('corrManData');
+    if(dataIn && !dataIn.value) dataIn.value=new Date().toISOString().slice(0,10);
+    if(typeof corrCalcTot==='function') corrCalcTot();
+  }
   if(tab==='iva' && typeof calcolaIVA==='function') calcolaIVA();
 }
 
@@ -2932,6 +2968,17 @@ async function compilaAssegno(id){
 }
 async function caricaCorrispettivi(){
   var anno=(document.getElementById('corrAnno').value||'').trim();if(!anno){toast('Anno');return;}
+  // Carica inserimenti manuali dello stesso anno per confronto
+  window._corrManuali = window._corrManuali || [];
+  try{
+    const local=JSON.parse(localStorage.getItem('corr_manuali')||'[]');
+    window._corrManuali = local.filter(m=>m.data_corrispettivo && m.data_corrispettivo.startsWith(anno));
+  }catch(e){window._corrManuali=[];}
+  try{
+    sbFetch('corrispettivi_manuali?data_corrispettivo=gte.'+anno+'-01-01&data_corrispettivo=lte.'+anno+'-12-31').then(function(r){
+      if(r&&r.length)window._corrManuali=r;
+    }).catch(function(){});
+  }catch(e){}
   var td=document.getElementById('corrTotali'),ld=document.getElementById('corrLista');
   td.innerHTML='<div style="text-align:center;padding:16px">Caricamento...</div>';ld.innerHTML='';
   try{var r=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);if(!r.ok)throw new Error('HTTP '+r.status);
@@ -2944,7 +2991,42 @@ async function caricaCorrispettivi(){
   var h='';li.forEach(function(c){var df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'}):'';var imp=parseFloat(c.totale_imponibile||0);var ivac=parseFloat(c.totale_iva||0);var ivaD='';
     if(c.riepilogo_iva&&c.riepilogo_iva.length){ivaD='<div style="margin-top:6px;font-size:11px">';c.riepilogo_iva.forEach(function(r){ivaD+='<div>IVA '+r.aliquota_iva+'%: imp. '+fe(parseFloat(r.ammontare||0))+' / iva '+fe(parseFloat(r.imposta||0))+'</div>';});ivaD+='</div>';}
     h+='<div style="background:var(--surface);border-radius:var(--radius);padding:12px 16px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer" onclick="var d=this.querySelector(\'.cd\');if(d)d.style.display=d.style.display===\'none\'?\'block\':\'none\'"><div style="display:flex;justify-content:space-between"><div><div style="font-size:14px;font-weight:600">'+df+'</div><div style="font-size:11px;color:var(--ink3)">'+(c.numero_documenti||0)+' scontrini</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700">'+fe(parseFloat(c.totale||0))+'</div><div style="font-size:11px;color:var(--ink3)">C:'+fe(parseFloat(c.pagato_contanti||0))+' E:'+fe(parseFloat(c.pagato_elettronico||0))+'</div></div></div><div class="cd" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--sep);font-size:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div>Imponibile: <b>'+fe(imp)+'</b></div><div>IVA: <b>'+fe(ivac)+'</b></div></div>'+ivaD+'</div></div>';});
-  ld.innerHTML=h;toast(li.length+' corrispettivi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
+  ld.innerHTML=h;
+  // POST-PROCESS: aggiungi badge coerenza per ogni giorno con inserimento manuale
+  try {
+    const manuali = window._corrManuali || [];
+    if(manuali.length){
+      li.forEach(function(c){
+        const m = manuali.find(function(x){return x.data_corrispettivo===c.data;});
+        if(!m) return;
+        const diffPos = parseFloat(c.pagato_elettronico||0) - parseFloat(m.pos||0);
+        const diffCont = parseFloat(c.pagato_contanti||0) - parseFloat(m.contanti||0);
+        let badge='';
+        if(Math.abs(diffPos)>0.01 || Math.abs(diffCont)>0.01){
+          const parts=[];
+          if(Math.abs(diffPos)>0.01) parts.push('POS '+(diffPos>0?'+':'')+diffPos.toFixed(2)+'€');
+          if(Math.abs(diffCont)>0.01) parts.push('Contanti '+(diffCont>0?'+':'')+diffCont.toFixed(2)+'€');
+          badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:6px;border-radius:8px;font-size:12px;color:#B45309;font-weight:600">⚠️ Scostamento vs manuale: '+parts.join(' · ')+'</div>';
+        } else {
+          badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:6px 10px;margin-top:6px;border-radius:8px;font-size:11px;color:#1a7a3a;font-weight:600">✓ Coerente con inserimento manuale</div>';
+        }
+        // Trova la card di questo giorno e appendi il badge
+        const cards = ld.querySelectorAll('[data-corr-date],.corr-card');
+        // Fallback: cerca per testo la data
+        const dateFmt = c.data ? new Date(c.data+'T12:00:00').toLocaleDateString('it-IT') : '';
+        ld.querySelectorAll('div').forEach(function(el){
+          if(el.getAttribute('data-coerenza-done')) return;
+          if(el.textContent && el.textContent.indexOf(dateFmt)===0 && !el.querySelector('[data-coerenza-badge]')){
+            const badgeEl = document.createElement('div');
+            badgeEl.setAttribute('data-coerenza-badge','1');
+            badgeEl.innerHTML=badge;
+            el.setAttribute('data-coerenza-done','1');
+            if(el.firstChild) el.appendChild(badgeEl.firstChild);
+          }
+        });
+      });
+    }
+  } catch(e){ console.warn('coerenza check fallita:', e); }toast(li.length+' corrispettivi');}catch(e){td.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
 }
 async function calcolaIVA(){
   var anno=(document.getElementById('ivaAnno').value||'').trim();if(!anno){toast('Anno');return;}
@@ -3084,6 +3166,58 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 });
-init();</script>
+init();
+// ── CORRISPETTIVI MANUALI ──
+function corrCalcTot(){
+  const c=parseFloat((document.getElementById('corrManContanti').value||'0').replace(',','.'))||0;
+  const p=parseFloat((document.getElementById('corrManPos').value||'0').replace(',','.'))||0;
+  const tot=c+p;
+  document.getElementById('corrManTot').textContent='\u20ac '+tot.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+async function salvaCorrManuale(){
+  const data=document.getElementById('corrManData').value;
+  const contanti=parseFloat((document.getElementById('corrManContanti').value||'0').replace(',','.'))||0;
+  const pos=parseFloat((document.getElementById('corrManPos').value||'0').replace(',','.'))||0;
+  const note=document.getElementById('corrManNote').value||'';
+  if(!data){toast('⚠️ Inserisci la data');return;}
+  if(contanti===0&&pos===0){toast('⚠️ Inserisci almeno un importo');return;}
+  const totale=contanti+pos;
+  const rec={
+    data_corrispettivo:data,
+    contanti:contanti,
+    pos:pos,
+    totale:totale,
+    note:note,
+    tipo:'manuale',
+    inserito_il:new Date().toISOString()
+  };
+  try{
+    const ok=await sbFetch('corrispettivi_manuali',{method:'POST',body:JSON.stringify(rec)});
+    toast('✅ Giornata salvata: '+'\u20ac '+totale.toLocaleString('it-IT',{minimumFractionDigits:2}));
+    document.getElementById('corrManData').value='';
+    document.getElementById('corrManContanti').value='';
+    document.getElementById('corrManPos').value='';
+    document.getElementById('corrManNote').value='';
+    corrCalcTot();
+    caricaCorrispettivi();
+  }catch(e){
+    // Fallback: salva in localStorage
+    const key='corr_manuali';
+    const list=JSON.parse(localStorage.getItem(key)||'[]');
+    list.push(rec);
+    localStorage.setItem(key,JSON.stringify(list));
+    toast('✅ Salvato localmente (DB offline)');
+    document.getElementById('corrManData').value='';
+    document.getElementById('corrManContanti').value='';
+    document.getElementById('corrManPos').value='';
+    document.getElementById('corrManNote').value='';
+    corrCalcTot();
+  }
+}
+
+// Auto-data odierna quando si apre la view
+const _origGoTab = typeof goTab !== 'undefined' ? goTab : null;
+
+</script>
 </body>
 </html>

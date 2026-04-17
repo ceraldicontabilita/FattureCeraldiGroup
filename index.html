@@ -3218,7 +3218,7 @@ function corrCalcTot(){
   const tot=c+p;
   document.getElementById('corrManTot').textContent='\u20ac '+tot.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-async async function salvaCorrManuale(){
+async function salvaCorrManuale(){
   const data=document.getElementById('corrManData').value;
   const contanti=parseFloat((document.getElementById('corrManContanti').value||'0').replace(',','.'))||0;
   const pos=parseFloat((document.getElementById('corrManPos').value||'0').replace(',','.'))||0;

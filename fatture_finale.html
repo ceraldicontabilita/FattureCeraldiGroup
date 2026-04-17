@@ -971,7 +971,7 @@ body{padding-bottom:92px !important}
   <div style="display:flex;gap:8px;margin-bottom:10px">
     <div style="flex:1"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">&#128181; CONTANTI</label>
       <input type="text" id="corrManContanti" placeholder="0,00" inputmode="decimal" oninput="corrCalcTot()" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
-    <div style="flex:1"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span>&#128179; POS</span><button type="button" onclick="apriPosSplit()" style="border:none;background:#2196F3;color:#fff;border-radius:99px;width:22px;height:22px;font-size:16px;font-weight:700;line-height:1;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center">+</button></label>
+    <div style="flex:1"><label style="font-size:11px;font-weight:600;color:var(--ink3);display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span>&#128179; POS</span></label>
       <input type="text" id="corrManPos" placeholder="0,00" inputmode="decimal" oninput="corrCalcTot()" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
   </div>
   <div id="corrManTotRow" style="background:var(--blue-light);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
@@ -991,24 +991,7 @@ body{padding-bottom:92px !important}
 <div id="corrTotali" style="margin-bottom:14px"></div>
 <div id="corrLista"></div>
 
-<!-- MINI MODAL POS SPLIT -->
-<div id="posSplitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
-  <div style="background:var(--bg);border-radius:20px;padding:20px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(0,0,0,.3)">
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px">Incassi POS</div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">Inserisci fino a 3 incassi, vengono sommati e inseriti nel campo POS</div>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><span style="font-size:13px;width:24px;color:var(--ink3);font-weight:600">1.</span><input type="text" id="posSp1" placeholder="0,00" inputmode="decimal" oninput="sommaPosSplit()" style="flex:1;padding:11px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><span style="font-size:13px;width:24px;color:var(--ink3);font-weight:600">2.</span><input type="text" id="posSp2" placeholder="0,00" inputmode="decimal" oninput="sommaPosSplit()" style="flex:1;padding:11px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center"><span style="font-size:13px;width:24px;color:var(--ink3);font-weight:600">3.</span><input type="text" id="posSp3" placeholder="0,00" inputmode="decimal" oninput="sommaPosSplit()" style="flex:1;padding:11px;border:1.5px solid var(--sep);border-radius:10px;font-size:15px;font-weight:600;background:var(--surface);box-sizing:border-box"></div>
-    <div style="background:var(--blue-light);border-radius:10px;padding:12px;text-align:center;margin-bottom:14px">
-      <div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.5px">SOMMA POS</div>
-      <div id="posSpSomma" style="font-size:22px;font-weight:800;color:var(--blue);margin-top:2px">&euro; 0,00</div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button type="button" onclick="chiudiPosSplit()" style="flex:1;padding:12px;border:1.5px solid var(--sep);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Annulla</button>
-      <button type="button" onclick="confermaPosSplit()" style="flex:1;padding:12px;border:none;border-radius:10px;background:var(--blue);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Conferma</button>
-    </div>
-  </div>
-</div>
+
 
 </div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
@@ -3019,6 +3002,7 @@ async function caricaCorrispettivi(){
 
   let li=[];
   // 1) SUPABASE (fonte primaria, condivisa tra dispositivi)
+  if(typeof caricaCachePOSBanca==='function') caricaCachePOSBanca(anno);
   try{
     const rows=await sbFetch('corrispettivi?data=gte.'+anno+'-01-01&data=lte.'+anno+'-12-31&select=*&order=data.desc');
     if(rows&&rows.length) li=rows;
@@ -3079,32 +3063,38 @@ async function caricaCorrispettivi(){
     const isMan=(c.fonte||'')==='manuale';
     const tagMan=isMan?'<span style="background:#FFF4E0;color:#B45309;font-size:10px;padding:2px 7px;border-radius:6px;margin-left:6px;font-weight:700;letter-spacing:.3px">MANUALE</span>':'';
     // Badge coerenza se c'è riferimento XML
-    let badge='';
-    if(isMan && c._xml_ref){
-      const totXml=parseFloat(c._xml_ref.totale||0);
-      const totMan=parseFloat(c.totale||0);
-      const dTot=totXml-totMan;
-      const dP=parseFloat(c._xml_ref.pagato_elettronico||0)-parseFloat(c.pagato_elettronico||0);
-      const dC=parseFloat(c._xml_ref.pagato_contanti||0)-parseFloat(c.pagato_contanti||0);
-      const coerenteTot=Math.abs(dTot)<0.01;
-      const coerenteTutto=coerenteTot && Math.abs(dP)<0.01 && Math.abs(dC)<0.01;
-      const fmtD=function(n){return (n>0?'+':'')+n.toFixed(2)+'\u20ac';};
-      if(coerenteTutto){
-        badge='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:10px;margin-top:8px;border-radius:8px;font-size:12px;color:#1a7a3a">'+
-          '<div style="font-weight:700;margin-bottom:2px">\u2713 COERENZA POST-FISCALE OK</div>'+
-          '<div style="font-size:11px;opacity:.85">Chiusura manuale = Registratore telematico: '+fe(totMan)+'</div>'+
-          '</div>';
-      } else {
-        const parts=[];
-        if(Math.abs(dTot)>0.01) parts.push('<div><b>Totale:</b> manuale '+fe(totMan)+' vs XML '+fe(totXml)+' <span style="color:#B45309">('+fmtD(dTot)+')</span></div>');
-        if(Math.abs(dC)>0.01) parts.push('<div>Contanti: '+fe(c.pagato_contanti)+' vs XML '+fe(c._xml_ref.pagato_contanti)+' <span style="color:#B45309">('+fmtD(dC)+')</span></div>');
-        if(Math.abs(dP)>0.01) parts.push('<div>POS: '+fe(c.pagato_elettronico)+' vs XML '+fe(c._xml_ref.pagato_elettronico)+' <span style="color:#B45309">('+fmtD(dP)+')</span></div>');
-        badge='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:10px;margin-top:8px;border-radius:8px;font-size:12px;color:#7a4a00">'+
-          '<div style="font-weight:700;margin-bottom:4px">\u26a0 SCOSTAMENTO POST-FISCALE</div>'+
-          parts.join('')+
-          '</div>';
+    let badgePOSAgenzia='',badgePOSBanca='';
+    if(isMan){
+      var fe2=function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+      var posManuale=parseFloat(c.pagato_elettronico||0);
+      // ── POS vs AGENZIA (scontrini XML vs chiusura XML) ──
+      if(c._xml_ref){
+        var posXML=parseFloat(c._xml_ref.pagato_elettronico||0);
+        var dA=posManuale-posXML;
+        if(Math.abs(dA)<0.01){
+          badgePOSAgenzia='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#1a7a3a"><b>\u2713 POS vs Agenzia OK</b> \u00b7 \u20ac '+fe2(posManuale)+' dichiarato = \u20ac '+fe2(posXML)+' trasmesso</div>';
+        } else if(dA>0){
+          badgePOSAgenzia='<div style="background:#FFE8E8;border-left:3px solid #F44336;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#b00020"><b>\u26a0 POS vs Agenzia \u2014 ANOMALIA</b><br>POS serale \u20ac '+fe2(posManuale)+' > POS trasmesso al registratore \u20ac '+fe2(posXML)+' (scarto +\u20ac '+fe2(dA)+')</div>';
+        } else {
+          badgePOSAgenzia='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#7a4a00"><b>\u26a0 POS vs Agenzia</b> \u00b7 POS serale \u20ac '+fe2(posManuale)+' < trasmesso \u20ac '+fe2(posXML)+' (\u20ac '+fe2(-dA)+')</div>';
+        }
+      }
+      // ── POS vs BANCA (serale vs accrediti estratto conto) ──
+      if(typeof window._ecPosCache==='object' && window._ecPosCache){
+        var targetBanca=(window._ecPosCache[c.data]||0) + (window._ecPosCache[addDays(c.data,1)]||0);
+        if(targetBanca>0){
+          var dB=posManuale-targetBanca;
+          if(Math.abs(dB)<0.01){
+            badgePOSBanca='<div style="background:#E8F8ED;border-left:3px solid #00B884;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#1a7a3a"><b>\u2713 POS vs Banca OK</b> \u00b7 \u20ac '+fe2(posManuale)+' dichiarato = \u20ac '+fe2(targetBanca)+' accreditato</div>';
+          } else if(dB>0){
+            badgePOSBanca='<div style="background:#FFE8E8;border-left:3px solid #F44336;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#b00020"><b>\u26a0 POS vs Banca \u2014 ANOMALIA</b><br>POS serale \u20ac '+fe2(posManuale)+' > accreditato \u20ac '+fe2(targetBanca)+' (mancano \u20ac '+fe2(dB)+')</div>';
+          } else {
+            badgePOSBanca='<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:8px 10px;margin-top:6px;border-radius:6px;font-size:11px;color:#7a4a00"><b>\u26a0 POS vs Banca</b> \u00b7 POS serale \u20ac '+fe2(posManuale)+' < accreditato \u20ac '+fe2(targetBanca)+' (+\u20ac '+fe2(-dB)+')</div>';
+          }
+        }
       }
     }
+    var badge=badgePOSAgenzia+badgePOSBanca;
     const actDel=isMan?'<button onclick="eliminaCorrManuale(\''+c.data+'\',event)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 8px">&#128465;</button>':'';
     h+='<div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.03)">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'+
@@ -3119,7 +3109,6 @@ async function caricaCorrispettivi(){
       badge+
     '</div>';
   });
-  window._corrListaCache = li;
   ld.innerHTML=h;
 }
 
@@ -3347,19 +3336,6 @@ async function salvaCorrispettivoManuale(){
 // == POS SPLIT (3 incassi) ==
 function _parsePosN(v){return parseFloat((v||'0').toString().replace(/\./g,'').replace(',','.'))||0;}
 
-function apriPosSplit(){
-  var m=document.getElementById('posSplitModal');
-  if(m){m.style.display='flex';var i=document.getElementById('posSp1');if(i)i.focus();}
-}
-function chiudiPosSplit(){
-  var m=document.getElementById('posSplitModal');
-  if(m) m.style.display='none';
-}
-function sommaPosSplit(){
-  var s=_parsePosN(document.getElementById('posSp1').value)+_parsePosN(document.getElementById('posSp2').value)+_parsePosN(document.getElementById('posSp3').value);
-  var el=document.getElementById('posSpSomma');
-  if(el) el.textContent='\u20ac '+s.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
 function confermaPosSplit(){
   var s=_parsePosN(document.getElementById('posSp1').value)+_parsePosN(document.getElementById('posSp2').value)+_parsePosN(document.getElementById('posSp3').value);
   var campo=document.getElementById('corrManPos');
@@ -3387,7 +3363,7 @@ function apriModalManuale(){
     +'<div style="font-size:12px;color:var(--ink3);margin-bottom:14px">Verifica coerenza tra totale corrispettivo e somma incassi POS + contanti</div>'
     
     +'<label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Data</label>'
-    +'<input type="date" id="cmData" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:12px" onchange="verificaXMLEsistente()">'
+    +'<input type="date" id="cmData" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:12px">'
     
     +'<label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Totale corrispettivo (\u20ac)</label>'
     +'<input type="text" id="cmTotale" inputmode="decimal" placeholder="0,00" oninput="verificaCoerenzaPOS()" style="width:100%;padding:12px;border:1.5px solid var(--blue);border-radius:var(--radius-sm);font-size:18px;font-weight:700;background:var(--surface);box-sizing:border-box;margin-bottom:14px">'
@@ -3407,7 +3383,7 @@ function apriModalManuale(){
     +'<div id="cmPosTot" style="font-size:12px;color:var(--ink3);text-align:right">Totale POS: \u20ac 0,00</div>'
     +'</div>'
     
-    +'<div id="cmXmlAvviso" style="margin-bottom:10px;display:none"></div>'+'<div id="cmVerifica" style="padding:14px;border-radius:12px;text-align:center;margin-bottom:14px;background:var(--surface2);font-size:13px;color:var(--ink3)">Inserisci gli importi per verificare la coerenza</div>'
+    +'<div id="cmVerifica" style="padding:14px;border-radius:12px;text-align:center;margin-bottom:14px;background:var(--surface2);font-size:13px;color:var(--ink3)">Inserisci gli importi per verificare la coerenza</div>'
     
     +'<button class="btn btn-p" onclick="salvaCorrManuale()" style="width:100%;padding:12px">Salva corrispettivo</button>'
     +'</div>';
@@ -3420,28 +3396,6 @@ function parsePrice(s){
   return parseFloat(s.toString().replace(/\./g,'').replace(',','.'))||0;
 }
 
-function verificaXMLEsistente(){
-  var dataEl=document.getElementById('cmData');
-  var box=document.getElementById('cmXmlAvviso');
-  if(!dataEl || !box) return;
-  var d=dataEl.value;
-  if(!d){ box.style.display='none'; return; }
-  // Cerca nei dati caricati se esiste già un record XML per quella data
-  try{
-    var existing=(typeof _corrListaCache!=='undefined' && _corrListaCache)?_corrListaCache.find(function(x){return x.data===d && (x.fonte||'')!=='manuale';}):null;
-    if(existing){
-      var fe=function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-      box.style.display='block';
-      box.innerHTML='<div style="background:#E3F2FD;border-left:3px solid var(--blue);padding:10px;border-radius:8px;font-size:12px;color:#0d47a1">'+
-        '<div style="font-weight:700;margin-bottom:3px">\u2139 Registratore telematico per '+new Date(d+'T12:00:00').toLocaleDateString('it-IT')+'</div>'+
-        '<div style="font-size:11px">Totale XML: \u20ac '+fe(existing.totale)+' (Contanti \u20ac '+fe(existing.pagato_contanti)+' \u00b7 POS \u20ac '+fe(existing.pagato_elettronico)+')</div>'+
-        '<div style="font-size:10px;opacity:.8;margin-top:2px">Se digiti un importo diverso vedrai lo scostamento post-fiscale</div>'+
-        '</div>';
-    } else {
-      box.style.display='none';
-    }
-  }catch(e){ box.style.display='none'; }
-}
 
 function verificaCoerenzaPOS(){
   var tot = parsePrice(document.getElementById('cmTotale').value);
@@ -3522,6 +3476,130 @@ async function salvaCorrManuale(){
   }
 }
 
+
+
+// ── HELPER: somma di accrediti POS in estratto conto per giorno ──
+function addDays(d, n){
+  var dt = new Date(d+'T12:00:00');
+  dt.setDate(dt.getDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+async function caricaCachePOSBanca(anno){
+  try{
+    var rows = await sbFetch('estratto_conto?data_contabile=gte.'+anno+'-01-01&data_contabile=lte.'+anno+'-12-31&select=data_contabile,importo,descrizione,circuito');
+    var cache = {};
+    (rows||[]).forEach(function(r){
+      var desc = (r.descrizione||'')+' '+(r.circuito||'');
+      // Identifica movimenti POS (nexi, worldline, stripe, sumup, ingenico, pagobancomat, visa, mastercard, pos, acquiring)
+      if(/nexi|worldline|stripe|sumup|ingenico|pagobancomat|\bpos\b|acquiring|satispay|cartas[ìi]|mastercard|visa/i.test(desc)){
+        var imp = parseFloat(r.importo||0);
+        if(imp>0){
+          cache[r.data_contabile] = (cache[r.data_contabile]||0) + imp;
+        }
+      }
+    });
+    window._ecPosCache = cache;
+  }catch(e){ window._ecPosCache = {}; }
+}
+// ══ LIQUIDAZIONE IVA — Art. 1 DPR 100/98 ══
+async function calcolaIVA(){
+  var anno=(document.getElementById('ivaAnno').value||'').trim();
+  if(!anno){ toast('Anno'); return; }
+  var tdi=document.getElementById('ivaTotali'),
+      mdi=document.getElementById('ivaMesi');
+  if(!tdi||!mdi) return;
+  tdi.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink3)">\u23f3 Caricamento...</div>';
+  mdi.innerHTML='';
+  try{
+    var r1=await fetch('https://impresasemplice.online/api/invoices?anno='+anno+'&limit=500');
+    var r2=await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+    if(!r1.ok||!r2.ok) throw new Error('API non disponibile');
+    var fa=await r1.json(); var co=await r2.json();
+    fa=Array.isArray(fa)?fa:(fa.items||[]); co=Array.isArray(co)?co:(co.items||[]);
+    // Aggiungo anche i corrispettivi manuali da Supabase
+    try{
+      var manu=await sbFetch('corrispettivi?data=gte.'+anno+'-01-01&data=lte.'+anno+'-12-31&select=*');
+      if(manu&&manu.length){
+        manu.forEach(function(m){
+          var ex=co.find(function(x){return x.data===m.data;});
+          if(!ex) co.push(m);
+        });
+      }
+    }catch(e){}
+    var fe=function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    var nm=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    var mesi={};
+    for(var m=1;m<=12;m++) mesi[m]={cr:0,db:0,ia:0,iv:0,nc:0};
+    // IVA CREDITO dai passivi — art. 1 DPR 100/98: fattura ricevuta entro 15 del mese successivo rientra nel mese della data fattura
+    fa.forEach(function(f){
+      var df=(f.invoice_date||f.data_effettiva||'').toString().slice(0,10);
+      var dr=(f.imported_at||'').toString().slice(0,10);
+      if(!df||df.slice(0,4)!==anno) return;
+      if(f.inclusa_in_corrispettivo) return;
+      var mf=parseInt(df.slice(5,7)), mc=mf;
+      if(dr){
+        var mr=parseInt(dr.slice(5,7)), gr=parseInt(dr.slice(8,10)), ar=dr.slice(0,4);
+        if(ar===anno && mr===mf+1 && gr<=15) mc=mf;
+        else if(ar===anno && mr>mf+1) mc=mr;
+        else if(mf===12 && ar===String(parseInt(anno)+1) && mr===1 && gr<=15) mc=mf;
+      }
+      if(mc<1||mc>12) return;
+      var iva=parseFloat(f.vat_amount||f.totale_iva||0);
+      var imp=parseFloat(f.taxable_amount||f.totale_imponibile||0);
+      if(f.document_type==='TD04'){ mesi[mc].cr-=iva; mesi[mc].nc+=iva; return; }
+      mesi[mc].cr+=iva; mesi[mc].ia+=imp;
+    });
+    // IVA DEBITO da corrispettivi (mese della data)
+    co.forEach(function(c){
+      var d=(c.data||'').toString().slice(0,10);
+      var m=parseInt(d.slice(5,7));
+      if(!m||m<1||m>12) return;
+      mesi[m].db+=parseFloat(c.totale_iva||0);
+      mesi[m].iv+=parseFloat(c.totale_imponibile||0);
+    });
+    var tc=0,tdb=0,rip=0,mh='',ma=0;
+    for(var m=1;m<=12;m++){
+      var d=mesi[m];
+      if(!d.cr && !d.db) continue;
+      ma++; tc+=d.cr; tdb+=d.db;
+      var s=d.db-d.cr-rip;
+      var dv=s>0?s:0;
+      var cr2=s<0?Math.abs(s):0;
+      var msn=m<12?m+1:1;
+      var asn=m<12?parseInt(anno):parseInt(anno)+1;
+      var sc=asn+'-'+String(msn).padStart(2,'0')+'-16';
+      var sf=new Date(sc+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
+      var scu=new Date(sc+'T12:00:00')<new Date() && dv>0;
+      var bc=dv>0?(scu?'var(--red)':'#FF9500'):'#00B884';
+      mh+='<div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:4px solid '+bc+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+          +'<div><div style="font-weight:700">'+nm[m]+' '+anno+'</div>'
+          +'<div style="font-size:11px;color:var(--ink3)">F24 entro '+sf+(scu?' \u2014 <b style="color:var(--red)">SCADUTO</b>':'')+'</div></div>';
+      if(dv>0) mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--red)">\u20ac '+fe(dv)+'</div><div style="font-size:10px;color:var(--red);font-weight:700">DA VERSARE</div></div>';
+      else mh+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:#1a7a3a">\u20ac '+fe(cr2)+'</div><div style="font-size:10px;color:#1a7a3a;font-weight:700">CREDITO</div></div>';
+      mh+='</div><div style="display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--ink3)">'
+        +'<span>Credito IVA \u20ac'+fe(d.cr)+'</span>'
+        +'<span>Debito IVA \u20ac'+fe(d.db)+'</span>'
+        +(rip>0?'<span>Riporto \u20ac'+fe(rip)+'</span>':'')
+        +'</div></div>';
+      rip=cr2;
+    }
+    var sa=tdb-tc, ic=sa<0;
+    tdi.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+      +'<div style="background:#E3F2FD;border-radius:12px;padding:14px"><div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.4px">IVA CREDITO</div><div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:2px">\u20ac '+fe(tc)+'</div></div>'
+      +'<div style="background:var(--red-light);border-radius:12px;padding:14px"><div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:.4px">IVA DEBITO</div><div style="font-size:22px;font-weight:800;color:var(--red);margin-top:2px">\u20ac '+fe(tdb)+'</div></div>'
+      +'</div>'
+      +'<div style="background:'+(ic?'linear-gradient(135deg,#007AFF,#5856D6)':'linear-gradient(135deg,#FF3B30,#FF6B6B)')+';border-radius:14px;padding:16px;color:#fff;margin-bottom:12px">'
+        +'<div style="font-size:11px;opacity:.75;letter-spacing:.5px">SALDO '+anno+'</div>'
+        +'<div style="font-size:26px;font-weight:800;margin-top:2px">\u20ac '+fe(Math.abs(sa))+'</div>'
+        +'<div style="font-size:12px;opacity:.9">'+(ic?'A CREDITO':'A DEBITO \u2014 F24 art.1 DPR 100/98')+'</div>'
+      +'</div>';
+    mdi.innerHTML=mh||'<div style="text-align:center;padding:20px;color:var(--ink3)">Nessun dato</div>';
+    toast('IVA '+anno+': '+ma+' mesi');
+  }catch(e){
+    tdi.innerHTML='<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
+  }
+}
 
 init();
 // ── CORRISPETTIVI MANUALI ──

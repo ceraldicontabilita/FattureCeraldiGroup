@@ -710,6 +710,32 @@ body{padding-bottom:92px !important}
   </div>
 
   
+  
+  <div class="rcard" id="rc-estrattoconto">
+    <div class="rcard-hd" onclick="toggleRCard('estrattoconto')">
+      <div class="rcard-hd-left"><span class="rcard-ico">&#127974;</span>
+        <div><div class="rcard-title">Estratto conto bancario</div><div class="rcard-sub" id="rsub-estrattoconto">Import CSV Banco BPM</div></div>
+      </div><span class="rcard-arr" id="rarr-estrattoconto">&#8250;</span>
+    </div>
+    <div class="rcard-body" id="rbody-estrattoconto">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--ink3);line-height:1.5">
+        &#128196; Importa il file <b>CSV</b> dell'estratto conto (Banco BPM “ElencoEntrateUscite”).
+        I movimenti vengono salvati nel database e sono visibili da tutti i dispositivi.
+      </div>
+      <button class="btn btn-p" style="width:100%;position:relative;overflow:hidden;margin-bottom:10px" id="ecUploadBtn">
+        <span id="ecUploadLbl">&#128228; Carica CSV estratto conto</span>
+        <input type="file" accept=".csv,text/csv" onchange="importaEstrattoConto(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+      </button>
+      <div id="ecProgress" style="display:none;background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="number" id="ecAnno" value="2026" placeholder="Anno" style="flex:1;padding:9px 10px;border:1.5px solid var(--sep);border-radius:10px;font-size:13px;background:var(--surface);box-sizing:border-box">
+        <button class="btn btn-s" onclick="caricaEstrattoConto()" style="flex:1;padding:9px;font-size:13px">&#128270; Visualizza</button>
+      </div>
+      <div id="ecTotali" style="margin-bottom:10px"></div>
+      <div id="ecLista"></div>
+    </div>
+  </div>
+
   <div class="rcard" id="rc-aimen">
     <div class="rcard-hd" onclick="toggleRCard('aimen')">
       <div class="rcard-hd-left"><span class="rcard-ico">&#129504;</span>
@@ -3247,6 +3273,265 @@ async function salvaCorrManuale(){
 
 // Auto-data odierna quando si apre la view
 const _origGoTab = typeof goTab !== 'undefined' ? goTab : null;
+
+
+// ══════════════════════════════════════════════════════
+// ESTRATTO CONTO BANCARIO — Import CSV Banco BPM
+// ══════════════════════════════════════════════════════
+
+// Parser CSV con separatore ; e quoting "
+function ecParsaCSV(testo){
+  const righe = [];
+  let cur = [], field = '', inQ = false;
+  for(let i=0; i<testo.length; i++){
+    const c = testo[i], n = testo[i+1];
+    if(c === '"'){
+      if(inQ && n === '"'){ field += '"'; i++; }
+      else inQ = !inQ;
+    } else if(c === ';' && !inQ){
+      cur.push(field); field = '';
+    } else if((c === '\n' || c === '\r') && !inQ){
+      if(c === '\r' && n === '\n') i++;
+      cur.push(field); field = '';
+      if(cur.some(v => v.trim())) righe.push(cur);
+      cur = [];
+    } else {
+      field += c;
+    }
+  }
+  if(field || cur.length){ cur.push(field); if(cur.some(v => v.trim())) righe.push(cur); }
+  return righe;
+}
+
+// Converte "03/04/2026" -> "2026-04-03" / "02/04/26" -> "2026-04-02"
+function ecParsaData(s){
+  if(!s) return null;
+  s = s.trim();
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(!m) return null;
+  let [_, g, mm, aa] = m;
+  if(aa.length === 2) aa = '20' + aa;
+  return aa + '-' + mm.padStart(2,'0') + '-' + g.padStart(2,'0');
+}
+
+// Converte "19,7" -> 19.7 / "-1.000,50" -> -1000.50
+function ecParsaImporto(s){
+  if(!s) return 0;
+  s = String(s).trim().replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// Hash semplice per deduplica (djb2)
+function ecHash(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+// Estrae circuito POS dalla descrizione (NUMIA-INTER/PGBNT/AMEX/BNCMT)
+function ecCircuitoPos(desc){
+  if(!desc) return null;
+  const m = desc.match(/NUMIA-(\w+)/i);
+  if(!m) return null;
+  const map = {'INTER':'Carte credito','PGBNT':'Pagobancomat','AMEX':'American Express','BNCMT':'Bancomat'};
+  return map[m[1].toUpperCase()] || m[1];
+}
+
+// È un movimento POS?
+function ecIsPos(cat){
+  return !!cat && /Incasso tramite POS/i.test(cat);
+}
+
+async function importaEstrattoConto(input){
+  if(!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const prog = document.getElementById('ecProgress');
+  const btn = document.getElementById('ecUploadBtn');
+  const lbl = document.getElementById('ecUploadLbl');
+  prog.style.display = 'block';
+  prog.innerHTML = '&#9203; Lettura file...';
+  if(btn) btn.disabled = true;
+
+  try {
+    const testo = await file.text();
+    const righe = ecParsaCSV(testo);
+    if(righe.length < 2){ prog.innerHTML = '&#10060; File vuoto o non valido'; if(btn) btn.disabled = false; return; }
+
+    // Prima riga = intestazioni
+    const headers = righe[0].map(h => h.trim());
+    const idx = {
+      dataContabile: headers.indexOf('Data contabile'),
+      dataValuta: headers.indexOf('Data valuta'),
+      banca: headers.indexOf('Banca'),
+      rapporto: headers.indexOf('Rapporto'),
+      importo: headers.indexOf('Importo'),
+      divisa: headers.indexOf('Divisa'),
+      descrizione: headers.indexOf('Descrizione'),
+      categoria: headers.indexOf('Categoria/sottocategoria')
+    };
+    if(idx.importo < 0 || idx.dataContabile < 0){
+      prog.innerHTML = '&#10060; Formato CSV non riconosciuto (manca \"Importo\" o \"Data contabile\")';
+      if(btn) btn.disabled = false;
+      return;
+    }
+
+    const records = [];
+    for(let i=1; i<righe.length; i++){
+      const r = righe[i];
+      const dataCont = ecParsaData(r[idx.dataContabile]);
+      const dataVal = ecParsaData(r[idx.dataValuta]);
+      const importo = ecParsaImporto(r[idx.importo]);
+      const desc = (r[idx.descrizione]||'').trim();
+      const cat = (r[idx.categoria]||'').trim();
+      if(!dataCont || importo === 0) continue;
+
+      // Estrai data transazione dalla descrizione (DEL gg/mm/aa) se presente
+      const mTx = desc.match(/DEL (\d{2}\/\d{2}\/\d{2,4})/);
+      const dataTx = mTx ? ecParsaData(mTx[1]) : null;
+
+      const rec = {
+        data_contabile: dataCont,
+        data_valuta: dataVal,
+        data_transazione: dataTx || dataCont,  // fallback: contabile
+        importo: importo,
+        descrizione: desc,
+        categoria: cat,
+        banca: (r[idx.banca]||'').trim(),
+        rapporto: (r[idx.rapporto]||'').trim(),
+        divisa: (r[idx.divisa]||'EUR').trim(),
+        is_pos: ecIsPos(cat),
+        circuito_pos: ecCircuitoPos(desc),
+        hash_riga: ecHash(dataCont + '|' + importo + '|' + desc.substring(0, 100))
+      };
+      records.push(rec);
+    }
+
+    prog.innerHTML = `&#128228; Invio ${records.length} movimenti al database...`;
+
+    // Controlla quali hash esistono già nel DB per non duplicare
+    let esistenti = [];
+    try {
+      // Prendo gli hash in chunk di 200 (query string limits)
+      for(let i=0; i<records.length; i+=200){
+        const batch = records.slice(i, i+200);
+        const hashes = batch.map(r => r.hash_riga).join(',');
+        const found = await sbFetch('estratto_conto?hash_riga=in.(' + hashes + ')&select=hash_riga');
+        if(found && found.length) esistenti = esistenti.concat(found.map(x => x.hash_riga));
+      }
+    } catch(e){
+      console.warn('Check duplicati fallito:', e.message);
+    }
+
+    const nuovi = records.filter(r => !esistenti.includes(r.hash_riga));
+    const duplicati = records.length - nuovi.length;
+
+    if(!nuovi.length){
+      prog.innerHTML = `&#9888; Tutti i ${records.length} movimenti sono già presenti (${duplicati} duplicati scartati)`;
+      if(btn) btn.disabled = false;
+      input.value = '';
+      return;
+    }
+
+    // Inserisci in batch da 100
+    let salvati = 0;
+    for(let i=0; i<nuovi.length; i+=100){
+      const batch = nuovi.slice(i, i+100);
+      try {
+        await sbFetch('estratto_conto', {method:'POST', body: JSON.stringify(batch)});
+        salvati += batch.length;
+        prog.innerHTML = `&#9203; Salvati ${salvati}/${nuovi.length}...`;
+      } catch(e){
+        prog.innerHTML = `&#10060; Errore batch ${i}: ${(e.message||'').substring(0,100)}`;
+        if(btn) btn.disabled = false;
+        return;
+      }
+    }
+
+    prog.innerHTML = `&#9989; <b>${salvati} movimenti importati</b>` + (duplicati ? ` (${duplicati} duplicati scartati)` : '');
+    toast('✅ Estratto conto importato: '+salvati+' righe');
+    if(btn) btn.disabled = false;
+    input.value = '';
+    // Ricarica vista
+    setTimeout(() => caricaEstrattoConto(), 400);
+
+  } catch(e){
+    prog.innerHTML = '&#10060; Errore: ' + (e.message||'').substring(0, 200);
+    if(btn) btn.disabled = false;
+    console.error('Import estratto conto:', e);
+  }
+}
+
+async function caricaEstrattoConto(){
+  const anno = (document.getElementById('ecAnno').value||'').trim();
+  if(!anno){ toast('Anno'); return; }
+  const td = document.getElementById('ecTotali');
+  const ld = document.getElementById('ecLista');
+  td.innerHTML = '<div style="text-align:center;padding:12px;color:var(--ink3)">&#9203; Caricamento...</div>';
+  ld.innerHTML = '';
+
+  let rows = [];
+  try {
+    rows = await sbFetch('estratto_conto?data_contabile=gte.'+anno+'-01-01&data_contabile=lte.'+anno+'-12-31&select=*&order=data_contabile.desc&limit=5000');
+  } catch(e){
+    td.innerHTML = '<div style="background:#FFF4E0;border-radius:10px;padding:12px;color:#B45309;font-size:13px">⚠️ Errore lettura DB: ' + (e.message||'').substring(0,120) + '</div>';
+    return;
+  }
+
+  if(!rows || !rows.length){
+    td.innerHTML = '<div style="text-align:center;padding:30px 12px;color:var(--ink3)"><div style="font-size:36px;opacity:.3">&#127974;</div><p style="font-size:13px;margin-top:8px">Nessun movimento per '+anno+'</p><p style="font-size:11px">Carica il CSV dell\'estratto conto qui sopra</p></div>';
+    return;
+  }
+
+  const fe = n => '\u20ac ' + (n||0).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Totali
+  let entrate = 0, uscite = 0, totPos = 0, totComm = 0;
+  const posByCircuito = {};
+  rows.forEach(r => {
+    const imp = parseFloat(r.importo||0);
+    if(imp > 0) entrate += imp; else uscite += imp;
+    if(r.is_pos){ totPos += imp; const c = r.circuito_pos || 'Altro'; posByCircuito[c] = (posByCircuito[c]||0) + imp; }
+    if((r.categoria||'').indexOf('Commissioni') >= 0) totComm += imp;
+  });
+
+  td.innerHTML =
+    '<div style="background:linear-gradient(135deg,#00B884,#007AFF);border-radius:14px;padding:14px;color:#fff;margin-bottom:10px">'+
+      '<div style="font-size:11px;opacity:.8;letter-spacing:.5px">SALDO '+anno+'</div>'+
+      '<div style="font-size:26px;font-weight:800;margin-top:4px">'+fe(entrate+uscite)+'</div>'+
+      '<div style="font-size:11px;opacity:.85">'+rows.length+' movimenti</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
+      '<div style="background:var(--green-light);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;color:#1a7a3a">&#8593; ENTRATE</div><div style="font-size:17px;font-weight:800;color:#1a7a3a;margin-top:2px">'+fe(entrate)+'</div></div>'+
+      '<div style="background:#FFF0EF;border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;color:var(--red)">&#8595; USCITE</div><div style="font-size:17px;font-weight:800;color:var(--red);margin-top:2px">'+fe(Math.abs(uscite))+'</div></div>'+
+    '</div>'+
+    '<div style="background:#E3F2FD;border-radius:10px;padding:12px;margin-bottom:8px">'+
+      '<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:6px">&#128179; POS TOTALE '+fe(totPos)+'</div>'+
+      Object.entries(posByCircuito).sort((a,b)=>b[1]-a[1]).map(([c,v])=>'<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--ink2)"><span>'+c+'</span><b>'+fe(v)+'</b></div>').join('')+
+    '</div>'+
+    (totComm ? '<div style="background:#FFF4E0;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:#B45309">COMMISSIONI</span><b style="color:#B45309">'+fe(Math.abs(totComm))+'</b></div>' : '');
+
+  // Lista (primi 100, con paginazione)
+  const mostrare = rows.slice(0, 100);
+  let h = '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px">Ultimi movimenti</div>';
+  mostrare.forEach(r => {
+    const imp = parseFloat(r.importo||0);
+    const isEnt = imp >= 0;
+    const df = r.data_contabile ? new Date(r.data_contabile+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'}) : '—';
+    const descBreve = (r.descrizione||'').substring(0, 70) + (r.descrizione && r.descrizione.length > 70 ? '…' : '');
+    const catBreve = (r.categoria||'').split(' - ').pop() || '';
+    h += '<div style="background:var(--surface);border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;gap:10px;align-items:flex-start">'+
+      '<div style="font-size:11px;font-weight:700;color:var(--ink3);width:50px;flex-shrink:0;padding-top:2px">'+df+'</div>'+
+      '<div style="flex:1;min-width:0;overflow:hidden"><div style="font-size:12px;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+descBreve+'</div>'+
+      '<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+catBreve+(r.circuito_pos?' · '+r.circuito_pos:'')+'</div></div>'+
+      '<div style="font-size:14px;font-weight:800;color:'+(isEnt?'#00B884':'var(--red)')+';flex-shrink:0">'+(isEnt?'+':'')+fe(imp)+'</div>'+
+      '</div>';
+  });
+  if(rows.length > 100) h += '<div style="text-align:center;padding:8px;font-size:11px;color:var(--ink3)">… e altri '+(rows.length-100)+' movimenti non visualizzati</div>';
+  ld.innerHTML = h;
+}
+// FINE ESTRATTO CONTO
+
 
 </script>
 </body>

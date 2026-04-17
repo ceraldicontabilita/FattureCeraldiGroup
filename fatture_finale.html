@@ -350,7 +350,7 @@ body{padding-bottom:92px !important}
 </div>
 </div>
 
-<div id="view-scan" class="view active">
+<div id="view-scan" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <p class="stitle" style="margin-bottom:0">Scansiona fattura</p>
     <span id="aiBadge" style="display:none;align-items:center;gap:4px;background:var(--green-light);color:#1a7a3a;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600">&#129504; IA addestrata</span>
@@ -562,7 +562,7 @@ body{padding-bottom:92px !important}
   </div>
 </div>
 
-<div id="view-lista" class="view">
+<div id="view-lista" class="view active">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 
   <div class="sw"><span class="si">&#128269;</span>
@@ -994,15 +994,12 @@ body{padding-bottom:92px !important}
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">
-  <button class="tab-item" onclick="goTab('scan',this)">
-    <span class="tab-ico">&#127968;</span>
-    <span class="tab-lbl">Home</span>
-  </button>
+  
   <button class="tab-item" onclick="goTab('assegni',this)">
     <span class="tab-ico">&#128221;</span>
     <span class="tab-lbl">Assegni</span>
   </button>
-  <button class="tab-item" onclick="goTab('lista',this)">
+  <button class="tab-item active" onclick="goTab('lista',this)">
     <span class="tab-ico">&#128203;</span>
     <span class="tab-lbl">Registro</span>
   </button>

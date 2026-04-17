@@ -510,7 +510,7 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 </div>
 
 <div id="view-lista" class="view">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 
   <div class="sw"><span class="si">&#128269;</span>
     <input type="text" id="searchInp" placeholder="Cerca fornitore, numero, note..." oninput="renderLista()" inputmode="text">
@@ -553,7 +553,7 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 </div>
 
 <div id="view-scadenzario" class="view">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 
   <div class="chip-row" style="margin-bottom:12px">
     <button class="chip active" id="scf-tutti" onclick="setScadFiltro('tutti',this)">Tutte</button>
@@ -567,7 +567,7 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 </div>
 
 <div id="view-riepilogo" class="view">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 
   <div class="tot-grid">
     <div class="tot-card full"><div class="tl">Totale</div><div class="tv" id="totAll">&#8364; 0,00</div></div>
@@ -878,13 +878,13 @@ pre,code{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-wo
 </div>
 
 <div class="view" id="view-assegni" style="padding:16px;padding-bottom:100px;overflow-x:hidden;max-width:100%">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle">Registro Assegni</p><div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">GENERA BLOCCHETTO</div><div style="display:flex;gap:8px"><input type="tel" id="assPrimo" placeholder="0208770851-03" inputmode="numeric" maxlength="14" oninput="formatAssegno(this)" style="flex:1;font-size:18px;letter-spacing:2px;font-family:monospace;font-weight:700;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm)"></div><button class="btn btn-p" onclick="generaAssegni()" style="margin-top:8px;width:100%">Genera 10 assegni</button></div><div id="assegniLista"></div><div id="assegniSalvati" style="margin-top:16px"></div></div>
 <div class="view" id="view-corrispettivi" style="padding:16px;padding-bottom:100px">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:14px">Corrispettivi</p><div style="display:flex;gap:8px;margin-bottom:12px"><input type="number" id="corrAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="caricaCorrispettivi()" style="flex:1;padding:10px;font-size:14px">Carica</button></div><div id="corrTotali" style="margin-bottom:14px"></div><div id="corrLista"></div></div>
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
-<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--blue);font-size:14px;font-weight:600;padding:0 0 14px;cursor:pointer">&#8592; Home</button>
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
 <nav class="tab-bar">
   <button class="tab-item" onclick="goTab('scan',this)">

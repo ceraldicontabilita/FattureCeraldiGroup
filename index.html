@@ -1028,9 +1028,66 @@ body{padding-bottom:92px !important}
 <div id="cassaLista"></div>
 </div>
 
+<!-- PRIMA NOTA BANCA -->
+<div class="view" id="view-banca" style="padding:16px;padding-bottom:100px">
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
+<p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Prima Nota Banca</p>
+<p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Estratto conto + riconciliazione fatture bonifico</p>
+
+<div style="display:flex;gap:8px;margin-bottom:12px">
+  <input type="number" id="bancaAnno" value="2026" min="2020" max="2099" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+  <select id="bancaMese" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+    <option value="0">Tutto l'anno</option>
+    <option value="1">Gennaio</option><option value="2">Febbraio</option><option value="3">Marzo</option>
+    <option value="4">Aprile</option><option value="5">Maggio</option><option value="6">Giugno</option>
+    <option value="7">Luglio</option><option value="8">Agosto</option><option value="9">Settembre</option>
+    <option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>
+  </select>
+  <button class="btn btn-p" onclick="caricaBanca()" style="flex:0 0 auto;padding:10px 16px;font-size:14px">Carica</button>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:12px">
+  <button onclick="riconciliaAutomatica()" style="flex:1;padding:10px;border:1px solid var(--blue);background:var(--blue-light);border-radius:10px;font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;font-family:inherit">&#128257; Riconcilia automaticamente</button>
+</div>
+
+<div id="bancaTotali" style="margin-bottom:14px"></div>
+<div id="bancaLista"></div>
+</div>
+
+
+
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
+
+<!-- MODAL MOVIMENTO CASSA MANUALE -->
+<div id="cassaMovMo" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--bg);border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div id="cmovTitle" style="font-size:17px;font-weight:700">Nuovo movimento cassa</div>
+      <button onclick="document.getElementById('cassaMovMo').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">&#215;</button>
+    </div>
+    <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Data</label>
+    <input type="date" id="cmovData" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box;margin-bottom:10px">
+    <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Importo (&euro;)</label>
+    <input type="text" id="cmovImporto" inputmode="decimal" placeholder="0,00" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box;margin-bottom:10px">
+    <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Causale</label>
+    <select id="cmovCausale" style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box;margin-bottom:10px">
+      <option value="">&mdash; Seleziona &mdash;</option>
+      <option value="prelievo_banca">Prelievo da banca</option>
+      <option value="versamento_banca">Versamento in banca</option>
+      <option value="pagamento_dipendente">Pagamento dipendente</option>
+      <option value="spesa_generica">Spesa generica</option>
+      <option value="anticipo_cassa">Anticipo cassa</option>
+      <option value="rimborso">Rimborso</option>
+      <option value="altro">Altro</option>
+    </select>
+    <label style="font-size:12px;font-weight:600;color:var(--ink3);display:block;margin-bottom:4px">Note</label>
+    <input type="text" id="cmovNote" placeholder="Descrizione..." style="width:100%;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box;margin-bottom:14px">
+    <button class="btn btn-p" onclick="salvaMovimentoCassa()" style="width:100%;padding:12px;font-size:14px">Salva movimento</button>
+  </div>
+</div>
+
 <nav class="tab-bar">
   
   <button class="tab-item" onclick="goTab('assegni',this)">
@@ -1053,6 +1110,10 @@ body{padding-bottom:92px !important}
   <button class="tab-item" onclick="goTab('cassa',this)">
     <span class="tab-ico">&#128176;</span>
     <span class="tab-lbl">Cassa</span>
+  </button>
+  <button class="tab-item" onclick="goTab('banca',this)">
+    <span class="tab-ico">&#127974;</span>
+    <span class="tab-lbl">Banca</span>
   </button>
   <button class="tab-item" onclick="goTab('iva',this)">
     <span class="tab-ico">&#128200;</span>
@@ -1275,6 +1336,7 @@ function goTab(tab,btn){
     if(typeof corrCalcTot==='function') corrCalcTot();
   }
   if(tab==='cassa' && typeof caricaCassa==='function') caricaCassa();
+  if(tab==='banca' && typeof caricaBanca==='function') caricaBanca();
   if(tab==='iva' && typeof calcolaIVA==='function') calcolaIVA();
 }
 
@@ -3542,6 +3604,178 @@ async function caricaCachePOSBanca(anno){
   }catch(e){ window._ecPosCache = {}; }
 }
 
+
+
+// ══ PRIMA NOTA BANCA + RICONCILIAZIONE ══
+async function caricaBanca(){
+  var anno = (document.getElementById('bancaAnno').value||'').trim();
+  var mese = parseInt(document.getElementById('bancaMese').value||'0');
+  if(!anno){ toast('Anno'); return; }
+  var td = document.getElementById('bancaTotali');
+  var ld = document.getElementById('bancaLista');
+  if(!td||!ld) return;
+  td.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3)">\u23f3 Caricamento...</div>';
+  ld.innerHTML = '';
+  
+  try {
+    var daIni = anno + '-01-01';
+    var daFin = anno + '-12-31';
+    if(mese>0){
+      var mm = String(mese).padStart(2,'0');
+      var ggFin = new Date(parseInt(anno), mese, 0).getDate();
+      daIni = anno + '-' + mm + '-01';
+      daFin = anno + '-' + mm + '-' + String(ggFin).padStart(2,'0');
+    }
+    
+    // Carica movimenti estratto conto
+    var rows = await sbFetch('estratto_conto?data_contabile=gte.'+daIni+'&data_contabile=lte.'+daFin+'&select=*&order=data_contabile.desc');
+    rows = rows || [];
+    
+    if(!rows.length){
+      td.innerHTML = '<div class="empty" style="padding:30px 20px;text-align:center;color:var(--ink3)"><div style="font-size:40px;opacity:.35;margin-bottom:8px">&#127974;</div>Nessun movimento bancario.<br><span style="font-size:12px">Importa il CSV dell\'estratto conto dalla sezione Estratto conto.</span></div>';
+      return;
+    }
+    
+    var totE=0, totU=0;
+    rows.forEach(function(r){
+      var imp = parseFloat(r.importo||0);
+      if(imp>0) totE+=imp; else totU+=Math.abs(imp);
+    });
+    var saldo = totE - totU;
+    var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    
+    td.innerHTML = 
+      '<div style="background:linear-gradient(135deg,'+(saldo>=0?'#007AFF,#5856D6':'#FF3B30,#FF6B6B')+');border-radius:14px;padding:16px;color:#fff;margin-bottom:10px">'+
+        '<div style="font-size:11px;opacity:.8;letter-spacing:.5px">SALDO PERIODO '+anno+(mese?' \u00b7 '+['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'][mese]:'')+'</div>'+
+        '<div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(saldo)+'</div>'+
+        '<div style="font-size:12px;opacity:.85">'+rows.length+' movimenti</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div style="background:#E8F8ED;border-radius:12px;padding:12px 14px">'+
+          '<div style="font-size:10px;font-weight:700;color:#1a7a3a;letter-spacing:.4px">&#11015; ACCREDITI</div>'+
+          '<div style="font-size:18px;font-weight:800;color:#1a7a3a;margin-top:2px">\u20ac '+fe(totE)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--red-light);border-radius:12px;padding:12px 14px">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:.4px">&#11014; ADDEBITI</div>'+
+          '<div style="font-size:18px;font-weight:800;color:var(--red);margin-top:2px">\u20ac '+fe(totU)+'</div>'+
+        '</div>'+
+      '</div>';
+    
+    // Per ogni movimento in uscita (addebito bonifico), cerca fattura match
+    var h = '<div style="margin-top:14px">';
+    rows.forEach(function(m){
+      var imp = parseFloat(m.importo||0);
+      var isUsc = imp<0;
+      var importoAbs = Math.abs(imp);
+      var data = (m.data_contabile||'').slice(0,10);
+      var dataFmt = new Date(data+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'});
+      var desc = m.descrizione||m.causale||'Movimento';
+      var circuito = m.circuito||'';
+      
+      // Match fattura (solo per uscite)
+      var match = null;
+      if(isUsc && typeof fatture!=='undefined' && fatture){
+        match = fatture.find(function(f){
+          if(f.pagamento!=='bonifico') return false;
+          if(Math.abs((f.importo||0)-importoAbs) > 0.5) return false;
+          // Match su descrizione (nome fornitore contenuto in causale)
+          if(f.fornitore && desc.toLowerCase().indexOf(f.fornitore.toLowerCase().split(/[\s.]/)[0])>=0) return true;
+          // Match su data ±10gg
+          if(f.scadenza){
+            var dtF = new Date(f.scadenza+'T12:00:00');
+            var dtM = new Date(data+'T12:00:00');
+            if(Math.abs(dtM-dtF) < 10*24*3600*1000) return true;
+          }
+          return false;
+        });
+      }
+      
+      var col = isUsc?'#b00020':'#1a7a3a';
+      var icon = isUsc?'&#11014;':'&#11015;';
+      var segno = isUsc?'\u2212':'+';
+      
+      h += '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.06)'+(match?';border-left:3px solid #00B884':'')+'">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+      h +=   '<div style="flex:1;min-width:0">';
+      h +=     '<div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+icon+' '+esc(desc)+'</div>';
+      h +=     '<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+dataFmt+(circuito?' \u00b7 '+esc(circuito):'')+'</div>';
+      if(match){
+        h += '<div style="margin-top:6px;background:#E8F8ED;border-radius:6px;padding:4px 8px;font-size:11px;color:#1a7a3a;font-weight:600">&#128279; Fattura '+esc(match.fornitore)+(match.numero?' N.'+esc(match.numero):'')+(match.stato==='pagata'?' &#10003;':'')+'</div>';
+      } else if(isUsc){
+        h += '<div style="margin-top:4px;font-size:10px;color:var(--ink3);font-style:italic">Nessuna fattura corrispondente</div>';
+      }
+      h +=   '</div>';
+      h +=   '<div style="font-size:14px;font-weight:700;color:'+col+'">'+segno+'\u20ac '+fe(importoAbs)+'</div>';
+      h += '</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+    ld.innerHTML = h;
+    
+  } catch(e){
+    td.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
+  }
+}
+
+// Riconciliazione automatica: per ogni addebito con match, segna la fattura come "pagata"
+async function riconciliaAutomatica(){
+  var anno = (document.getElementById('bancaAnno').value||'').trim();
+  var mese = parseInt(document.getElementById('bancaMese').value||'0');
+  if(!anno){ toast('Anno'); return; }
+  var daIni = anno + '-01-01', daFin = anno + '-12-31';
+  if(mese>0){
+    var mm = String(mese).padStart(2,'0');
+    var ggFin = new Date(parseInt(anno), mese, 0).getDate();
+    daIni = anno + '-' + mm + '-01';
+    daFin = anno + '-' + mm + '-' + String(ggFin).padStart(2,'0');
+  }
+  
+  toast('Riconciliazione in corso...');
+  var count = 0;
+  try {
+    var rows = await sbFetch('estratto_conto?data_contabile=gte.'+daIni+'&data_contabile=lte.'+daFin+'&importo=lt.0&select=*');
+    rows = rows || [];
+    
+    for(var i=0; i<rows.length; i++){
+      var m = rows[i];
+      var importoAbs = Math.abs(parseFloat(m.importo||0));
+      var data = (m.data_contabile||'').slice(0,10);
+      var desc = (m.descrizione||m.causale||'').toLowerCase();
+      
+      var match = null;
+      if(typeof fatture!=='undefined' && fatture){
+        match = fatture.find(function(f){
+          if(f.pagamento!=='bonifico') return false;
+          if(f.stato==='pagata') return false;
+          if(Math.abs((f.importo||0)-importoAbs) > 0.5) return false;
+          if(f.fornitore && desc.indexOf(f.fornitore.toLowerCase().split(/[\s.]/)[0])>=0) return true;
+          if(f.scadenza){
+            var dtF = new Date(f.scadenza+'T12:00:00');
+            var dtM = new Date(data+'T12:00:00');
+            if(Math.abs(dtM-dtF) < 10*24*3600*1000) return true;
+          }
+          return false;
+        });
+      }
+      
+      if(match){
+        try {
+          await sbFetch('fatture?id=eq.'+match.id, {method:'PATCH', body:JSON.stringify({stato:'pagata', riconciliato_banca:m.id, data_pagamento:data})});
+          match.stato = 'pagata';
+          count++;
+        } catch(e){}
+      }
+    }
+    
+    if(typeof save==='function') save(fatture);
+    toast(count + ' fatture riconciliate');
+    caricaBanca();
+    if(typeof renderLista==='function') renderLista();
+    if(typeof renderAlerts==='function') renderAlerts();
+  } catch(e){
+    toast('Errore: '+e.message.slice(0,40));
+  }
+}
 
 // ══ PRIMA NOTA CASSA ══
 // Entrate: corrispettivi (contanti), movimenti manuali tipo "prelievo_banca", "rimborso"

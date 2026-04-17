@@ -1001,6 +1001,40 @@ body{padding-bottom:92px !important}
 
 
 </div>
+<!-- PRIMA NOTA (wrapper con 3 sottoschede) -->
+<div class="view" id="view-primanota" style="padding:16px;padding-bottom:100px">
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
+<p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Prima Nota</p>
+<p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Provvisoria da riconciliare · Cassa reale · Banca (estratto conto)</p>
+
+<div style="display:flex;gap:4px;margin-bottom:14px;background:var(--surface2);border-radius:10px;padding:3px">
+  <button id="pnSubProv" onclick="switchPrimaNota('prov')" style="flex:1;padding:8px 4px;border:none;background:var(--surface);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.08);font-family:inherit">&#9888; Provvisoria <span id="pnProvBadge" style="background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;margin-left:4px;display:none">0</span></button>
+  <button id="pnSubCassa" onclick="switchPrimaNota('cassa')" style="flex:1;padding:8px 4px;border:none;background:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink3);font-family:inherit">&#128181; Cassa</button>
+  <button id="pnSubBanca" onclick="switchPrimaNota('banca')" style="flex:1;padding:8px 4px;border:none;background:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink3);font-family:inherit">&#127974; Banca</button>
+</div>
+
+<div id="pnSectionProv">
+  <!-- Provvisoria -->
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <input type="number" id="provAnno" value="2026" min="2020" max="2099" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+    <button class="btn btn-p" onclick="caricaProvvisoria()" style="flex:0 0 auto;padding:10px 16px;font-size:14px">Aggiorna</button>
+  </div>
+  <div id="provTotali" style="margin-bottom:14px"></div>
+  <div id="provLista"></div>
+</div>
+
+<div id="pnSectionCassa" style="display:none">
+  <!-- Cassa (il contenuto viene spostato qui) -->
+  <div id="pnCassaContainer"></div>
+</div>
+
+<div id="pnSectionBanca" style="display:none">
+  <!-- Banca (il contenuto viene spostato qui) -->
+  <div id="pnBancaContainer"></div>
+</div>
+
+</div>
+
 <!-- PRIMA NOTA CASSA -->
 <div class="view" id="view-cassa" style="padding:16px;padding-bottom:100px">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
@@ -1128,17 +1162,13 @@ body{padding-bottom:92px !important}
     <span class="tab-ico">&#128179;</span>
     <span class="tab-lbl">Corrisp.</span>
   </button>
-  <button class="tab-item" onclick="goTab('cassa',this)">
-    <span class="tab-ico">&#128176;</span>
-    <span class="tab-lbl">Cassa</span>
+  <button class="tab-item" onclick="goTab('primanota',this)">
+    <span class="tab-ico">&#128179;</span>
+    <span class="tab-lbl">P.Nota</span>
   </button>
   <button class="tab-item" onclick="goTab('fornitori',this)">
     <span class="tab-ico">&#128101;</span>
     <span class="tab-lbl">Fornit.</span>
-  </button>
-  <button class="tab-item" onclick="goTab('banca',this)">
-    <span class="tab-ico">&#127974;</span>
-    <span class="tab-lbl">Banca</span>
   </button>
   <button class="tab-item" onclick="goTab('iva',this)">
     <span class="tab-ico">&#128200;</span>
@@ -1360,6 +1390,7 @@ function goTab(tab,btn){
     if(dataIn && !dataIn.value) dataIn.value=new Date().toISOString().slice(0,10);
     if(typeof corrCalcTot==='function') corrCalcTot();
   }
+  if(tab==='primanota' && typeof inizializzaPrimaNota==='function') inizializzaPrimaNota();
   if(tab==='cassa' && typeof caricaCassa==='function') caricaCassa();
   if(tab==='banca' && typeof caricaBanca==='function') caricaBanca();
   if(tab==='fornitori' && typeof renderFornitori==='function') renderFornitori();
@@ -3906,6 +3937,249 @@ async function salvaFornitore(nome){
   }
 }
 
+
+// ══ PRIMA NOTA — WRAPPER con sotto-sezioni ══
+var _pnSub = 'prov'; // default
+
+function inizializzaPrimaNota(){
+  // Sposto le view view-cassa e view-banca dentro i container
+  var vc = document.getElementById('view-cassa');
+  var vb = document.getElementById('view-banca');
+  var cc = document.getElementById('pnCassaContainer');
+  var bc = document.getElementById('pnBancaContainer');
+  if(vc && cc && !cc.hasChildNodes()){
+    // Prendo SOLO il contenuto (figli) non il wrapper
+    // Evito di spostare il bottone Home che è duplicato nel wrapper padre
+    var children = Array.from(vc.children);
+    children.forEach(function(ch){
+      // Salto il bottone Home e i titoli h1
+      var isHome = ch.tagName==='BUTTON' && ch.textContent.trim().indexOf('Home')>=0;
+      if(isHome) return;
+      cc.appendChild(ch);
+    });
+    vc.style.display='none';
+  }
+  if(vb && bc && !bc.hasChildNodes()){
+    var children2 = Array.from(vb.children);
+    children2.forEach(function(ch){
+      var isHome = ch.tagName==='BUTTON' && ch.textContent.trim().indexOf('Home')>=0;
+      if(isHome) return;
+      bc.appendChild(ch);
+    });
+    vb.style.display='none';
+  }
+  switchPrimaNota(_pnSub);
+}
+
+function switchPrimaNota(which){
+  _pnSub = which;
+  ['prov','cassa','banca'].forEach(function(k){
+    var sec = document.getElementById('pnSection'+k.charAt(0).toUpperCase()+k.slice(1));
+    var btn = document.getElementById('pnSub'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(!sec||!btn) return;
+    if(k===which){
+      sec.style.display='block';
+      btn.style.background='var(--surface)';
+      btn.style.color='var(--blue)';
+      btn.style.boxShadow='0 1px 3px rgba(0,0,0,.08)';
+    } else {
+      sec.style.display='none';
+      btn.style.background='none';
+      btn.style.color='var(--ink3)';
+      btn.style.boxShadow='none';
+    }
+  });
+  if(which==='prov' && typeof caricaProvvisoria==='function') caricaProvvisoria();
+  else if(which==='cassa' && typeof caricaCassa==='function') caricaCassa();
+  else if(which==='banca' && typeof caricaBanca==='function') caricaBanca();
+}
+
+// ══ PRIMA NOTA PROVVISORIA ══
+// Tutto quello che è dichiarato MA non ancora riconciliato:
+// - Fatture da pagare (stato != pagata) raggruppate per metodo previsto
+// - Movimenti banca non ancora associati a una fattura (se estratto_conto disponibile)
+async function caricaProvvisoria(){
+  var anno = (document.getElementById('provAnno').value||'').trim();
+  if(!anno){ toast('Anno'); return; }
+  var td = document.getElementById('provTotali');
+  var ld = document.getElementById('provLista');
+  if(!td||!ld) return;
+  td.innerHTML = '<div style="text-align:center;padding:12px;color:var(--ink3)">\u23f3 Caricamento...</div>';
+  ld.innerHTML = '';
+  
+  try {
+    var daIni = anno + '-01-01', daFin = anno + '-12-31';
+    
+    // A) Fatture DA PAGARE (non ancora in stato pagata) raggruppate per metodo previsto
+    var daPagare = {contanti:[], bonifico:[], assegno:[], altro:[]};
+    if(typeof fatture !== 'undefined' && fatture){
+      fatture.forEach(function(f){
+        if(f.document_type==='TD04') return;
+        if(f.stato==='pagata') return;
+        if(!f.importo || f.importo<=0) return;
+        var d = (f.data||'').slice(0,10);
+        if(d<daIni || d>daFin) return;
+        // Residuo considerando compensazioni note credito
+        var residuo = parseFloat(f.importo||0);
+        if(f.compensazione_note){
+          try{
+            var notes = typeof f.compensazione_note==='string' ? JSON.parse(f.compensazione_note) : f.compensazione_note;
+            if(Array.isArray(notes)) notes.forEach(function(n){ residuo -= Math.abs(parseFloat(n.importo||0)); });
+          }catch(e){}
+        }
+        if(residuo<=0.01) return;
+        var met = f.pagamento||'altro';
+        if(!daPagare[met]) daPagare[met]=[];
+        f._residuo_calc = residuo;
+        daPagare[met].push(f);
+      });
+    }
+    
+    // B) Movimenti banca non associati a fatture (se estratto_conto esiste)
+    var movNonAssoc = [];
+    try {
+      var movs = await sbFetch('estratto_conto?data_contabile=gte.'+daIni+'&data_contabile=lte.'+daFin+'&select=*');
+      (movs||[]).forEach(function(m){
+        var desc = (m.descrizione||m.causale||'').toLowerCase();
+        var imp = parseFloat(m.importo||0);
+        if(imp>=0) return; // solo addebiti (uscite da banca)
+        var importoAbs = Math.abs(imp);
+        // cerco fattura associata
+        var matched = false;
+        if(typeof fatture!=='undefined' && fatture){
+          matched = !!fatture.find(function(f){
+            if(f.riconciliato_banca===m.id) return true;
+            if(f.pagamento==='bonifico' && f.stato==='pagata' && Math.abs((f.importo||0)-importoAbs)<0.5){
+              if(f.fornitore && desc.indexOf(f.fornitore.toLowerCase().split(/[\s.]/)[0])>=0) return true;
+            }
+            return false;
+          });
+        }
+        if(!matched) movNonAssoc.push(m);
+      });
+    } catch(e){ /* tabella può non esistere */ }
+    
+    var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    
+    // Totali
+    var totPagare = 0, numPagare = 0;
+    Object.keys(daPagare).forEach(function(k){
+      daPagare[k].forEach(function(f){ totPagare += f._residuo_calc; numPagare++; });
+    });
+    var totNonAssoc = movNonAssoc.reduce(function(s,m){return s + Math.abs(parseFloat(m.importo||0));}, 0);
+    
+    // Badge sul bottone Provvisoria (tab bar interna)
+    var badge = document.getElementById('pnProvBadge');
+    if(badge){
+      var tot = numPagare + movNonAssoc.length;
+      badge.textContent = tot;
+      badge.style.display = tot>0 ? 'inline-block' : 'none';
+    }
+    
+    td.innerHTML = 
+      '<div style="background:linear-gradient(135deg,#FF9500,#FF3B30);border-radius:14px;padding:16px;color:#fff;margin-bottom:10px">'+
+        '<div style="font-size:11px;opacity:.8;letter-spacing:.5px">DA RICONCILIARE '+anno+'</div>'+
+        '<div style="font-size:26px;font-weight:800;margin-top:4px">\u20ac '+fe(totPagare)+'</div>'+
+        '<div style="font-size:12px;opacity:.9">'+numPagare+' fatture da pagare'+(movNonAssoc.length?' \u00b7 '+movNonAssoc.length+' movimenti banca sospesi':'')+'</div>'+
+      '</div>';
+    
+    if(numPagare===0 && movNonAssoc.length===0){
+      ld.innerHTML = '<div class="empty" style="padding:40px 16px;text-align:center;color:var(--ink3)"><div style="font-size:40px;opacity:.35;margin-bottom:8px">\u2713</div>Tutto riconciliato!<br><span style="font-size:12px">Nessuna fattura pendente, nessun movimento banca sospeso</span></div>';
+      return;
+    }
+    
+    var h = '';
+    
+    // Sezione fatture da pagare
+    ['contanti','bonifico','assegno','altro'].forEach(function(met){
+      var arr = daPagare[met]||[];
+      if(!arr.length) return;
+      var subTot = 0; arr.forEach(function(f){ subTot+=f._residuo_calc; });
+      var icon = {contanti:'&#128181;',bonifico:'&#127974;',assegno:'&#128221;',altro:'&#10067;'}[met];
+      var lbl = {contanti:'Contanti',bonifico:'Bonifico',assegno:'Assegno',altro:'Metodo non definito'}[met];
+      h += '<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden">';
+      h +=   '<div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--sep);display:flex;justify-content:space-between;align-items:center">';
+      h +=     '<div style="font-weight:700;font-size:13px">'+icon+' Da pagare '+lbl+' ('+arr.length+')</div>';
+      h +=     '<div style="font-size:13px;font-weight:700;color:var(--red)">\u20ac '+fe(subTot)+'</div>';
+      h +=   '</div>';
+      arr.sort(function(a,b){return (a.scadenza||a.data||'').localeCompare(b.scadenza||b.data||'');});
+      arr.forEach(function(f){
+        var oggi = new Date(); oggi.setHours(0,0,0,0);
+        var sc = f.scadenza || f.data || '';
+        var scd = sc ? new Date(sc+'T12:00:00') : null;
+        var scaduta = scd && scd<oggi;
+        var scadFmt = sc ? new Date(sc+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'}) : '\u2014';
+        h += '<div style="padding:10px 14px;border-bottom:1px solid var(--sep)">';
+        h +=   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+        h +=     '<div style="flex:1;min-width:0">';
+        h +=       '<div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(f.fornitore||'(senza fornitore)')+'</div>';
+        h +=       '<div style="font-size:10px;color:'+(scaduta?'var(--red)':'var(--ink3)')+';margin-top:2px">N.'+esc(f.numero||'—')+' \u00b7 '+(scaduta?'<b>SCADUTA '+scadFmt+'</b>':'Scad. '+scadFmt)+'</div>';
+        h +=     '</div>';
+        h +=     '<div style="font-size:14px;font-weight:700;color:var(--red)">\u20ac '+fe(f._residuo_calc)+'</div>';
+        h +=   '</div>';
+        h +=   '<div style="display:flex;gap:6px;margin-top:8px">';
+        h +=     '<button onclick="riconciliaFatturaProv('+f.id+',\'cassa\')" style="flex:1;padding:6px;border:1px solid #00B884;background:#E8F8ED;border-radius:6px;font-size:11px;font-weight:600;color:#1a7a3a;cursor:pointer;font-family:inherit">\u2192 Cassa</button>';
+        h +=     '<button onclick="riconciliaFatturaProv('+f.id+',\'banca\')" style="flex:1;padding:6px;border:1px solid var(--blue);background:var(--blue-light);border-radius:6px;font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;font-family:inherit">\u2192 Banca</button>';
+        h +=   '</div>';
+        h += '</div>';
+      });
+      h += '</div>';
+    });
+    
+    // Sezione movimenti banca non associati
+    if(movNonAssoc.length){
+      h += '<div style="background:var(--surface);border-radius:12px;margin-top:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden">';
+      h +=   '<div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--sep);display:flex;justify-content:space-between;align-items:center">';
+      h +=     '<div style="font-weight:700;font-size:13px">&#127974; Movimenti banca senza fattura ('+movNonAssoc.length+')</div>';
+      h +=     '<div style="font-size:13px;font-weight:700;color:var(--red)">\u20ac '+fe(totNonAssoc)+'</div>';
+      h +=   '</div>';
+      movNonAssoc.slice(0,30).forEach(function(m){
+        var dataFmt = new Date((m.data_contabile||'').slice(0,10)+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'});
+        h += '<div style="padding:10px 14px;border-bottom:1px solid var(--sep);display:flex;justify-content:space-between;gap:8px">';
+        h +=   '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.descrizione||m.causale||'Movimento')+'</div>';
+        h +=   '<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+dataFmt+'</div></div>';
+        h +=   '<div style="font-size:13px;font-weight:700;color:var(--red)">\u20ac '+fe(Math.abs(parseFloat(m.importo||0)))+'</div>';
+        h += '</div>';
+      });
+      h += '</div>';
+    }
+    
+    ld.innerHTML = h;
+    
+  } catch(e){
+    td.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+esc(e.message||'')+'</div>';
+  }
+}
+
+// Riconcilia una fattura manualmente: la segna come pagata + riconciliato_banca se va in banca
+async function riconciliaFatturaProv(fId, dove){
+  var f = fatture.find(function(x){return x.id==fId;});
+  if(!f){ toast('Fattura non trovata'); return; }
+  var oggi = new Date().toISOString().slice(0,10);
+  var payload = {stato:'pagata', data_pagamento:oggi};
+  if(dove==='banca') payload.riconciliato_banca = -1; // flag "riconciliata banca ma senza id movimento"
+  
+  try {
+    await sbFetch('fatture?id=eq.'+fId, {method:'PATCH', body:JSON.stringify(payload)});
+    f.stato = 'pagata';
+    f.data_pagamento = oggi;
+    if(dove==='banca') f.riconciliato_banca = -1;
+    if(typeof save==='function') save(fatture);
+    toast('Fattura spostata in '+dove);
+    caricaProvvisoria();
+    if(typeof renderLista==='function') renderLista();
+    if(typeof renderAlerts==='function') renderAlerts();
+  } catch(e){
+    // Fallback locale
+    f.stato = 'pagata';
+    f.data_pagamento = oggi;
+    if(dove==='banca') f.riconciliato_banca = -1;
+    if(typeof save==='function') save(fatture);
+    toast('Salvato in memoria');
+    caricaProvvisoria();
+  }
+}
+
 // ══ PRIMA NOTA BANCA + RICONCILIAZIONE ══
 async function caricaBanca(){
   var anno = (document.getElementById('bancaAnno').value||'').trim();
@@ -4013,7 +4287,16 @@ async function caricaBanca(){
     ld.innerHTML = h;
     
   } catch(e){
-    td.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
+    var msg = e.message||'';
+    if(msg.indexOf('estratto_conto')>=0 || msg.indexOf('PGRST205')>=0 || msg.indexOf('schema cache')>=0){
+      td.innerHTML = '<div style="background:#FFF4E0;border-left:3px solid #FF9500;padding:14px;border-radius:8px;color:#7a4a00;font-size:12px">'
+        +'<div style="font-weight:700;margin-bottom:4px">⚠ Tabella estratto_conto non trovata su Supabase</div>'
+        +'<div>Per usare la Prima Nota Banca serve creare la tabella. Esegui questo SQL su Supabase (SQL Editor):</div>'
+        +'<pre style="background:#fff;padding:10px;border-radius:6px;margin-top:8px;font-size:10px;overflow-x:auto;white-space:pre-wrap">CREATE TABLE IF NOT EXISTS estratto_conto (\n  id bigint primary key,\n  data_contabile date,\n  data_valuta date,\n  importo numeric(12,2),\n  descrizione text,\n  causale text,\n  circuito text,\n  hash_riga text unique,\n  ts bigint\n);</pre>'
+        +'</div>';
+    } else {
+      td.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+esc(msg)+'</div>';
+    }
   }
 }
 
@@ -4734,6 +5017,15 @@ function calcolaAlerts(){
 }
 
 function renderAlerts(){
+  // Aggiorna silenziosamente il badge Provvisoria se disponibile
+  try{
+    if(typeof fatture!=='undefined' && fatture){
+      var nDaPag = fatture.filter(function(f){return f.document_type!=='TD04' && f.stato!=='pagata' && (f.importo||0)>0;}).length;
+      var b = document.getElementById('pnProvBadge');
+      if(b){ b.textContent = nDaPag; b.style.display = nDaPag>0 ? 'inline-block' : 'none'; }
+    }
+  }catch(e){}
+
   var card = document.getElementById('alertsCard');
   var body = document.getElementById('alertsBody');
   var count = document.getElementById('alertsCount');

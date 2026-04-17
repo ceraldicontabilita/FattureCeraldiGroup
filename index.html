@@ -3158,48 +3158,84 @@ function gestApriDettaglio(idx){
   var imp = parseFloat(inv.taxable_amount||inv.totale_imponibile||0);
   var iva = parseFloat(inv.vat_amount||inv.totale_iva||0);
   var ivaR = inv.vat_rate||'';
-  var data = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+  var dataF = (inv.invoice_date||inv.data_effettiva||'').toString().slice(0,10);
+  var dataFmt = dataF ? new Date(dataF+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'}) : '';
   var desc = inv.descrizione||'';
   var piva = inv.cedente_piva||inv.fornitore_piva||'';
   var cf = inv.cedente_cf||'';
-  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
-  var artHtml = '';
+  var addr = inv.cedente_indirizzo||'';
+  var docType = inv.document_type||'TD01';
+  var ddt = inv.ddt_numero||inv.ddt_riferimento||'';
+  var fe = function(n){return '\u20ac '+(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+
+  // Tabella articoli
+  var righeHtml = '';
   if(inv.linee && inv.linee.length){
-    artHtml = '<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:6px">ARTICOLI ('+inv.linee.length+')</div>';
+    righeHtml = '<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:10px">DETTAGLIO VOCI</div>';
+    righeHtml += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.1)"><th style="text-align:left;padding:8px 4px">Descrizione</th><th style="text-align:center;padding:8px 4px">Qt\u00e0</th><th style="text-align:right;padding:8px 4px">P.Unit</th><th style="text-align:right;padding:8px 4px;font-weight:700">Totale</th></tr></thead><tbody>';
     inv.linee.forEach(function(l){
       var pz = parseFloat(l.prezzo_unitario||0);
       var qt = parseFloat(l.quantita||1);
-      var ltot = pz*qt;
-      artHtml += '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:12px;display:flex;justify-content:space-between"><span style="flex:1">'+esc(l.descrizione||'')+'</span><span style="white-space:nowrap;font-weight:600;margin-left:8px">'+fe(ltot)+'</span></div>';
+      var um = l.unita_misura||'';
+      var ltot = parseFloat(l.prezzo_totale||(pz*qt)||0);
+      var ali = l.aliquota_iva||ivaR||'';
+      righeHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:10px 4px;color:#fff">'+(esc(l.descrizione||''))+'</td><td style="padding:10px 4px;text-align:center;color:rgba(255,255,255,.7)">'+qt.toFixed(2)+' '+esc(um)+'</td><td style="padding:10px 4px;text-align:right;color:rgba(255,255,255,.7)">\u20ac '+pz.toFixed(2)+'</td><td style="padding:10px 4px;text-align:right;color:#fff;font-weight:700">\u20ac '+ltot.toFixed(2)+'</td></tr>';
     });
+    righeHtml += '</tbody></table></div>';
   } else if(desc){
     var dp = desc.split(';').map(function(s){return s.trim();}).filter(Boolean);
-    artHtml = '<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:6px">ARTICOLI</div>';
+    righeHtml = '<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:10px">ARTICOLI</div>';
     dp.forEach(function(s){
-      artHtml += '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:3px;font-size:12px">'+esc(s)+'</div>';
+      righeHtml += '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);color:#fff;font-size:13px">'+esc(s)+'</div>';
     });
+    righeHtml += '</div>';
   }
+
+  // Riepilogo IVA
+  var riepHtml = '<div style="margin-top:16px;background:rgba(255,255,255,.05);border-radius:12px;padding:14px"><div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:8px">RIEPILOGO</div>';
+  riepHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Imponibile</span><span style="color:#fff">'+fe(imp)+'</span></div>';
+  riepHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">IVA'+(ivaR?' ('+ivaR+'%)':'')+'</span><span style="color:#fff">'+fe(iva)+'</span></div>';
+  riepHtml += '<div style="display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px solid rgba(255,255,255,.1);margin-top:6px"><span style="color:#fff;font-weight:700;font-size:15px">Totale documento</span><span style="color:#fff;font-weight:800;font-size:20px">'+fe(tot)+'</span></div>';
+  riepHtml += '</div>';
+
+  // Modal
   var mo = document.getElementById('gestDetailMo');
   if(!mo){
     mo = document.createElement('div');
     mo.id = 'gestDetailMo';
-    mo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch';
-    mo.addEventListener('click',function(e){if(e.target===mo){mo.style.display='none';}});
+    mo.style.cssText = 'display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);overflow-y:auto;-webkit-overflow-scrolling:touch';
     document.body.appendChild(mo);
   }
-  mo.innerHTML = '<div style="background:var(--bg);border-radius:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px 20px;box-shadow:0 8px 32px rgba(0,0,0,.25)">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">Fattura N\u00b0 '+esc(num)+'</div><button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px">\u2715</button></div>'
-    +'<div style="font-size:20px;font-weight:800;margin-bottom:4px">'+esc(forn)+'</div>'
-    +'<div style="font-size:13px;color:var(--ink3)">P.IVA '+esc(piva)+(cf?' \u2014 CF '+esc(cf):'')+'</div>'
-    +'<div style="font-size:13px;color:var(--ink3);margin-bottom:16px">'+data+'</div>'
-    +'<div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:600;color:var(--ink3)">TOTALE</span><span style="font-size:28px;font-weight:800">\u20ac '+fe(tot)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px"><span style="color:var(--ink3)">Imponibile</span><span>\u20ac '+fe(imp)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:2px"><span style="color:var(--ink3)">IVA'+(ivaR?' ('+ivaR+'%)':'')+'</span><span>\u20ac '+fe(iva)+'</span></div>'
+
+  mo.innerHTML = '<div style="min-height:100%;background:linear-gradient(180deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);padding:60px 20px 100px">'
+    // Header
+    +'<div style="margin-bottom:24px"><div style="font-size:20px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px">\ud83d\udcce Fattura '+esc(num)+' \u2014 '+esc(forn)+'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">fattura_'+esc(num)+'.xml</div></div>'
+    // Fornitore
+    +'<div style="background:rgba(255,255,255,.07);border-radius:14px;padding:18px;margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:8px">FORNITORE</div>'
+    +'<div style="font-size:18px;font-weight:800;color:#fff">'+esc(forn)+'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">P.IVA'+(piva?' / CF: '+esc(piva):'')+(cf?' '+esc(cf):'')+'</div>'
+    +(addr?'<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">'+esc(addr)+'</div>':'')
     +'</div>'
-    +artHtml
+    // Dati documento
+    +'<div style="background:rgba(255,255,255,.07);border-radius:14px;padding:18px;margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:12px">DATI DOCUMENTO</div>'
+    +'<div style="display:flex;gap:20px"><div><div style="font-size:11px;color:rgba(255,255,255,.4)">N\u00b0 Fattura</div><div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">'+esc(num)+'</div></div>'
+    +'<div><div style="font-size:11px;color:rgba(255,255,255,.4)">Data emissione</div><div style="font-size:18px;font-weight:600;color:#fff;margin-top:2px">'+dataFmt+'</div></div></div>'
+    +(ddt?'<div style="margin-top:10px"><div style="font-size:11px;color:rgba(255,255,255,.4)">DDT di riferimento</div><div style="font-size:18px;font-weight:600;color:#4fc3f7;margin-top:2px">'+esc(ddt)+'</div></div>':'')
+    +'</div>'
+    // Dettaglio voci
+    +righeHtml
+    // Riepilogo
+    +riepHtml
+    // Bottoni
+    +'<div style="position:fixed;bottom:0;left:0;right:0;display:flex;gap:10px;padding:14px 20px;background:linear-gradient(0deg,rgba(15,15,30,.98),rgba(15,15,30,.8));backdrop-filter:blur(10px)">'
+    +'<button onclick="document.getElementById(\'gestDetailMo\').style.display=\'none\'" style="flex:1;padding:14px;border:none;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer">\u00d7 Chiudi</button>'
+    +'</div>'
     +'</div>';
-  mo.style.display = 'flex';
+  mo.style.display = 'block';
+  mo.scrollTop = 0;
 }
 document.addEventListener('DOMContentLoaded', function(){
   var listaEl = document.getElementById('listaEl');

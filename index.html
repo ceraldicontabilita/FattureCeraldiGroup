@@ -1001,6 +1001,33 @@ body{padding-bottom:92px !important}
 
 
 </div>
+<!-- PRIMA NOTA CASSA -->
+<div class="view" id="view-cassa" style="padding:16px;padding-bottom:100px">
+<button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
+<p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Prima Nota Cassa</p>
+<p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Entrate da corrispettivi · Uscite da fatture contanti · Movimenti manuali</p>
+
+<div style="display:flex;gap:8px;margin-bottom:12px">
+  <input type="number" id="cassaAnno" value="2026" min="2020" max="2099" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+  <select id="cassaMese" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
+    <option value="0">Tutto l'anno</option>
+    <option value="1">Gennaio</option><option value="2">Febbraio</option><option value="3">Marzo</option>
+    <option value="4">Aprile</option><option value="5">Maggio</option><option value="6">Giugno</option>
+    <option value="7">Luglio</option><option value="8">Agosto</option><option value="9">Settembre</option>
+    <option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>
+  </select>
+  <button class="btn btn-p" onclick="caricaCassa()" style="flex:0 0 auto;padding:10px 16px;font-size:14px">Carica</button>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <button onclick="apriNuovoMovimentoCassa('entrata')" style="flex:1;min-width:140px;padding:10px;border:1px solid #00B884;background:#E8F8ED;border-radius:10px;font-size:13px;font-weight:600;color:#1a7a3a;cursor:pointer;font-family:inherit">+ Entrata manuale</button>
+  <button onclick="apriNuovoMovimentoCassa('uscita')" style="flex:1;min-width:140px;padding:10px;border:1px solid var(--red);background:var(--red-light);border-radius:10px;font-size:13px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit">− Uscita manuale</button>
+</div>
+
+<div id="cassaTotali" style="margin-bottom:14px"></div>
+<div id="cassaLista"></div>
+</div>
+
 <div class="view" id="view-iva" style="padding:16px;padding-bottom:100px">
 <button onclick="goTab('scan',document.querySelector('.tab-item'))" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--sep);border-radius:99px;color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow)">&#8592; Home</button>
 <p class="stitle" style="font-size:20px;font-weight:700;margin-bottom:4px">Liquidazione IVA</p><p style="font-size:12px;color:var(--ink3);margin-bottom:14px">Art. 1 DPR 100/98</p><div style="display:flex;gap:8px;margin-bottom:14px"><input type="number" id="ivaAnno" value="2026" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box"><button class="btn btn-p" onclick="calcolaIVA()" style="flex:1;padding:10px;font-size:14px">Calcola</button></div><div id="ivaTotali"></div><div id="ivaMesi"></div></div>
@@ -1022,6 +1049,10 @@ body{padding-bottom:92px !important}
   <button class="tab-item" onclick="goTab('corrispettivi',this)">
     <span class="tab-ico">&#128179;</span>
     <span class="tab-lbl">Corrisp.</span>
+  </button>
+  <button class="tab-item" onclick="goTab('cassa',this)">
+    <span class="tab-ico">&#128176;</span>
+    <span class="tab-lbl">Cassa</span>
   </button>
   <button class="tab-item" onclick="goTab('iva',this)">
     <span class="tab-ico">&#128200;</span>
@@ -1243,6 +1274,7 @@ function goTab(tab,btn){
     if(dataIn && !dataIn.value) dataIn.value=new Date().toISOString().slice(0,10);
     if(typeof corrCalcTot==='function') corrCalcTot();
   }
+  if(tab==='cassa' && typeof caricaCassa==='function') caricaCassa();
   if(tab==='iva' && typeof calcolaIVA==='function') calcolaIVA();
 }
 
@@ -3508,6 +3540,287 @@ async function caricaCachePOSBanca(anno){
     });
     window._ecPosCache = cache;
   }catch(e){ window._ecPosCache = {}; }
+}
+
+
+// ══ PRIMA NOTA CASSA ══
+// Entrate: corrispettivi (contanti), movimenti manuali tipo "prelievo_banca", "rimborso"
+// Uscite: fatture con pagamento=contanti alla data pagamento, movimenti tipo versamento/spesa/dipendente
+async function caricaCassa(){
+  var anno = (document.getElementById('cassaAnno').value||'').trim();
+  var mese = parseInt(document.getElementById('cassaMese').value||'0');
+  if(!anno){ toast('Anno'); return; }
+  var td = document.getElementById('cassaTotali');
+  var ld = document.getElementById('cassaLista');
+  if(!td||!ld) return;
+  td.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3)">\u23f3 Caricamento...</div>';
+  ld.innerHTML = '';
+  
+  try {
+    var movimenti = [];
+    var daIni = anno + '-01-01';
+    var daFin = anno + '-12-31';
+    if(mese>0){
+      var mm = String(mese).padStart(2,'0');
+      var ggFin = new Date(parseInt(anno), mese, 0).getDate();
+      daIni = anno + '-' + mm + '-01';
+      daFin = anno + '-' + mm + '-' + String(ggFin).padStart(2,'0');
+    }
+    
+    // A) Entrate — corrispettivi contanti
+    //   1) da API esterna
+    try {
+      var r1 = await fetch('https://impresasemplice.online/api/corrispettivi?anno='+anno);
+      if(r1.ok){
+        var dX = await r1.json();
+        var xmlCorr = Array.isArray(dX)?dX:(dX.items||[]);
+        xmlCorr.forEach(function(c){
+          var d = (c.data||'').slice(0,10);
+          if(d>=daIni && d<=daFin){
+            var cont = parseFloat(c.pagato_contanti||0);
+            if(cont>0){
+              movimenti.push({
+                data:d,
+                tipo:'entrata',
+                importo:cont,
+                categoria:'corrispettivo_xml',
+                descrizione:'Corrispettivo contanti (registratore)',
+                origine:'xml',
+                ref_id:c.id||c.data
+              });
+            }
+          }
+        });
+      }
+    } catch(e){}
+    
+    //   2) da corrispettivi manuali (Supabase)
+    try {
+      var manu = await sbFetch('corrispettivi?data=gte.'+daIni+'&data=lte.'+daFin+'&select=*');
+      (manu||[]).forEach(function(c){
+        var d = (c.data||'').slice(0,10);
+        var cont = parseFloat(c.pagato_contanti||0);
+        if(cont>0){
+          // Evita doppio conteggio se c'è già entrata XML per stessa data
+          var esiste = movimenti.find(function(m){
+            return m.data===d && m.categoria==='corrispettivo_xml' && Math.abs(m.importo-cont)<0.01;
+          });
+          if(!esiste){
+            movimenti.push({
+              data:d,
+              tipo:'entrata',
+              importo:cont,
+              categoria:'corrispettivo_manuale',
+              descrizione:'Corrispettivo contanti (serale)',
+              origine:'manuale',
+              ref_id:c.id
+            });
+          }
+        }
+      });
+    } catch(e){}
+    
+    // B) Uscite — fatture contanti
+    // Uso le fatture già in memoria (più affidabile)
+    if(typeof fatture !== 'undefined' && fatture){
+      fatture.forEach(function(f){
+        if(f.pagamento==='contanti' && f.importo>0 && f.fornitore){
+          var d = (f.data||'').slice(0,10);
+          if(d>=daIni && d<=daFin){
+            movimenti.push({
+              data:d,
+              tipo:'uscita',
+              importo:f.importo,
+              categoria:'fattura_contanti',
+              descrizione:esc(f.fornitore) + (f.numero?' \u00b7 N.'+esc(f.numero):''),
+              origine:'fattura',
+              ref_id:f.id
+            });
+          }
+        }
+      });
+    }
+    
+    // C) Movimenti manuali dalla tabella prima_nota_cassa
+    try {
+      var mov = await sbFetch('prima_nota_cassa?data=gte.'+daIni+'&data=lte.'+daFin+'&select=*&order=data.asc');
+      (mov||[]).forEach(function(m){
+        movimenti.push({
+          data:(m.data||'').slice(0,10),
+          tipo:m.tipo,
+          importo:parseFloat(m.importo||0),
+          categoria:m.causale||'manuale',
+          descrizione:m.note||causalaLabel(m.causale),
+          origine:'cassa_manuale',
+          ref_id:m.id
+        });
+      });
+    } catch(e){ /* tabella potrebbe non esistere ancora */ }
+    
+    // Ordino per data decrescente
+    movimenti.sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+    
+    // Calcolo totali
+    var totEnt=0, totUsc=0;
+    movimenti.forEach(function(m){
+      if(m.tipo==='entrata') totEnt+=m.importo;
+      else totUsc+=m.importo;
+    });
+    var saldo = totEnt - totUsc;
+    
+    var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    
+    // Header totali
+    td.innerHTML = 
+      '<div style="background:linear-gradient(135deg,'+(saldo>=0?'#00B884,#007B5F':'#F44336,#B00020')+');border-radius:14px;padding:16px;color:#fff;margin-bottom:10px">'+
+        '<div style="font-size:11px;opacity:.8;letter-spacing:.5px">SALDO CASSA '+anno+(mese?' \u00b7 '+['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'][mese]:'')+'</div>'+
+        '<div style="font-size:28px;font-weight:800;margin-top:4px">\u20ac '+fe(saldo)+'</div>'+
+        '<div style="font-size:12px;opacity:.85">'+movimenti.length+' movimenti</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div style="background:#E8F8ED;border-radius:12px;padding:12px 14px">'+
+          '<div style="font-size:10px;font-weight:700;color:#1a7a3a;letter-spacing:.4px">&#11015; ENTRATE</div>'+
+          '<div style="font-size:18px;font-weight:800;color:#1a7a3a;margin-top:2px">\u20ac '+fe(totEnt)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--red-light);border-radius:12px;padding:12px 14px">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:.4px">&#11014; USCITE</div>'+
+          '<div style="font-size:18px;font-weight:800;color:var(--red);margin-top:2px">\u20ac '+fe(totUsc)+'</div>'+
+        '</div>'+
+      '</div>';
+    
+    // Lista movimenti raggruppati per giorno
+    if(!movimenti.length){
+      ld.innerHTML = '<div class="empty" style="padding:40px 20px;text-align:center;color:var(--ink3);margin-top:16px">Nessun movimento di cassa per il periodo</div>';
+      return;
+    }
+    
+    var giorni = {};
+    movimenti.forEach(function(m){
+      if(!giorni[m.data]) giorni[m.data] = [];
+      giorni[m.data].push(m);
+    });
+    
+    var h = '<div style="margin-top:14px">';
+    Object.keys(giorni).sort().reverse().forEach(function(d){
+      var items = giorni[d];
+      var subE=0, subU=0;
+      items.forEach(function(m){
+        if(m.tipo==='entrata') subE+=m.importo;
+        else subU+=m.importo;
+      });
+      var netto = subE - subU;
+      var dataFmt = new Date(d+'T12:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'});
+      h += '<div style="background:var(--surface);border-radius:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden">';
+      h += '<div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--sep);display:flex;justify-content:space-between;align-items:center">';
+      h +=   '<div style="font-weight:700;font-size:13px">'+dataFmt+'</div>';
+      h +=   '<div style="font-size:13px;font-weight:700;color:'+(netto>=0?'#1a7a3a':'var(--red)')+'">'+(netto>=0?'+':'')+'\u20ac '+fe(netto)+'</div>';
+      h += '</div>';
+      items.forEach(function(m){
+        var icon = m.tipo==='entrata' ? '&#11015;' : '&#11014;';
+        var col = m.tipo==='entrata' ? '#1a7a3a' : '#b00020';
+        var segno = m.tipo==='entrata' ? '+' : '\u2212';
+        var canDel = m.origine==='cassa_manuale';
+        h += '<div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--sep)">';
+        h +=   '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)"><span style="color:'+col+'">'+icon+'</span> '+m.descrizione+'</div>';
+        h +=     '<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+causalaLabel(m.categoria)+'</div></div>';
+        h +=   '<div style="font-size:14px;font-weight:700;color:'+col+'">'+segno+'\u20ac '+fe(m.importo)+'</div>';
+        if(canDel){
+          h += '<button onclick="eliminaMovimentoCassa('+m.ref_id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:4px 6px">&#128465;</button>';
+        }
+        h += '</div>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
+    ld.innerHTML = h;
+    
+  } catch(e){
+    td.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Errore: '+e.message+'</div>';
+  }
+}
+
+function causalaLabel(c){
+  var map = {
+    'corrispettivo_xml':'Corrispettivo registratore',
+    'corrispettivo_manuale':'Corrispettivo serale',
+    'fattura_contanti':'Pagamento fattura',
+    'prelievo_banca':'Prelievo banca',
+    'versamento_banca':'Versamento banca',
+    'pagamento_dipendente':'Pagamento dipendente',
+    'spesa_generica':'Spesa generica',
+    'anticipo_cassa':'Anticipo',
+    'rimborso':'Rimborso',
+    'altro':'Altro'
+  };
+  return map[c]||c;
+}
+
+function apriNuovoMovimentoCassa(tipo){
+  var mo = document.getElementById('cassaMovMo');
+  if(!mo) return;
+  document.getElementById('cmovTitle').textContent = tipo==='entrata'?'Nuova entrata cassa':'Nuova uscita cassa';
+  mo.dataset.tipo = tipo;
+  document.getElementById('cmovData').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cmovImporto').value = '';
+  document.getElementById('cmovCausale').value = '';
+  document.getElementById('cmovNote').value = '';
+  // Filtro causali per tipo
+  var sel = document.getElementById('cmovCausale');
+  var opts = sel.querySelectorAll('option');
+  opts.forEach(function(o){
+    var v = o.value;
+    var entraOk = ['prelievo_banca','anticipo_cassa','rimborso','altro',''].indexOf(v)>=0;
+    var usciOk = ['versamento_banca','pagamento_dipendente','spesa_generica','altro',''].indexOf(v)>=0;
+    o.style.display = (tipo==='entrata'?entraOk:usciOk)?'':'none';
+  });
+  mo.style.display='flex';
+}
+
+async function salvaMovimentoCassa(){
+  var mo = document.getElementById('cassaMovMo');
+  if(!mo) return;
+  var tipo = mo.dataset.tipo || 'entrata';
+  var data = document.getElementById('cmovData').value;
+  var importo = parseFloat((document.getElementById('cmovImporto').value||'0').replace(',','.'));
+  var causale = document.getElementById('cmovCausale').value;
+  var note = document.getElementById('cmovNote').value.trim();
+  
+  if(!data){ toast('Data'); return; }
+  if(!importo || importo<=0){ toast('Importo non valido'); return; }
+  if(!causale){ toast('Seleziona causale'); return; }
+  
+  var rec = {
+    id: Date.now(),
+    data: data,
+    tipo: tipo,
+    importo: importo,
+    causale: causale,
+    note: note || causalaLabel(causale),
+    ts: Date.now()
+  };
+  
+  try {
+    await sbFetch('prima_nota_cassa', {method:'POST', body:JSON.stringify(rec)});
+    toast('Movimento salvato');
+    mo.style.display='none';
+    caricaCassa();
+  } catch(e){
+    // Se tabella non esiste, messaggio chiaro
+    if(e.message && e.message.indexOf('relation')>=0){
+      toast('Tabella prima_nota_cassa da creare su Supabase');
+    } else {
+      toast('Errore: '+e.message.slice(0,40));
+    }
+  }
+}
+
+async function eliminaMovimentoCassa(id){
+  if(!confirm('Eliminare il movimento?')) return;
+  try {
+    await sbFetch('prima_nota_cassa?id=eq.'+id, {method:'DELETE'});
+    toast('Eliminato');
+    caricaCassa();
+  } catch(e){ toast('Errore: '+e.message.slice(0,40)); }
 }
 
 // ══ SISTEMA ALERT INTELLIGENTI ══

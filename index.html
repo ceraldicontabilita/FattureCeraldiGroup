@@ -3141,7 +3141,17 @@ async function caricaAssegniSalvati(){
     dc.forEach(function(r){h+='<div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);width:100%;box-sizing:border-box;overflow:hidden"><div style="font-size:16px;font-weight:800;font-family:monospace;margin-bottom:10px">'+esc(r.assegno||'')+'</div><select id="assB_'+r.id+'" style="width:100%;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;margin-bottom:8px;background:var(--surface)">'+fo+'</select><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"><input type="text" id="assI_'+r.id+'" placeholder="Importo" inputmode="decimal" style="flex:1;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box"><input type="text" id="assF_'+r.id+'" placeholder="N.Fattura" style="flex:1;padding:8px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;box-sizing:border-box"></div><button class="btn btn-p" style="padding:8px;font-size:13px;width:100%" onclick="compilaAssegno('+r.id+')">Salva</button></div>';});}
     el.innerHTML=h;
     if(co.length&&elS){var hs='<div style="font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:8px">COMPILATI ('+co.length+')</div>';
-    co.forEach(function(r){hs+='<div style="background:var(--green-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between"><div><b>'+esc(r.fornitore||'')+'</b><br><span style="font-size:11px;color:var(--ink3)">Ass.'+esc(r.assegno||'')+'</span></div><div style="font-size:15px;font-weight:700">\u20ac '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2})+'</div></div>';});
+    co.forEach(function(r){
+      var abb = r.abbinato_fattura_numero || '';
+      var lblState = abb ? '✓ Abbinato N.'+esc(abb) : '→ Tocca per abbinare';
+      var colState = abb ? '#1a7a3a' : 'var(--blue)';
+      hs += '<div onclick="apriAbbinaAssegno('+r.id+')" style="background:var(--green-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer">'+
+        '<div style="flex:1;min-width:0"><b>'+esc(r.fornitore||'')+'</b>'+
+        '<div style="font-size:11px;color:var(--ink3);margin-top:2px">Ass. '+esc(r.assegno||'')+'</div>'+
+        '<div style="font-size:10px;color:'+colState+';font-weight:600;margin-top:3px">'+lblState+'</div></div>'+
+        '<div style="font-size:15px;font-weight:700;white-space:nowrap">\u20ac '+(parseFloat(r.importo)||0).toLocaleString('it-IT',{minimumFractionDigits:2})+'</div>'+
+      '</div>';
+    });
     elS.innerHTML=hs;}
   }catch(e){el.innerHTML='<div style="color:var(--red);padding:20px">Errore: '+e.message+'</div>';}
 }
@@ -3664,6 +3674,130 @@ async function caricaCachePOSBanca(anno){
 
 
 
+
+// ══ ABBINAMENTO ASSEGNO → FATTURA ══
+async function apriAbbinaAssegno(assegnoId){
+  var ass = null;
+  try{
+    var rows = await sbFetch('fatture?id=eq.'+assegnoId+'&select=*');
+    if(rows && rows.length) ass = rows[0];
+  }catch(e){}
+  if(!ass){ toast('Assegno non trovato'); return; }
+  
+  var importo = parseFloat(ass.importo||0);
+  var forn = ass.fornitore || '';
+  
+  var candidati = [];
+  if(typeof fatture !== 'undefined' && fatture){
+    candidati = fatture.filter(function(f){
+      if(f.id === assegnoId) return false;
+      if(f.pagamento==='assegno' && !f.fornitore) return false;
+      if(!f.fornitore) return false;
+      if((f.fornitore||'').toLowerCase() !== forn.toLowerCase()) return false;
+      if(f.abbinato_assegno_id) return false;
+      return true;
+    });
+    candidati.sort(function(a,b){
+      return Math.abs((a.importo||0)-importo) - Math.abs((b.importo||0)-importo);
+    });
+    candidati = candidati.slice(0,10);
+  }
+  
+  var fe = function(n){return (n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  
+  var mo = document.getElementById('abbAssMo');
+  if(!mo){
+    mo = document.createElement('div');
+    mo.id = 'abbAssMo';
+    mo.style.cssText = 'display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px';
+    mo.onclick = function(e){ if(e.target===mo) mo.style.display='none'; };
+    document.body.appendChild(mo);
+  }
+  
+  var candHtml = '';
+  if(!candidati.length){
+    candHtml = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">Nessuna fattura di <b>'+esc(forn)+'</b> da abbinare</div>';
+  } else {
+    candidati.forEach(function(f){
+      var dataFmt = f.data ? new Date(f.data+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'2-digit'}) : '';
+      var matchImp = Math.abs((f.importo||0)-importo)<0.01;
+      var bordo = matchImp ? '#00B884' : 'var(--sep)';
+      var matchLbl = matchImp ? ' <span style="color:#00B884;font-size:10px">\u2713 match</span>' : '';
+      candHtml += '<div onclick="confermaAbbinaAssegno('+assegnoId+','+f.id+')" style="padding:12px 14px;border:1.5px solid '+bordo+';border-radius:10px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;font-weight:600">N. '+esc(f.numero||'-')+matchLbl+'</div>'+
+          '<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+dataFmt+'</div>'+
+        '</div>'+
+        '<div style="font-size:14px;font-weight:700">\u20ac '+fe(f.importo)+'</div>'+
+      '</div>';
+    });
+  }
+  
+  var rimuoviBtn = ass.abbinato_fattura_numero 
+    ? '<button onclick="rimuoviAbbinaAssegno('+assegnoId+')" style="margin-top:10px;padding:6px 12px;border:1px solid var(--red);background:var(--red-light);border-radius:6px;font-size:11px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit;width:100%">\u2715 Rimuovi abbinamento</button>' 
+    : '';
+  
+  mo.innerHTML = '<div style="background:var(--bg);border-radius:16px;max-width:460px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3)">'+
+    '<div style="padding:16px 18px;border-bottom:1px solid var(--sep)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+        '<div style="flex:1"><div style="font-size:15px;font-weight:700">Abbina assegno</div>'+
+        '<div style="font-size:12px;color:var(--ink3);margin-top:3px">'+esc(forn)+' \u00b7 '+esc(ass.assegno||'')+' \u00b7 \u20ac '+fe(importo)+'</div></div>'+
+        '<button onclick="document.getElementById(\'abbAssMo\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">\u00d7</button>'+
+      '</div>'+ rimuoviBtn +
+    '</div>'+
+    '<div style="overflow-y:auto;flex:1;padding:12px">'+candHtml+'</div>'+
+  '</div>';
+  mo.style.display='flex';
+}
+
+async function confermaAbbinaAssegno(assegnoId, fatturaId){
+  var fa = fatture.find(function(x){return x.id==fatturaId;});
+  if(!fa){ toast('Fattura non trovata'); return; }
+  try {
+    await sbFetch('fatture?id=eq.'+assegnoId, {method:'PATCH', body:JSON.stringify({
+      abbinato_fattura_id: fatturaId,
+      abbinato_fattura_numero: fa.numero || ''
+    })});
+    await sbFetch('fatture?id=eq.'+fatturaId, {method:'PATCH', body:JSON.stringify({
+      abbinato_assegno_id: assegnoId,
+      stato: 'pagata',
+      data_pagamento: new Date().toISOString().slice(0,10)
+    })});
+    var a = fatture.find(function(x){return x.id==assegnoId;});
+    if(a){ a.abbinato_fattura_id = fatturaId; a.abbinato_fattura_numero = fa.numero; }
+    fa.abbinato_assegno_id = assegnoId; fa.stato = 'pagata';
+    if(typeof save==='function') save(fatture);
+    toast('Abbinato a N.'+(fa.numero||''));
+    document.getElementById('abbAssMo').style.display='none';
+    if(typeof caricaAssegniSalvati==='function') caricaAssegniSalvati();
+    if(typeof renderLista==='function') renderLista();
+    if(typeof renderAlerts==='function') renderAlerts();
+  } catch(e){ toast('Errore: '+(e.message||'').slice(0,40)); }
+}
+
+async function rimuoviAbbinaAssegno(assegnoId){
+  if(!confirm('Rimuovere abbinamento?')) return;
+  var a = fatture.find(function(x){return x.id==assegnoId;});
+  var fattId = a ? a.abbinato_fattura_id : null;
+  try {
+    await sbFetch('fatture?id=eq.'+assegnoId, {method:'PATCH', body:JSON.stringify({
+      abbinato_fattura_id: null, abbinato_fattura_numero: null
+    })});
+    if(fattId){
+      await sbFetch('fatture?id=eq.'+fattId, {method:'PATCH', body:JSON.stringify({abbinato_assegno_id: null})});
+    }
+    if(a){ a.abbinato_fattura_id = null; a.abbinato_fattura_numero = null; }
+    if(fattId){
+      var f = fatture.find(function(x){return x.id==fattId;});
+      if(f) f.abbinato_assegno_id = null;
+    }
+    if(typeof save==='function') save(fatture);
+    toast('Rimosso');
+    document.getElementById('abbAssMo').style.display='none';
+    if(typeof caricaAssegniSalvati==='function') caricaAssegniSalvati();
+  } catch(e){ toast('Errore: '+(e.message||'').slice(0,40)); }
+}
+
 // ══ FORNITORI — ANAGRAFICA + STORICO ACQUISTI ══
 // Cache di fornitori con dati derivati da fatture
 window._fornCache = null;
@@ -4016,9 +4150,12 @@ async function caricaProvvisoria(){
       fatture.forEach(function(f){
         if(f.document_type==='TD04') return;
         if(!f.importo || f.importo<=0) return;
-        var nonPagata = f.stato!=='pagata';
+        // Una fattura entra in Provvisoria SOLO se:
+        //   a) ha stato esplicito "da pagare" (da_pagare, aperta, pending)
+        //   b) OPPURE pagata ma non riconciliata
+        var statoDaPagare = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
         var pagataNonRiconc = f.stato==='pagata' && !f.riconciliato_cassa && !f.riconciliato_banca;
-        if(!nonPagata && !pagataNonRiconc) return;
+        if(!statoDaPagare && !pagataNonRiconc) return;
         var d = (f.data||'').slice(0,10);
         if(d<daIni || d>daFin) return;
         // Residuo considerando compensazioni note credito
@@ -4892,9 +5029,11 @@ function calcolaAlerts(){
   if(typeof fatture === 'undefined' || !fatture) return list;
   var oggi = new Date(); oggi.setHours(0,0,0,0);
   
-  // A) Fatture senza metodo pagamento (gravità alta)
+  // A) Fatture senza metodo: solo stato esplicito
   var senzaMetodo = fatture.filter(function(f){
-    return (!f.pagamento || f.pagamento==='') && f.stato!=='pagata';
+    if(f.pagamento && f.pagamento!=='') return false;
+    var statoDaPag = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
+    return statoDaPag;
   });
   if(senzaMetodo.length){
     list.push({
@@ -4908,9 +5047,11 @@ function calcolaAlerts(){
     });
   }
   
-  // B) Fatture con metodo bonifico ma senza scadenza (gravità alta)
+  // B) Bonifico senza scadenza: solo stato esplicito
   var senzaScadenza = fatture.filter(function(f){
-    return f.pagamento==='bonifico' && !f.scadenza && f.stato!=='pagata';
+    if(f.pagamento!=='bonifico' || f.scadenza) return false;
+    var statoDaPag = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
+    return statoDaPag;
   });
   if(senzaScadenza.length){
     list.push({
@@ -4924,9 +5065,11 @@ function calcolaAlerts(){
     });
   }
   
-  // C) Fatture scadute non pagate (gravità alta)
+  // C) Fatture scadute: solo stato esplicito
   var scadute = fatture.filter(function(f){
-    if(f.stato==='pagata' || !f.scadenza) return false;
+    if(!f.scadenza) return false;
+    var statoDaPag = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
+    if(!statoDaPag) return false;
     return new Date(f.scadenza+'T12:00:00') < oggi;
   });
   if(scadute.length){
@@ -5028,7 +5171,12 @@ function renderAlerts(){
   // Aggiorna silenziosamente il badge Provvisoria se disponibile
   try{
     if(typeof fatture!=='undefined' && fatture){
-      var nDaPag = fatture.filter(function(f){return f.document_type!=='TD04' && f.stato!=='pagata' && (f.importo||0)>0;}).length;
+      var nDaPag = fatture.filter(function(f){
+        if(f.document_type==='TD04' || (f.importo||0)<=0) return false;
+        var statoDaPag = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
+        var pagNonRic = f.stato==='pagata' && !f.riconciliato_cassa && !f.riconciliato_banca;
+        return statoDaPag || pagNonRic;
+      }).length;
       var b = document.getElementById('pnProvBadge');
       if(b){ b.textContent = nDaPag; b.style.display = nDaPag>0 ? 'inline-block' : 'none'; }
     }

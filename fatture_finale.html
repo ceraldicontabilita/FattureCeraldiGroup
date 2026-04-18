@@ -1015,10 +1015,11 @@ body{padding-bottom:92px !important}
 
 <div id="pnSectionProv">
   <!-- Provvisoria -->
-  <div style="display:flex;gap:8px;margin-bottom:12px">
+  <div style="display:flex;gap:8px;margin-bottom:8px">
     <input type="number" id="provAnno" value="2026" min="2020" max="2099" style="flex:1;padding:10px;border:1.5px solid var(--sep);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);box-sizing:border-box">
     <button class="btn btn-p" onclick="caricaProvvisoria()" style="flex:0 0 auto;padding:10px 16px;font-size:14px">Aggiorna</button>
   </div>
+  <button onclick="riconciliaCompletaDaEstratto()" style="width:100%;padding:10px;border:1px solid var(--blue);background:var(--blue-light);border-radius:10px;font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;font-family:inherit;margin-bottom:12px">&#128257; Riconcilia con estratto conto bancario</button>
   <div id="provTotali" style="margin-bottom:14px"></div>
   <div id="provLista"></div>
 </div>
@@ -4151,11 +4152,13 @@ async function caricaProvvisoria(){
         if(f.document_type==='TD04') return;
         if(!f.importo || f.importo<=0) return;
         // Una fattura entra in Provvisoria SOLO se:
-        //   a) ha stato esplicito "da pagare" (da_pagare, aperta, pending)
-        //   b) OPPURE pagata ma non riconciliata
+        //   a) stato esplicito da pagare E non riconciliata/abbinata
+        //   b) pagata ma senza traccia di riconciliazione
         var statoDaPagare = f.stato==='da_pagare' || f.stato==='aperta' || f.stato==='pending';
-        var pagataNonRiconc = f.stato==='pagata' && !f.riconciliato_cassa && !f.riconciliato_banca;
+        var pagataNonRiconc = f.stato==='pagata' && !f.riconciliato_cassa && !f.riconciliato_banca && !f.abbinato_assegno_id && !f.abbinato_fattura_id;
         if(!statoDaPagare && !pagataNonRiconc) return;
+        // Esclusione esplicita: se ha qualche forma di riconciliazione, non è più provvisoria
+        if(f.riconciliato_banca || f.riconciliato_cassa) return;
         var d = (f.data||'').slice(0,10);
         if(d<daIni || d>daFin) return;
         // Residuo considerando compensazioni note credito
@@ -4617,7 +4620,41 @@ async function caricaCassa(){
           ref_id:m.id
         });
       });
-    } catch(e){ /* tabella potrebbe non esistere ancora */ }
+    } catch(e){}
+    
+    // D) Dall'estratto conto: PRELIEVI (contanti o assegno) = entrata cassa
+    //                         VERSAMENTI contanti = uscita cassa (soldi escono dalla cassa vanno in banca)
+    try {
+      var ecRows = await sbFetch('estratto_conto?data_contabile=gte.'+daIni+'&data_contabile=lte.'+daFin+'&select=*&order=data_contabile.asc');
+      (ecRows||[]).forEach(function(m){
+        var desc = (m.descrizione||'').toUpperCase();
+        var cat = (m.categoria||'').toUpperCase();
+        var imp = parseFloat(m.importo||0);
+        var data = (m.data_contabile||'').slice(0,10);
+        if(!data) return;
+        
+        // PRELIEVO CONTANTI/ASSEGNO da banca → entra in cassa
+        // (in banca è un'uscita, quindi imp<0)
+        // Ma in cassa le fatture assegno le gestiamo a parte — qui solo prelievi contanti espliciti
+        if(imp<0 && (desc.indexOf('PRELIEVO CONTANTI')>=0 || desc.indexOf('PRELEVAMENTO CONTANTI')>=0 || desc.indexOf('PRELIEVO SPORTELLO')>=0)){
+          movimenti.push({
+            data:data, tipo:'entrata', importo:Math.abs(imp),
+            categoria:'prelievo_banca',
+            descrizione:'Prelievo contanti da banca',
+            origine:'estratto_conto', ref_id:m.id
+          });
+        }
+        // VERSAMENTO CONTANTI in banca → esce dalla cassa
+        if(imp>0 && (desc.indexOf('VERSAMENTO CONTANTI')>=0 || desc.indexOf('VERSAMENTO')>=0 && desc.indexOf('CONTANT')>=0)){
+          movimenti.push({
+            data:data, tipo:'uscita', importo:imp,
+            categoria:'versamento_banca',
+            descrizione:'Versamento contanti in banca',
+            origine:'estratto_conto', ref_id:m.id
+          });
+        }
+      });
+    } catch(e){}
     
     // Ordino per data decrescente
     movimenti.sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
@@ -5566,6 +5603,113 @@ function ecIsPos(cat){
   return !!cat && /Incasso tramite POS/i.test(cat);
 }
 
+
+// ══ RICONCILIAZIONE COMPLETA DA ESTRATTO CONTO ══
+// Dopo import CSV, passa su ogni movimento e lega fatture/assegni
+async function riconciliaCompletaDaEstratto(){
+  if(typeof fatture==='undefined' || !fatture){ toast('Fatture non caricate'); return 0; }
+  toast('Riconciliazione in corso...');
+  var count = 0;
+  try {
+    // Carico ultimi 12 mesi di estratto conto
+    var oggi = new Date();
+    var unAnnoFa = new Date(oggi); unAnnoFa.setMonth(oggi.getMonth()-12);
+    var dIni = unAnnoFa.toISOString().slice(0,10);
+    var dFin = oggi.toISOString().slice(0,10);
+    var rows = await sbFetch('estratto_conto?data_contabile=gte.'+dIni+'&data_contabile=lte.'+dFin+'&select=*&limit=5000');
+    rows = rows || [];
+    
+    for(var i=0; i<rows.length; i++){
+      var m = rows[i];
+      var imp = parseFloat(m.importo||0);
+      if(imp >= 0) continue; // solo uscite
+      var importoAbs = Math.abs(imp);
+      var desc = (m.descrizione||'').toUpperCase();
+      var data = (m.data_contabile||'').slice(0,10);
+      
+      // 1) PRELIEVO ASSEGNO — cerco NUM: xxxxxxx nella descrizione
+      var matchAss = desc.match(/NUM:\s*0*(\d+)/);
+      if(matchAss && desc.indexOf('PRELIEVO ASSEGNO')>=0){
+        var numAss = matchAss[1];
+        // Cerco assegno con numero corrispondente nel campo assegno
+        var assegno = fatture.find(function(f){
+          if(f.pagamento!=='assegno' || !f.assegno) return false;
+          if(f.riconciliato_banca) return false;
+          // Normalizzo rimuovendo zeri iniziali
+          var aNum = (f.assegno||'').replace(/^0+/,'').split(/[-\s]/)[0];
+          return aNum === numAss;
+        });
+        if(assegno){
+          try {
+            await sbFetch('fatture?id=eq.'+assegno.id, {method:'PATCH', body:JSON.stringify({
+              riconciliato_banca: m.id,
+              stato: 'pagata',
+              data_pagamento: data
+            })});
+            assegno.riconciliato_banca = m.id;
+            assegno.stato = 'pagata';
+            assegno.data_pagamento = data;
+            count++;
+          } catch(e){}
+          continue;
+        }
+      }
+      
+      // 2) VOSTRA DISPOSIZIONE → bonifico a fornitore
+      if(desc.indexOf('VOSTRA DISPOSIZIONE')>=0 || desc.indexOf('DISPOSIZIONE')>=0){
+        // Cerco fornitore nella descrizione (dopo FAVORE)
+        var matchForn = desc.match(/FAVORE\s+([^-]+?)(?:\s+NOTPROVIDE|\s+-\s+|\s+ADD)/);
+        var fornDesc = matchForn ? matchForn[1].trim() : '';
+        
+        var bonifico = fatture.find(function(f){
+          if(f.pagamento!=='bonifico') return false;
+          if(f.riconciliato_banca) return false;
+          if(Math.abs((f.importo||0)-importoAbs) > 0.50) return false;
+          if(!f.fornitore) return false;
+          // Match su fornitore
+          var fn = f.fornitore.toUpperCase();
+          var fnFirst = fn.split(/[\s.]/)[0];
+          if(desc.indexOf(fnFirst)>=0) return true;
+          if(fornDesc && fnFirst && fornDesc.indexOf(fnFirst)>=0) return true;
+          // Match su scadenza ±10gg
+          if(f.scadenza){
+            var dtS = new Date(f.scadenza+'T12:00:00');
+            var dtM = new Date(data+'T12:00:00');
+            if(Math.abs(dtM-dtS) < 10*24*3600*1000) return true;
+          }
+          return false;
+        });
+        if(bonifico){
+          try {
+            await sbFetch('fatture?id=eq.'+bonifico.id, {method:'PATCH', body:JSON.stringify({
+              riconciliato_banca: m.id,
+              riconciliato_cassa: null,
+              stato: 'pagata',
+              data_pagamento: data
+            })});
+            bonifico.riconciliato_banca = m.id;
+            bonifico.riconciliato_cassa = null;
+            bonifico.stato = 'pagata';
+            bonifico.data_pagamento = data;
+            count++;
+          } catch(e){}
+        }
+      }
+    }
+    
+    if(typeof save==='function') save(fatture);
+    toast('\u2713 '+count+' operazioni riconciliate');
+    if(typeof renderLista==='function') renderLista();
+    if(typeof renderAlerts==='function') renderAlerts();
+    if(typeof caricaProvvisoria==='function' && document.getElementById('pnSectionProv') && document.getElementById('pnSectionProv').style.display !== 'none') caricaProvvisoria();
+    if(typeof caricaAssegniSalvati==='function') caricaAssegniSalvati();
+    return count;
+  } catch(e){
+    toast('Errore: '+(e.message||'').slice(0,40));
+    return 0;
+  }
+}
+
 async function importaEstrattoConto(input){
   if(!input.files || !input.files[0]) return;
   const file = input.files[0];
@@ -5675,8 +5819,14 @@ async function importaEstrattoConto(input){
     toast('✅ Estratto conto importato: '+salvati+' righe');
     if(btn) btn.disabled = false;
     input.value = '';
-    // Ricarica vista
-    setTimeout(() => caricaEstrattoConto(), 400);
+    // Riconciliazione automatica dopo import
+    setTimeout(async function(){
+      prog.innerHTML = '&#128257; Riconciliazione automatica fatture...';
+      var ricCount = 0;
+      try { ricCount = await riconciliaCompletaDaEstratto(); } catch(e){}
+      prog.innerHTML = `&#9989; ${salvati} movimenti importati · ${ricCount} fatture riconciliate`;
+      caricaEstrattoConto();
+    }, 400);
 
   } catch(e){
     prog.innerHTML = '&#10060; Errore: ' + (e.message||'').substring(0, 200);
